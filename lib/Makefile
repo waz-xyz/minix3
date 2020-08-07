@@ -25,6 +25,8 @@ all-gnu: makefiles
 	cd dummy && $(MAKE) $@
 	mkdir -p obj/editline
 	cd editline && $(MAKE) $@
+	mkdir -p obj/ieee_float
+	cd ieee_float && $(MAKE) $@
 	mkdir -p obj/ip
 	cd ip && $(MAKE) $@
 	mkdir -p obj/math
@@ -55,6 +57,7 @@ clean depend:: makefiles
 	cd curses && $(MAKE) $@
 	cd dummy && $(MAKE) $@
 	cd editline && $(MAKE) $@
+	cd ieee_float && $(MAKE) $@
 	cd ip && $(MAKE) $@
 	cd math && $(MAKE) $@
 	cd other && $(MAKE) $@
@@ -72,6 +75,7 @@ makefiles: ansi/Makefile
 makefiles: curses/Makefile
 makefiles: dummy/Makefile
 makefiles: editline/Makefile
+makefiles: ieee_float/Makefile
 makefiles: ip/Makefile
 makefiles: math/Makefile
 makefiles: other/Makefile
@@ -93,6 +97,8 @@ dummy/Makefile: dummy/Makefile.in
 	cd dummy && sh ../generate.sh ../obj/dummy ../bin && $(MAKE) makefiles
 editline/Makefile: editline/Makefile.in
 	cd editline && sh ../generate.sh ../obj/editline ../bin && $(MAKE) makefiles
+ieee_float/Makefile: ieee_float/Makefile.in
+	cd ieee_float && sh ../generate.sh ../obj/ieee_float ../bin && $(MAKE) makefiles
 ip/Makefile: ip/Makefile.in
 	cd ip && sh ../generate.sh ../obj/ip ../bin && $(MAKE) makefiles
 math/Makefile: math/Makefile.in
@@ -127,6 +133,7 @@ clean-make:
 	find curses -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete
 	find dummy -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete
 	find editline -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete
+	find ieee_float -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete
 	find ip -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete
 	find math -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete
 	find other -type f \( -name 'Makefile' -or -name 'Makedepend' \) -delete

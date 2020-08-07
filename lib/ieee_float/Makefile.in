@@ -1,5 +1,5 @@
 
-CFLAGS="-O -I.."
+CFLAGS="-O"
 
 LIBRARIES=libc
 

@@ -7,4 +7,4 @@
         .align 2
 
 _brksize:
-        .word   endbss
+        .word   __bss_end__

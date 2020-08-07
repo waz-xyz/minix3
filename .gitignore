@@ -1,8 +1,9 @@
 .vscode/
 *.[oa]
+*.map
 .depend
 Makedepend
 kernel/kernel.elf
-kernel/kernel.map
 lib/*/Makefile
 lib/*/*/Makefile
+servers/bin/*

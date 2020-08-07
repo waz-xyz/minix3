@@ -8,6 +8,7 @@ SUBDIRS="ansi \
 	curses \
 	dummy \
 	editline \
+	ieee_float \
 	ip \
 	math \
 	other \

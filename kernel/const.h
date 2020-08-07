@@ -108,7 +108,11 @@
 #define reallock(c, v)	intr_disable()
 #define realunlock(c)	intr_enable()
 #define lock(c, v)	reallock(c, v)
-#define unlock(c)	realunlock(c) 
+#define unlock(c)	realunlock(c)
+
+/* Sizes of memory tables.
+ */
+#define NR_MEMS		1
 
 #endif /* (CHIP == ARM) */
 

@@ -455,7 +455,7 @@ add_exponent(struct EXTEND *e, int exp)
 	}
 }
 
-static void _str_ext_cvt(const char *s, char **ss, struct EXTEND *e)
+void _str_ext_cvt(const char *s, char **ss, struct EXTEND *e)
 {
 	/*	Like strtod, but for extended precision */
 	register int	c;
@@ -696,7 +696,7 @@ _ext_str_cvt(struct EXTEND *e, int ndigit, int *decpt, int *sign, int ecvtflag)
 	return buf;
 }
 
-static void _dbl_ext_cvt(double value, struct EXTEND *e)
+void _dbl_ext_cvt(double value, struct EXTEND *e)
 {
 	/*	Convert double to extended
 	*/

@@ -63,7 +63,9 @@ libc_FILES=" \
 	mblen.c \
 	mbstowcs.c \
 	mbtowc.c \
+	memchr.c \
 	memcpy.c \
+	memmove.c \
 	misc.c \
 	mktime.c \
 	qsort.c \
@@ -73,11 +75,16 @@ libc_FILES=" \
 	sigmisc.c \
 	signal.c \
 	strcoll.c \
+	strcmp.c \
+	strcpy.c \
 	strcspn.c \
 	strerror.c \
 	strftime.c \
+	strlen.c \
 	strncpy.c \
+	strncmp.c \
 	strpbrk.c \
+	strrchr.c \
 	strspn.c \
 	strstr.c \
 	strtok.c \

@@ -3,8 +3,8 @@
 
 	.section .text
 
-	.global __exit
-	.type	__exit, %function
+	.global _exit
+	.type	_exit, %function
 
 	.align	2
 

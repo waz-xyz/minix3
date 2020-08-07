@@ -9,8 +9,8 @@
 	.arch armv7a
 	.syntax unified
 
-	.global crtso
-	.type	crtso, %function
+	.global _start
+	.type	_start, %function
 
 	.global	_penviron
 	.global	_penvp
@@ -26,7 +26,8 @@
 
 	.section .text
 	.align	2
-crtso:
+_start:
+	ldr	pc, =main
 @ 	xor     ebp, ebp		! clear for backtrace of core files
 @ 	mov     eax, (esp)		! argc
 @ 	lea     edx, 4(esp)		! argv
