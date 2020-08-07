@@ -6,6 +6,8 @@
 #ifndef _LIMITS_H
 #define _LIMITS_H
 
+#include <minix/sys_config.h>
+
 /* Definitions about chars (8 bits in MINIX, and signed). */
 #define CHAR_BIT           8	/* # bits in a char */
 #define CHAR_MIN        -128	/* minimum value of a char */

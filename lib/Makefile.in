@@ -8,21 +8,25 @@ SUBDIRS="ansi \
 	curses \
 	dummy \
 	editline \
-	end \
 	ip \
 	math \
 	other \
 	posix \
 	regex \
 	stdio \
-	syscall \
 	syslib \
 	util \
 	sysutil \
 	timers \
-	i386 \
-	zlib-1.2.3 \
-	ack
-	gnu"
-	
+	zlib-1.2.3"
+
+case $ARCH in
+arm )
+	SUBDIRS="$SUBDIRS armv7"
+	;;
+x86 )
+	SUBDIRS="$SUBDIRS i386"
+	;;
+esac
+
 TYPE=both

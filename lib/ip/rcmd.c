@@ -50,8 +50,6 @@ static char sccsid[] = "@(#)rcmd.c	5.22 (Berkeley) 6/1/90";
 #define CONST
 #endif
 
-extern	errno;
-
 int rcmd(ahost, rport, locuser, remuser, cmd, fd2p)
 char **ahost;
 int rport;

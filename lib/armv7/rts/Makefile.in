@@ -1,0 +1,16 @@
+# Makefile for lib/armv7/rts.
+
+CFLAGS="-O -D_MINIX -D_POSIX_SOURCE"
+
+LIBRARIES=libc
+
+libc_FILES=" \
+	__sigreturn.s \
+	_ipc.s \
+	_ipcnew.s \
+	brksize.s"
+	
+STARTFILES="\
+	crtso.s"
+
+TYPE=both

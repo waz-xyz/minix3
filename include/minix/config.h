@@ -29,6 +29,7 @@
 #define SUN_4_60     _MACHINE_SUN_4_60
 #define ATARI        _MACHINE_ATARI
 #define MACINTOSH    _MACHINE_MACINTOSH
+#define ZYNQ         _MACHINE_ZYNQ
 
 /* Number of slots in the process table for non-kernel processes. The number
  * of system processes defines how many processes with special privileges 
@@ -113,6 +114,7 @@
 #define INTEL             _CHIP_INTEL	/* CHIP type for PC, XT, AT, 386 and clones */
 #define M68000            _CHIP_M68000	/* CHIP type for Atari, Amiga, Macintosh    */
 #define SPARC             _CHIP_SPARC	/* CHIP type for SUN-4 (e.g. SPARCstation)  */
+#define ARM               _CHIP_ARM
 
 /* Set the FP_FORMAT type based on the machine selected, either hw or sw    */
 #define FP_NONE	 _FP_NONE	/* no floating point support                */

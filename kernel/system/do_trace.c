@@ -56,7 +56,9 @@ register message *m_ptr;
   case T_STOP:			/* stop process */
 	if (rp->p_rts_flags == 0) lock_dequeue(rp);
 	rp->p_rts_flags |= P_STOP;
+#if (CHIP == INTEL)
 	rp->p_reg.psw &= ~TRACEBIT;	/* clear trace bit */
+#endif
 	return(OK);
 
   case T_GETINS:		/* return value from instruction space */
@@ -115,12 +117,13 @@ register message *m_ptr;
 #endif
 	    i == (int) &((struct proc *) 0)->p_reg.ss)
 		return(EIO);
-#endif
+
 	if (i == (int) &((struct proc *) 0)->p_reg.psw)
 		/* only selected bits are changeable */
 		SETPSW(rp, tr_data);
 	else
 		*(reg_t *) ((char *) &rp->p_reg + i) = (reg_t) tr_data;
+#endif
 	m_ptr->CTL_DATA = 0;
 	break;
 
@@ -131,7 +134,9 @@ register message *m_ptr;
 	break;
 
   case T_STEP:			/* set trace bit */
+#if (CHIP == INTEL)
 	rp->p_reg.psw |= TRACEBIT;
+#endif
 	rp->p_rts_flags &= ~P_STOP;
 	if (rp->p_rts_flags == 0) lock_enqueue(rp);
 	m_ptr->CTL_DATA = 0;

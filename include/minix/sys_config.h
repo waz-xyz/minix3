@@ -4,13 +4,14 @@
 /*===========================================================================*
  *		This section contains user-settable parameters		     *
  *===========================================================================*/
-#define _MINIX_MACHINE       _MACHINE_IBM_PC
+#define _MINIX_MACHINE          _MACHINE_ZYNQ
 
-#define _MACHINE_IBM_PC             1	/* any  8088 or 80x86-based system */
-#define _MACHINE_SUN_4             40	/* any Sun SPARC-based system */
-#define _MACHINE_SUN_4_60	   40	/* Sun-4/60 (aka SparcStation 1 or Campus) */
-#define _MACHINE_ATARI             60	/* ATARI ST/STe/TT (68000/68030) */
-#define _MACHINE_MACINTOSH         62	/* Apple Macintosh (68000) */
+#define _MACHINE_IBM_PC         1	/* any  8088 or 80x86-based system */
+#define _MACHINE_SUN_4          40	/* any Sun SPARC-based system */
+#define _MACHINE_SUN_4_60       40	/* Sun-4/60 (aka SparcStation 1 or Campus) */
+#define _MACHINE_ATARI          60	/* ATARI ST/STe/TT (68000/68030) */
+#define _MACHINE_MACINTOSH      62	/* Apple Macintosh (68000) */
+#define _MACHINE_ZYNQ           100
 
 /* Word size in bytes (a constant equal to sizeof(int)). */
 #if __ACK__ || __GNUC__
@@ -18,9 +19,11 @@
 #define _PTR_SIZE	_EM_WSIZE
 #endif
 
-#define _NR_PROCS	100
-#define _NR_SYS_PROCS	32
-#define _NR_HOLES (2*_NR_PROCS+4)  /* No. of memory holes maintained by PM */
+#define _NR_PROCS       100
+#define _NR_SYS_PROCS   32
+#define _NR_HOLES       (2*_NR_PROCS+4)  /* No. of memory holes maintained by PM */
+
+#define DO_SERIAL_DEBUG         0
 
 /* Set the CHIP type based on the machine selected. The symbol CHIP is actually
  * indicative of more than just the CPU.  For example, machines for which
@@ -29,6 +32,7 @@
 #define _CHIP_INTEL             1	/* CHIP type for PC, XT, AT, 386 and clones */
 #define _CHIP_M68000            2	/* CHIP type for Atari, Amiga, Macintosh    */
 #define _CHIP_SPARC             3	/* CHIP type for SUN-4 (e.g. SPARCstation)  */
+#define _CHIP_ARM               4
 
 /* Set the FP_FORMAT type based on the machine selected, either hw or sw    */
 #define _FP_NONE		  0	/* no floating point support                */
@@ -50,6 +54,14 @@
 #if (_MINIX_MACHINE == _MACHINE_ATARI) || (_MINIX_MACHINE == _MACHINE_SUN_4)
 #define _ASKDEV            1	/* ask for boot device */
 #define _FASTLOAD          1	/* use multiple block transfers to init ram */
+#endif
+
+#if (_MINIX_MACHINE == _MACHINE_ZYNQ)
+#define _EM_WSIZE               4
+#define _MINIX_CHIP             _CHIP_ARM
+#define _MINIX_FP_FORMAT        _FP_IEEE
+#undef DO_SERIAL_DEBUG
+#define DO_SERIAL_DEBUG         1
 #endif
 
 #ifndef _MINIX_FP_FORMAT

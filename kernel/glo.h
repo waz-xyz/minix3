@@ -45,7 +45,6 @@ EXTERN int irq_use;				/* map of all in-use irq's */
 /* Miscellaneous. */
 EXTERN reg_t mon_ss, mon_sp;		/* boot monitor stack */
 EXTERN int mon_return;			/* true if we can return to monitor */
-EXTERN int do_serial_debug;
 EXTERN int who_e, who_p;		/* message source endpoint and proc */
 
 /* VM */
@@ -63,6 +62,26 @@ EXTERN _PROTOTYPE( void (*level0_func), (void) );
 
 #if (CHIP == M68000)
 /* M68000 specific variables go here. */
+#endif
+
+#if (CHIP == ARM)
+
+/* Interrupt related variables. */
+EXTERN irq_hook_t irq_hooks[NR_IRQ_HOOKS];	/* hooks for general use */
+EXTERN int irq_actids[NR_IRQ_VECTORS];		/* IRQ ID bits active */
+
+/* Miscellaneous. */
+EXTERN int who_e, who_p;		/* message source endpoint and proc */
+
+/* VM */
+EXTERN phys_bytes vm_base;
+EXTERN phys_bytes vm_size;
+EXTERN phys_bytes vm_mem_high;
+
+/* Variables that are initialized elsewhere are just extern here. */
+extern struct boot_image image[]; 	/* system image processes */
+extern char *t_stack[];			/* task stack space */
+
 #endif
 
 #endif /* GLO_H */

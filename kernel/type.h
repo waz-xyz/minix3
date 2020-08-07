@@ -108,4 +108,49 @@ typedef int (*irq_handler_t)(struct irq_hook *);
 /* M68000 specific types go here. */
 #endif /* (CHIP == M68000) */
 
+#if (CHIP == ARM)
+
+typedef unsigned long reg_t;		/* machine register */
+
+struct stackframe_s {           /* proc_ptr points here */
+  reg_t r0;
+  reg_t r1;
+  reg_t r2;
+  reg_t r3;
+  reg_t r4;
+  reg_t r5;
+  reg_t r6;
+  reg_t r7;
+  reg_t r8;
+  reg_t r9;
+  reg_t r10;
+  reg_t r11;
+  reg_t r12;
+  reg_t r13;
+  reg_t r14;
+  reg_t pc;
+  reg_t retreg;
+  reg_t sp;
+  reg_t psw;
+};
+
+typedef unsigned long irq_policy_t;	
+typedef unsigned long irq_id_t;	
+
+typedef struct irq_hook {
+  struct irq_hook *next;		/* next hook in chain */
+  int (*handler)(struct irq_hook *);	/* interrupt handler */
+  int irq;				/* IRQ vector number */ 
+  int id;				/* id of this hook */
+  int proc_nr_e;			/* (endpoint) NONE if not in use */
+  irq_id_t notify_id;			/* id to return on interrupt */
+  irq_policy_t policy;			/* bit mask for policy */
+} irq_hook_t;
+
+typedef int (*irq_handler_t)(struct irq_hook *);
+
+typedef unsigned long irq_id_t;
+
+#endif /* (CHIP == ARM) */
+
 #endif /* TYPE_H */

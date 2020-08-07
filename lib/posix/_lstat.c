@@ -3,6 +3,8 @@
 #include <sys/stat.h>
 #include <string.h>
 
+extern int _stat(const char *_path, struct stat *_buf);
+
 PUBLIC int lstat(name, buffer)
 _CONST char *name;
 struct stat *buffer;

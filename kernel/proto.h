@@ -39,10 +39,6 @@ _PROTOTYPE( int isokendpt_f, (int e, int *p, int f)			);
 #define isokendpt_d(e, p, f) isokendpt_f((e), (p), (f))
 #endif
 
-/* start.c */
-_PROTOTYPE( void cstart, (U16_t cs, U16_t ds, U16_t mds,
-				U16_t parmoff, U16_t parmsize)		);
-
 /* system.c */
 _PROTOTYPE( int get_priv, (register struct proc *rc, int proc_type)	);
 _PROTOTYPE( void send_sig, (int proc_nr, int sig_nr)			);
@@ -63,17 +59,21 @@ _PROTOTYPE( void clear_endpoint, (struct proc *rc)			);
 
 #if (CHIP == INTEL)
 
+/* start_x86.c */
+_PROTOTYPE( void cstart, (U16_t cs, U16_t ds, U16_t mds,
+				U16_t parmoff, U16_t parmsize)		);
+
 /* exception.c */
 _PROTOTYPE( void exception, (unsigned vec_nr)				);
 
-/* i8259.c */
+/* interrupts_x86.c */
 _PROTOTYPE( void intr_init, (int mine)					);
 _PROTOTYPE( void intr_handle, (irq_hook_t *hook)			);
 _PROTOTYPE( void put_irq_handler, (irq_hook_t *hook, int irq,
 						irq_handler_t handler)	);
 _PROTOTYPE( void rm_irq_handler, (irq_hook_t *hook)			);
 
-/* klib*.s */
+/* klib_x86.s */
 _PROTOTYPE( void int86, (void)						);
 _PROTOTYPE( void cp_mess, (int src,phys_clicks src_clicks,vir_bytes src_offset,
 		phys_clicks dst_clicks, vir_bytes dst_offset)		);
@@ -97,7 +97,7 @@ _PROTOTYPE( void write_cr0, (unsigned long value)			);
 _PROTOTYPE( void write_cr3, (unsigned long value)			);
 _PROTOTYPE( unsigned long read_cpu_flags, (void)			);
 
-/* mpx*.s */
+/* mpx_x86.s */
 _PROTOTYPE( void idle_task, (void)					);
 _PROTOTYPE( void restart, (void)					);
 
@@ -158,10 +158,46 @@ _PROTOTYPE( void alloc_segments, (struct proc *rp)			);
 /* system/do_vm.c */
 _PROTOTYPE( void vm_map_default, (struct proc *pp)			);
 
+/* serial.c */
+void serial_putc(char c);
+
 #endif /* (CHIP == INTEL) */
 
 #if (CHIP == M68000)
 /* M68000 specific prototypes go here. */
 #endif /* (CHIP == M68000) */
+
+#if (CHIP == ARM)
+
+/* start_armv7.c */
+void cstart(void);
+
+/* interrupts_armv7.c */
+_PROTOTYPE( void intr_init, (int mine)					);
+_PROTOTYPE( void put_irq_handler, (irq_hook_t *hook, int irq,
+						irq_handler_t handler)	);
+_PROTOTYPE( void rm_irq_handler, (irq_hook_t *hook)			);
+
+/* klib_armv7.s */
+void intr_enable(void);
+void intr_disable(void);
+_PROTOTYPE( void cp_mess, (int src,phys_clicks src_clicks,vir_bytes src_offset,
+		phys_clicks dst_clicks, vir_bytes dst_offset)		);
+_PROTOTYPE( void enable_irq, (irq_hook_t *hook)				);
+_PROTOTYPE( int disable_irq, (irq_hook_t *hook)				);
+_PROTOTYPE( void phys_copy, (phys_bytes source, phys_bytes dest, phys_bytes count) );
+_PROTOTYPE( void phys_memset, (phys_bytes source, unsigned long pattern, phys_bytes count) );
+
+/* mpx*.s */
+_PROTOTYPE( void idle_task, (void)					);
+_PROTOTYPE( void restart, (void)					);
+
+/* system/do_vm.c */
+_PROTOTYPE( void vm_map_default, (struct proc *pp)			);
+
+/* serial.c */
+void serial_putc(char c);
+
+#endif /* (CHIP == ARM) */
 
 #endif /* PROTO_H */

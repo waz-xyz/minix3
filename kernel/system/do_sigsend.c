@@ -60,8 +60,10 @@ message *m_ptr;			/* pointer to request message */
   frp = (struct sigframe *) scp - 1;
   fr.sf_scpcopy = scp;
   fr.sf_retadr2= (void (*)()) rp->p_reg.pc;
+#if (CHIP == INTEL)
   fr.sf_fp = rp->p_reg.fp;
   rp->p_reg.fp = (reg_t) &frp->sf_fp;
+#endif
   fr.sf_scp = scp;
   fr.sf_code = 0;	/* XXX - should be used for type of FP exception */
   fr.sf_signo = smsg.sm_signo;

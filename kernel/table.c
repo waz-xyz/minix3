@@ -37,9 +37,9 @@
 /* Define stack sizes for the kernel tasks included in the system image. */
 #define NO_STACK	0
 #define SMALL_STACK	(128 * sizeof(char *))
-#define IDL_S	SMALL_STACK	/* 3 intr, 3 temps, 4 db for Intel */
-#define	HRD_S	NO_STACK	/* dummy task, uses kernel stack */
-#define	TSK_S	SMALL_STACK	/* system and clock task */
+#define IDL_S		SMALL_STACK	/* 3 intr, 3 temps, 4 db for Intel */
+#define	HRD_S		NO_STACK	/* dummy task, uses kernel stack */
+#define	TSK_S		SMALL_STACK	/* system and clock task */
 
 /* Stack space for all the task stacks.  Declared as (char *) to align it. */
 #define	TOT_STACK_SPACE	(IDL_S + HRD_S + (2 * TSK_S))
@@ -123,4 +123,3 @@ PUBLIC struct boot_image image[] = {
 extern int dummy[(NR_BOOT_PROCS==sizeof(image)/
 	sizeof(struct boot_image))?1:-1];
 extern int dummy[(BITCHUNK_BITS > NR_BOOT_PROCS - 1) ? 1 : -1];
-

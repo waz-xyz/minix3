@@ -46,7 +46,9 @@ message *m_ptr;			/* pointer to request message */
    */
   if (sc.sc_flags & SC_NOREGLOCALS) {
       rp->p_reg.retreg = sc.sc_retreg;
+#if (CHIP == INTEL)
       rp->p_reg.fp = sc.sc_fp;
+#endif
       rp->p_reg.pc = sc.sc_pc;
       rp->p_reg.sp = sc.sc_sp;
       return(OK);

@@ -9,6 +9,8 @@ settimeofday.c
 
 int settimeofday(const struct timeval *tp, const void *tzp)
 {
+	time_t top = tp->tv_sec;
+
 	/* Ignore time zones */
-	return stime(&tp->tv_sec);
+	return stime(&top);
 }

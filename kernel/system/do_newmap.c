@@ -34,8 +34,10 @@ message *m_ptr;			/* pointer to request message */
   if (src_phys == 0) return(EFAULT);
   phys_copy(src_phys,vir2phys(rp->p_memmap),(phys_bytes)sizeof(rp->p_memmap));
 
-#if (CHIP != M68000)
+#if (CHIP == INTEL)
   alloc_segments(rp);
+#elif (CHIP == ARM)
+  #warning TODO: Add "alloc_segments" for ARM
 #else
   pmmu_init_proc(rp);
 #endif

@@ -1,0 +1,7 @@
+.vscode/
+*.[oa]
+.depend
+Makedepend
+kernel/kernel
+lib/*/Makefile
+lib/*/*/Makefile

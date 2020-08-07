@@ -105,7 +105,7 @@ static struct sockaddr no_addr;
 #endif /* FD_SET */
 #endif /* _MINIX */
 
-res_send(buf, buflen, answer, anslen)
+int res_send(buf, buflen, answer, anslen)
 	const char *buf;
 	int buflen;
 	char *answer;

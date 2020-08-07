@@ -88,6 +88,13 @@ FORWARD _PROTOTYPE( void pick_proc, (void));
  */
 #endif /* (CHIP == M68000) */
 
+#if (CHIP == ARM)
+#define CopyMess(s,sp,sm,dp,dm) \
+	cp_mess(proc_addr(s)->p_endpoint, \
+		(sp)->p_memmap[D].mem_phys,	\
+		(vir_bytes)sm, (dp)->p_memmap[D].mem_phys, (vir_bytes)dm)
+#endif /* (CHIP == ARM) */
+
 /*===========================================================================*
  *				sys_call				     * 
  *===========================================================================*/

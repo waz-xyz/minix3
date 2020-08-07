@@ -15,7 +15,7 @@
 #endif
 
 #if !defined(_MINIX_CHIP)
-#include "error, configuration is not known"
+#pragma error "error, configuration is not known"
 #endif
 
 /* The following structure should match the stackframe_s structure used
@@ -57,8 +57,7 @@ struct sigframe {		/* stack frame created for signalled process */
   struct sigcontext *sf_scpcopy;
 };
 
-#else
-#if (_MINIX_CHIP == _CHIP_M68000)
+#elif (_MINIX_CHIP == _CHIP_M68000)
 struct sigregs {  
   long sr_retreg;			/* d0 */
   long sr_d1;
@@ -80,9 +79,40 @@ struct sigregs {
   short sr_psw;
   short sr_dummy;		/* make size multiple of 4 for system.c */
 };
+#elif (CHIP == ARM)
+struct sigregs {
+  long sr_r0;
+  long sr_r1;
+  long sr_r2;
+  long sr_r3;
+  long sr_r4;
+  long sr_r5;
+  long sr_r6;
+  long sr_r7;
+  long sr_r8;
+  long sr_r9;
+  long sr_r10;
+  long sr_r11;
+  long sr_r12;
+  long sr_r13;
+  long sr_r14;
+  long sr_pc;
+  long sr_retreg;
+  long sr_sp;
+  long sr_psw;
+};
+
+struct sigframe {		/* stack frame created for signalled process */
+  _PROTOTYPE( void (*sf_retadr), (void) );
+  int sf_signo;
+  int sf_code;
+  struct sigcontext *sf_scp;
+  int sf_fp;
+  _PROTOTYPE( void (*sf_retadr2), (void) );
+  struct sigcontext *sf_scpcopy;
+};
 #else
-#include "error, _MINIX_CHIP is not supported"
-#endif
+#pragma error "_MINIX_CHIP is not supported"
 #endif /* _MINIX_CHIP == _CHIP_INTEL */
 
 struct sigcontext {
@@ -135,6 +165,13 @@ struct sigcontext {
 #define sc_pc sc_regs.sr_pc
 #define sc_psw sc_regs.sr_psw
 #endif /* _MINIX_CHIP == M68000 */
+
+#if (_MINIX_CHIP == ARM)
+#define sc_retreg sc_regs.sr_retreg
+#define sc_pc sc_regs.sr_pc
+#define sc_psw sc_regs.sr_psw
+#define sc_sp sc_regs.sr_sp
+#endif /* _MINIX_CHIP == ARM */
 
 /* Values for sc_flags.  Must agree with <minix/jmp_buf.h>. */
 #define SC_SIGCONTEXT	2	/* nonzero when signal context is included */

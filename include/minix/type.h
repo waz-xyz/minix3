@@ -26,6 +26,10 @@ typedef unsigned long vir_bytes;/* virtual addresses and lengths in bytes */
 typedef unsigned long vir_bytes;/* virtual addresses and lengths in bytes */
 #endif
 
+#if (_MINIX_CHIP == _CHIP_ARM)
+typedef unsigned long vir_bytes;/* virtual addresses and lengths in bytes */
+#endif
+
 /* Memory map for local text, stack, data segments. */
 struct mem_map {
   vir_clicks mem_vir;		/* virtual address */

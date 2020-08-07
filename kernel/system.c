@@ -152,14 +152,18 @@ PRIVATE void initialize(void)
 
   /* Device I/O. */
   map(SYS_IRQCTL, do_irqctl);  		/* interrupt control operations */ 
+#if (CHIP == INTEL)
   map(SYS_DEVIO, do_devio);   		/* inb, inw, inl, outb, outw, outl */ 
   map(SYS_SDEVIO, do_sdevio);		/* phys_insb, _insw, _outsb, _outsw */
   map(SYS_VDEVIO, do_vdevio);  		/* vector with devio requests */ 
   map(SYS_INT86, do_int86);  		/* real-mode BIOS calls */ 
+#endif
 
   /* Memory management. */
   map(SYS_NEWMAP, do_newmap);		/* set up a process memory map */
+#if (CHIP == INTEL)
   map(SYS_SEGCTL, do_segctl);		/* add segment and get selector */
+#endif
   map(SYS_MEMSET, do_memset);		/* write char to memory area */
   map(SYS_VM_SETBUF, do_vm_setbuf); 	/* PM passes buffer for page tables */
   map(SYS_VM_MAP, do_vm_map); 		/* Map/unmap physical (device) memory */
@@ -177,8 +181,10 @@ PRIVATE void initialize(void)
 
   /* System control. */
   map(SYS_ABORT, do_abort);		/* abort MINIX */
-  map(SYS_GETINFO, do_getinfo); 	/* request system information */ 
+  map(SYS_GETINFO, do_getinfo); 	/* request system information */
+#if (CHIP == INTEL)
   map(SYS_IOPENABLE, do_iopenable); 	/* Enable I/O */
+#endif
 }
 
 /*===========================================================================*
@@ -228,10 +234,15 @@ int source;
 
   source %= RANDOM_SOURCES;
   r_next= krandom.bin[source].r_next;
-  if (machine.processor > 486) {
+#if (MACHINE == IBM_PC)
+  if (machine.processor > 486)
+  {
       read_tsc(&tsc_high, &tsc_low);
       krandom.bin[source].r_buf[r_next] = tsc_low;
-  } else {
+  }
+  else
+#endif
+  {
       krandom.bin[source].r_buf[r_next] = read_clock();
   }
   if (krandom.bin[source].r_size < RANDOM_ELEMENTS) {
@@ -297,6 +308,7 @@ int sig_nr;			/* signal to be sent, 1 to _NSIG */
   }
 }
 
+#if (MACHINE == IBM_PC)
 /*===========================================================================*
  *				umap_bios				     *
  *===========================================================================*/
@@ -326,6 +338,7 @@ vir_bytes bytes;		/* # of bytes to be copied */
   kprintf("Warning, error in umap_bios, virtual address 0x%x\n", vir_addr);
   return 0;
 }
+#endif 
 
 /*===========================================================================*
  *				umap_local				     *
@@ -374,14 +387,17 @@ vir_bytes bytes;		/* # of bytes to be copied */
   seg_base = seg_base << CLICK_SHIFT;	/* segment origin in bytes */
 #endif
   pa = (phys_bytes) vir_addr;
-#if (CHIP != M68000)
+#if (CHIP == INTEL)
   pa -= rp->p_memmap[seg].mem_vir << CLICK_SHIFT;
-  return(seg_base + pa);
-#endif
-#if (CHIP == M68000)
+  return (seg_base + pa);
+#elif (CHIP == ARM)
   pa -= (phys_bytes)rp->p_memmap[seg].mem_vir << CLICK_SHIFT;
   pa += (phys_bytes)rp->p_memmap[seg].mem_phys << CLICK_SHIFT;
-  return(pa);
+  return (pa);
+#elif (CHIP == M68000)
+  pa -= (phys_bytes)rp->p_memmap[seg].mem_vir << CLICK_SHIFT;
+  pa += (phys_bytes)rp->p_memmap[seg].mem_phys << CLICK_SHIFT;
+  return (pa);
 #endif
 }
 
@@ -451,10 +467,12 @@ vir_bytes bytes;		/* # of bytes to copy  */
           seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
           phys_addr[i] = umap_remote(p, seg_index, vir_addr[i]->offset, bytes);
           break;
+#if (MACHINE == IBM_PC)
       case BIOS_SEG:
 	  if(!p) return EDEADSRCDST;
           phys_addr[i] = umap_bios(p, vir_addr[i]->offset, bytes );
           break;
+#endif
       case PHYS_SEG:
           phys_addr[i] = vir_addr[i]->offset;
           break;

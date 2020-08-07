@@ -43,9 +43,11 @@ register message *m_ptr;	/* pointer to request message */
   case REMOTE_SEG:
       phys_addr = umap_remote(proc_addr(proc_nr), seg_index, offset, count); 
       break;
+#if (MACHINE == IBM_PC)
   case BIOS_SEG:
       phys_addr = umap_bios(proc_addr(proc_nr), offset, count); 
       break;
+#endif
   default:
       return(EINVAL);
   }

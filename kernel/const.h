@@ -2,10 +2,14 @@
 #ifndef CONST_H
 #define CONST_H
 
+#if (MACHINE == IBM_PC)
 #include <ibm/interrupt.h>	/* interrupt numbers and hardware vectors */
 #include <ibm/ports.h>		/* port addresses and magic numbers */
 #include <ibm/bios.h>		/* BIOS addresses, sizes and magic numbers */
 #include <ibm/cpu.h>		/* BIOS addresses, sizes and magic numbers */
+#elif (MACHINE == ZYNQ)
+#include <arm/interrupt.h>
+#endif
 #include <minix/config.h>
 #include "config.h"
 
@@ -87,5 +91,25 @@
 #if (CHIP == M68000)
 /* M68000 specific constants go here. */
 #endif /* (CHIP == M68000) */
+
+#if (CHIP == ARM)
+/* ARM specific constants go here. */
+
+/* Program stack words and masks. */
+#define INIT_PSW      0x0200	/* initial psw */
+#define INIT_TASK_PSW 0x1200	/* initial psw for tasks (with IOPL 1) */
+#define TRACEBIT      0x0100	/* OR this with psw in proc[] for tracing */
+#define SETPSW(rp, new)		/* permits only certain bits to be set */ \
+	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)
+
+/* Disable/ enable hardware interrupts. The parameters of lock() and unlock()
+ * are used when debugging is enabled. See debug.h for more information.
+ */
+#define reallock(c, v)	intr_disable()
+#define realunlock(c)	intr_enable()
+#define lock(c, v)	reallock(c, v)
+#define unlock(c)	realunlock(c) 
+
+#endif /* (CHIP == ARM) */
 
 #endif /* CONST_H */

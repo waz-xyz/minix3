@@ -74,6 +74,11 @@
 #define CLICK_SHIFT	  12	/* log2 of CLICK_SIZE */
 #endif
 
+#if (CHIP == ARM)
+#define CLICK_SIZE	4096	/* unit in which memory is allocated */
+#define CLICK_SHIFT	  12	/* log2 of CLICK_SIZE */
+#endif
+
 /* Click to byte conversions (and vice versa). */
 #define HCLICK_SHIFT       4	/* log2 of HCLICK_SIZE */
 #define HCLICK_SIZE       16	/* hardware segment conversion magic */

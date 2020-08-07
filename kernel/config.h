@@ -29,9 +29,11 @@
 #define USE_GETINFO    	   1 	/* retrieve a copy of kernel data */
 #define USE_TIMES 	   1	/* get process and system time info */
 #define USE_SETALARM	   1	/* schedule a synchronous alarm */
+#if (CHIP == INTEL)
 #define USE_DEVIO      	   1	/* read or write a single I/O port */
 #define USE_VDEVIO     	   1	/* process vector with I/O requests */
 #define USE_SDEVIO     	   1	/* perform I/O request on a buffer */
+#endif
 #define USE_IRQCTL     	   1	/* set an interrupt policy */
 #define USE_SEGCTL     	   1	/* set up a remote segment */
 #define USE_PRIVCTL    	   1	/* system privileges control */

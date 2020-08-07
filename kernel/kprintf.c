@@ -20,7 +20,6 @@
 #include "../lib/sysutil/kprintf.c"
 
 #define END_OF_KMESS 	0
-FORWARD _PROTOTYPE( void ser_putc, (char c));
 
 /*===========================================================================*
  *				kputc				     	     *
@@ -31,41 +30,24 @@ int c;					/* character to append */
 /* Accumulate a single character for a kernel message. Send a notification
  * to the output driver if an END_OF_KMESS is encountered. 
  */
-  if (c != END_OF_KMESS) {
-      if (do_serial_debug)
-      	ser_putc(c);
-      kmess.km_buf[kmess.km_next] = c;	/* put normal char in buffer */
-      if (kmess.km_size < KMESS_BUF_SIZE)
-          kmess.km_size += 1;		
-      kmess.km_next = (kmess.km_next + 1) % KMESS_BUF_SIZE;
-  } else {
-      int p, outprocs[] = OUTPUT_PROCS_ARRAY;
-      for(p = 0; outprocs[p] != NONE; p++) {
-	 if(isokprocn(outprocs[p]) && !isemptyn(outprocs[p])) {
-           send_sig(outprocs[p], SIGKMESS);
-	 }
-      }
-  }
-}
-
-#define COM1_BASE	0x3F8
-#define COM1_THR	(COM1_BASE + 0)
-#define	  LSR_THRE	0x20
-#define COM1_LSR	(COM1_BASE + 5)
-
-PRIVATE void ser_putc(char c)
-{
-	int i;
-	int lsr, thr;
-
-	return;
-
-	lsr= COM1_LSR;
-	thr= COM1_THR;
-	for (i= 0; i<100000; i++)
+	if (c != END_OF_KMESS)
 	{
-		if (inb(lsr) & LSR_THRE)
-			break;
+		if (DO_SERIAL_DEBUG)
+			serial_putc(c);
+		kmess.km_buf[kmess.km_next] = c; /* put normal char in buffer */
+		if (kmess.km_size < KMESS_BUF_SIZE)
+			kmess.km_size += 1;
+		kmess.km_next = (kmess.km_next + 1) % KMESS_BUF_SIZE;
 	}
-	outb(thr, c);
+	else
+	{
+		int p, outprocs[] = OUTPUT_PROCS_ARRAY;
+		for (p = 0; outprocs[p] != NONE; p++)
+		{
+			if (isokprocn(outprocs[p]) && !isemptyn(outprocs[p]))
+			{
+				send_sig(outprocs[p], SIGKMESS);
+			}
+		}
+	}
 }

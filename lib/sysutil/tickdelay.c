@@ -17,7 +17,7 @@ long ticks;				/* number of ticks to wait */
     clock_t time_left;
     int s;
 
-    if (ticks <= 0) return;		/* check for robustness */
+    if (ticks <= 0) return 0;		/* check for robustness */
 
     m.ALRM_ENDPT = SELF;		/* SELF means this process nr */
     m.ALRM_EXP_TIME = ticks;		/* request message after ticks */

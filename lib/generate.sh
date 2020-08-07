@@ -1,39 +1,37 @@
 #!/bin/sh
-# called with parameters: 1:dir 2:ackbase 3:gnubase
+# called with parameters: 1:objdir 2:bindir
 
 exec  >Makefile
-exec 3>Makedepend-ack
-exec 4>Makedepend-gnu
-touch  .depend-ack
-touch  .depend-gnu
+exec 4>Makedepend
+touch  .depend
 
-echo "#Generated from $1/Makefile.in"
+echo "# Generated from $(basename $(pwd))/Makefile.in"
 
-ACKBASE=$2
-GNUBASE=$3
 OBJDIR=$1
+BINDIR=$2
 
-RECURSIVE_TARGETS="clean depend depend-ack depend-gnu"
+RECURSIVE_TARGETS="clean depend"
 
-if [ -z $ACKBASE ]; then echo ACKBASE is not set!; exit 1; fi
-if [ -z $GNUBASE ]; then echo GNUBASE is not set!; exit 1; fi
+if [ -z "$OBJDIR" ]; then echo "OBJDIR is not set!" > /dev/tty; exit 1; fi
+if [ -z "$BINDIR" ]; then echo "BINDIR is not set!" > /dev/tty; exit 1; fi
 
-. Makefile.in
+. ./Makefile.in
 
 #to enable library debugging, enable the next line
 #CFLAGS=$CFLAGS" -g"
 
-echo "all: all-ack"
+CFLAGS="$CFLAGS -ffreestanding -nostdinc -I../../include"
 echo
-echo "all-ack:"
-echo "all-gnu:"
+echo "all: all-gnu"
+echo
+echo "all-gnu: "
 echo
 echo "makefiles: Makefile"
-echo "Makedepend-ack Makedepend-gnu: "
-echo "	sh $0 $OBJDIR $ACKBASE $GNUBASE"
+echo "Makedepend: "
+echo "	sh $0 $OBJDIR $BINDIR"
 echo
-echo "Makefile: Makefile.in Makedepend-ack Makedepend-gnu"
-echo "	sh $0 $OBJDIR $ACKBASE $GNUBASE"
+echo "Makefile: Makefile.in Makedepend"
+echo "	sh $0 $OBJDIR $BINDIR"
 echo "	@echo"
 echo "	@echo *Attention*"
 echo "	@echo Makefile is regenerated... rerun command to see changes"
@@ -41,84 +39,41 @@ echo "	@echo *Attention*"
 echo "	@echo"
 echo
 if [ ! -z "$SUBDIRS" ]; then
-	echo "all-ack: makefiles"
-	for dir in $SUBDIRS
-	{
-		if [ $TYPE = "both" -o $TYPE = "ack" ]; then
-			echo "	mkdir -p $ACKBASE/$OBJDIR/$dir"
-		fi
-		echo "	cd $dir && \$(MAKE) \$@"
-	}
-	echo
 	echo "all-gnu: makefiles"
 	for dir in $SUBDIRS
-	{
+	do
 		if [ $TYPE = "both" -o $TYPE = "gnu" ]; then
-			echo "	mkdir -p $GNUBASE/$OBJDIR/$dir"
+			echo "	mkdir -p $OBJDIR/$dir"
 		fi
 		
 		echo "	cd $dir && \$(MAKE) \$@"
-	}
+	done
 	echo
 	echo "$RECURSIVE_TARGETS:: makefiles"
 	for dir in $SUBDIRS
-	{
-		#if [ $TYPE = "both" -o $TYPE = "ack" ]; then
-			#echo "	mkdir -p $ACKBASE/$OBJDIR/$dir"
-		#fi
+	do
 		#if [ $TYPE = "both" -o $TYPE = "gnu" ]; then
-			#echo "	mkdir -p $GNUBASE/$OBJDIR/$dir"
+			#echo "	mkdir -p $OBJDIR/$dir"
 		#fi
 		
 		echo "	cd $dir && \$(MAKE) \$@"
-	}
+	done
 	echo
 	for dir in $SUBDIRS
-	{
+	do
 		echo "makefiles: $dir/Makefile"
-	}
+	done
 	echo
 	for dir in $SUBDIRS
-	{
+	do
 		echo "$dir/Makefile: $dir/Makefile.in"
-		echo "	cd $dir && sh ../$0 $OBJDIR/$dir ../$ACKBASE ../$GNUBASE && \$(MAKE) makefiles"
-	}
+		echo "	cd $dir && sh ../$0 ../$OBJDIR/$dir ../$BINDIR && \$(MAKE) makefiles"
+	done
 else
 
-echo "depend: depend-ack"
-
-echo "depend-ack:" >&3
-echo "	rm .depend-ack" >&3
-echo "	touch .depend-ack" >&3
-
-echo "depend-gnu:" >&4
-echo "	rm .depend-gnu" >&4
-echo "	touch .depend-gnu" >&4
-
-ackCommands()
-{
-	dstfile=$1
-	srcfile=$2
-	dstdir=`dirname $dstfile`
-	
-	case $srcfile in
-	*.s | *.c | *.e )
-		echo "	cc $CFLAGS -c -o $dstfile $srcfile"
-		
-		echo "	mkdep 'cc $CFLAGS -E' $srcfile | sed -e 's:^\(.\):$dstdir/\1:' >> .depend-ack" >&3
-		;;
-	*.mod )
-		echo "	m2 $M2FLAGS -c -o $dstfile $srcfile"
-		
-		echo "	mkdep 'm2 $M2FLAGS -E' $srcfile | sed -e 's:^\(.\):$dstdir/\1:' >> .depend-ack" >&3
-		;;
-	*.fc )
-		echo "	sh ./FP.compile $dstfile $srcfile"
-		
-		echo "	mkdep 'cc -E' $srcfile | sed -e 's:^\(.\):$dstdir/\1:' >> .depend-ack" >&3
-		;;
-	esac
-}
+echo "depend:" >&4
+echo "	rm .depend" >&4
+echo "	touch .depend" >&4
 
 gnuCommands()
 {
@@ -129,20 +84,19 @@ gnuCommands()
 	
 	case $srcfile in
 	*.s )
-		echo "	gcc $CFLAGS -E -x assembler-with-cpp -I. $srcfile | asmconv -mi386 ack gnu > $GNUBASE/$OBJDIR/$srcfile.gnu || true"
-		echo "	gas -o $dstfile $GNUBASE/$OBJDIR/$srcfile.gnu"
+		echo "	${TOOLCHAIN_PREFIX}gcc $CFLAGS -c -o $dstfile $srcfile"
 		
-		echo "	mkdep 'gcc $CFLAGS -E -x assembler-with-cpp -I.' $srcfile | $sedcmd >> .depend-gnu" >&4
+		echo "	${TOOLCHAIN_PREFIX}gcc -M -MG $CFLAGS $srcfile >> .depend" >&4
 		;;
 	*.gs )
-		echo "	gas -o $dstfile $srcfile"
+		echo "	${TOOLCHAIN_PREFIX}gas -o $dstfile $srcfile"
 		
-		echo "	mkdep 'gcc $CFLAGS -E -x assembler-with-cpp -I.' $srcfile | $sedcmd >> .depend-gnu" >&4
+		echo "	mkdep '${TOOLCHAIN_PREFIX}gcc $CFLAGS -E -x assembler-with-cpp -I.' $srcfile | $sedcmd >> .depend-gnu" >&4
 		;;
 	*.c )
-		echo "	gcc $CFLAGS -c -o $dstfile $srcfile"
+		echo "	${TOOLCHAIN_PREFIX}gcc $CFLAGS -c -o $dstfile $srcfile"
 		
-		echo "	mkdep 'gcc $CFLAGS -E' $srcfile | $sedcmd >> .depend-gnu" >&4
+		echo "	${TOOLCHAIN_PREFIX}gcc -M -MG $CFLAGS $srcfile >> .depend" >&4
 		;;
 	#*.mod )
 	#	echo "	\$(M2C) -o $dstfile $srcfile"
@@ -156,102 +110,79 @@ gnuCommands()
 
 #libraries
 for lib in $LIBRARIES
-{
-	if [ $TYPE = "both" -o $TYPE = "ack" ]; then
-		echo "all-ack: $ACKBASE/$lib.a"
-		eval "FILES=\$${lib}_FILES" 
-		echo
-		for f in $FILES
-		{
-			o=`echo $f | sed -e 's/\\..*\$/\.o/'`
-			echo "$ACKBASE/$lib.a: $ACKBASE/$lib.a($o)"
-		}
-		echo
-		echo "$ACKBASE/$lib.a:"
-		echo "	ar cr $ACKBASE/$lib.a $ACKBASE/$OBJDIR/*.o"
-		echo "	rm $ACKBASE/$OBJDIR/*.o"
-		echo
-		for f in $FILES
-		{
-			o=`echo $f | sed -e 's/\\..*\$/\.o/'`
-			echo "$ACKBASE/$lib.a($o): $f"
-			
-			ackCommands $ACKBASE/$OBJDIR/$o $f
-		}
-		echo
-	fi
-	
+do	
 	if [ $TYPE = "both" -o $TYPE = "gnu" ]; then
-		echo "all-gnu: $GNUBASE/$lib.a"
+		echo "all-gnu: $BINDIR/$lib.a"
 		eval "FILES=\$${lib}_FILES" 
 		echo
 		for f in $FILES
-		{
+		do
 			o=`echo $f | sed -e 's/\\..*\$/\.o/'`
-			echo "$GNUBASE/$lib.a: $GNUBASE/$OBJDIR/$o"
-		}
+			echo "$BINDIR/$lib.a: $OBJDIR/$o"
+		done
 		echo
-		echo "$GNUBASE/$lib.a:"
-		echo "	gar cr $GNUBASE/$lib.a \$?"
+		echo "$BINDIR/$lib.a:"
+		echo "	${TOOLCHAIN_PREFIX}ar cr $BINDIR/$lib.a \$?"
 		echo
 		for f in $FILES
-		{
+		do
 			o=`echo $f | sed -e 's/\\..*\$/\.o/'`
 			
-			echo "$GNUBASE/$OBJDIR/$o: $f"
+			echo "$OBJDIR/$o: $f"
 			
-			gnuCommands $GNUBASE/$OBJDIR/$o $f
-		}
+			gnuCommands "$OBJDIR/$o" $f
+		done
 		echo
+	else
+		echo "ACK is no longer supported!" > /dev/tty
 	fi
-}
+done
 echo
 
 #start files
 for f in $STARTFILES
-{
+do
 	o=`echo $f | sed -e 's/\\..*\$/\.o/'`
 	
-	if [ $TYPE = "both" -o $TYPE = "ack" ]; then
-		echo "all-ack: $ACKBASE/$o"
-		echo
-		echo "$ACKBASE/$o: $f"
-		ackCommands $ACKBASE/$o $f
-		echo
-	fi
 	if [ $TYPE = "both" -o $TYPE = "gnu" ]; then
-		echo "all-gnu: $GNUBASE/$o"
+		echo "all-gnu: $OBJDIR/$o"
 		echo
-		echo "$GNUBASE/$o: $f"
-		gnuCommands $GNUBASE/$o $f
+		echo "$OBJDIR/$o: $f"
+		gnuCommands $OBJDIR/$o $f
 		echo
+	else
+		echo "ACK is no longer supported!" > /dev/tty
 	fi
-}
+done
 
 fi # elif of if [ -n "$SUBDIRS" ]
+
 echo
 echo "clean::"
-if [ $TYPE = "both" -o $TYPE = "ack" ]; then
-	echo "	rm -f $ACKBASE/$OBJDIR/*"
-fi
 if [ $TYPE = "both" -o $TYPE = "gnu" ]; then
-	echo "	rm -f $GNUBASE/$OBJDIR/*"
+	echo "	rm -df $OBJDIR/*"
+	if [ $OBJDIR = "obj" ]; then
+		echo "	rm -f $BINDIR/*.a"
+	fi
+else
+	echo "ACK is no longer supported!" > /dev/tty
 fi
 
-if [ $OBJDIR = "." ]; then
+if [ ! -z "$SUBDIRS" ]; then
 	echo
-	echo "install: install-ack"
+	echo "clean-make:"
+	for dir in $SUBDIRS
+	do
+		echo "	find $dir -type f \\( -name 'Makefile' -or -name 'Makedepend' \\) -delete"
+	done
+fi
+
+if [ $OBJDIR = "obj" ]; then
 	echo
-	echo "install-ack: all-ack"
-	echo "	cp $ACKBASE/*.[ao] /usr/lib/i386"
-	echo
-	echo "install-gnu: all-gnu"
-	echo "	cp $GNUBASE/*.[ao] /usr/gnu/lib"
+	echo "install:"
+	echo "	cp $OBJDIR/*.a /usr/lib"
 fi
 
 echo
-echo "include Makedepend-ack"
-echo "include .depend-ack"
-echo
-echo "include Makedepend-gnu"
-echo "include .depend-gnu"
+echo "include Makedepend"
+echo "include .depend"

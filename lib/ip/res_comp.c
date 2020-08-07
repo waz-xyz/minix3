@@ -58,7 +58,7 @@ static dn_find();
  * 'exp_dn' is a pointer to a buffer of size 'length' for the result.
  * Return size of compressed name or -1 if there was an error.
  */
-dn_expand(msg, eomorig, comp_dn, exp_dn, length)
+int dn_expand(msg, eomorig, comp_dn, exp_dn, length)
 	CONST u_char *msg, *eomorig, *comp_dn;
 	u_char *exp_dn;
 	int length;
@@ -220,7 +220,7 @@ dn_comp(exp_dn, comp_dn, length, dnptrs, lastdnptr)
 /*
  * Skip over a compressed domain name. Return the size or -1.
  */
-dn_skipname(comp_dn, eom)
+int dn_skipname(comp_dn, eom)
 	CONST u_char *comp_dn, *eom;
 {
 	register CONST u_char *cp;

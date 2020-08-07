@@ -1,0 +1,7 @@
+# Makefile for lib/armv7.
+
+SUBDIRS="\
+	rts \
+        syscall"
+
+TYPE=both

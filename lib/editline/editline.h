@@ -2,6 +2,8 @@
 **
 **  Internal header file for editline library.
 */
+#include <unistd.h>
+#include <termcap.h>
 #include <stdio.h>
 #if	defined(HAVE_STDLIB)
 #include <stdlib.h>

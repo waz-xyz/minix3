@@ -20,7 +20,7 @@ extern u32_t _tmp_l;
 #include "_MINIX_CHIP macro not set, include <minix/config.h>"
 #endif
 
-#if (_MINIX_CHIP == _CHIP_INTEL)
+#if (_MINIX_CHIP == _CHIP_INTEL || _MINIX_CHIP == _CHIP_ARM)
 #define LITTLE_ENDIAN	1
 #endif
 

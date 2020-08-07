@@ -34,8 +34,6 @@ message *m_ptr;			/* pointer to request message */
 	phys_bytes base, size, offset, p_phys;
 	struct proc *pp;
 
-	/* do_serial_debug= 1; */
-
 	if (vm_needs_init)
 	{
 		vm_needs_init= 0;
@@ -69,7 +67,9 @@ message *m_ptr;			/* pointer to request message */
 	{
 		map_range(p_phys, size, p_phys);
 	}
+#if (CHIP == INTEL)
 	vm_set_cr3(vm_cr3);
+#endif
 
 	return OK;
 }
@@ -90,9 +90,29 @@ struct proc *pp;
 		base_clicks;
 	map_range(base_clicks << CLICK_SHIFT, size_clicks << CLICK_SHIFT,
 		base_clicks << CLICK_SHIFT);
+#if (CHIP == INTEL)
 	vm_set_cr3(vm_cr3);
+#endif
 }
 
+PRIVATE void phys_put32(addr, value)
+phys_bytes addr;
+u32_t value;
+{
+	phys_copy(vir2phys((vir_bytes)&value), addr, sizeof(value));
+}
+
+PRIVATE u32_t phys_get32(addr)
+phys_bytes addr;
+{
+	u32_t value;
+
+	phys_copy(addr, vir2phys((vir_bytes)&value), sizeof(value));
+
+	return value;
+}
+
+#if (CHIP == INTEL)
 PRIVATE void vm_init(void)
 {
 	int o;
@@ -143,23 +163,6 @@ PRIVATE void vm_init(void)
 	}
 	vm_set_cr3(vm_dir_base);
 	level0(vm_enable_paging);
-}
-
-PRIVATE void phys_put32(addr, value)
-phys_bytes addr;
-u32_t value;
-{
-	phys_copy(vir2phys((vir_bytes)&value), addr, sizeof(value));
-}
-
-PRIVATE u32_t phys_get32(addr)
-phys_bytes addr;
-{
-	u32_t value;
-
-	phys_copy(addr, vir2phys((vir_bytes)&value), sizeof(value));
-
-	return value;
 }
 
 PRIVATE void vm_set_cr3(value)
@@ -222,3 +225,19 @@ u32_t offset;
 		size -= PAGE_SIZE;
 	}
 }
+#endif
+
+
+#if (CHIP == ARM)
+PRIVATE void vm_init(void)
+{
+}
+
+PRIVATE void map_range(base, size, offset)
+u32_t base;
+u32_t size;
+u32_t offset;
+{
+}
+
+#endif

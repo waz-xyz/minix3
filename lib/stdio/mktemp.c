@@ -46,7 +46,7 @@ static char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
 
 static int _gettemp(char*,int*);
 
-mkstemp(path)
+int mkstemp(path)
 	char *path;
 {
 	int fd;
@@ -61,7 +61,7 @@ mktemp(path)
 	return(_gettemp(path, (int *)NULL) ? path : (char *)NULL);
 }
 
-static
+static int
 _gettemp(path, doopen)
 	char *path;
 	register int *doopen;
