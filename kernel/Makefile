@@ -10,8 +10,8 @@ CC =	${TOOLCHAIN_PREFIX}gcc
 CPP =	${TOOLCHAIN_PREFIX}cpp
 LD =	$(CC)
 MKDEP = $(CC) -M -MG
-CFLAGS = -ffreestanding -nostdinc -I$i
-LDFLAGS = -nostdlib
+CFLAGS = -ffreestanding -nostdinc -I$i -fno-plt -fno-pie
+LDFLAGS = -static -nostartfiles -nostdlib -T kernel.ld -Wl,--build-id=none -Wl,-Map=kernel.map -Wl,--cref -Wl,--gc-sections -L$l
 
 HEAD =	mpx.o
 OBJS =	klib.o table.o kprintf.o proc.o \
@@ -30,12 +30,12 @@ LIBS = -lgcc -lc -ltimers
 all: build 
 kernel build install: $(HEAD) $(OBJS) 
 	cd system && $(MAKE) -$(MAKEFLAGS) $@
-	$(LD) $(CFLAGS) $(LDFLAGS) -o kernel $(HEAD) $(OBJS) -static -nostartfiles -nostdlib -L$l $(SYSTEM) $(LIBS)
-	#install -S 0 kernel
+	$(LD) $(LDFLAGS) -o kernel.elf $(HEAD) $(OBJS) $(SYSTEM) $(LIBS)
+	#install -S 0 kernel.elf
 
 clean:
 	cd system && $(MAKE) -$(MAKEFLAGS) $@
-	rm -f *.a *.o *~ *.bak kernel
+	rm -f *.a *.o *~ *.bak kernel.elf
 
 depend:
 	cd system && $(MAKE) -$(MAKEFLAGS) $@

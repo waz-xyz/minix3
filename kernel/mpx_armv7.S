@@ -6,6 +6,17 @@
 	.arch armv7a
 	.syntax unified
 
+	.section .text.boot
+
+	.global _start
+	.type	_start, %function
+
+/*===========================================================================*
+ *				MINIX					     *
+ *===========================================================================*/
+_start:			/* this is the entry point for the MINIX kernel */
+	ldr	pc, =cstart
+
 	.section .text
 
 	.global restart

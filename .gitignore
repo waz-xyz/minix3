@@ -2,6 +2,7 @@
 *.[oa]
 .depend
 Makedepend
-kernel/kernel
+kernel/kernel.elf
+kernel/kernel.map
 lib/*/Makefile
 lib/*/*/Makefile
