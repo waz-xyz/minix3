@@ -142,7 +142,7 @@ _PROTOTYPE(void get_line, (char line[LINE_LEN], char *parse[MAX_TOKENS]));
 _PROTOTYPE(void check_mtab, (char *devname));
 _PROTOTYPE(long file_time, (int f));
 _PROTOTYPE(void pexit, (char *s));
-_PROTOTYPE(void copy, (char *from, char *to, int count));
+_PROTOTYPE(void copy, (const char *from, char *to, int count));
 _PROTOTYPE(void print_fs, (void));
 _PROTOTYPE(int read_and_set, (block_t n));
 _PROTOTYPE(void special, (char *string));
@@ -180,10 +180,9 @@ void err(char *prog_name, char *str)
   perror(" ");
 }
 
+/* Read in /etc/mtab and store it in /etc/mtab. */
 int load_mtab(char *prog_name)
 {
-/* Read in /etc/mtab and store it in /etc/mtab. */
-
   int fd, n;
   char *ptr;
 
@@ -220,11 +219,7 @@ int load_mtab(char *prog_name)
   return(0);
 }
 
-int get_mtab_entry(special, mounted_on, version, rw_flag)
-char *special;
-char *mounted_on;
-char *version;
-char *rw_flag;
+int get_mtab_entry(char *special, char *mounted_on, char *version, char *rw_flag)
 {
 /* Return the next entry from mtab_in. */
 
@@ -256,9 +251,7 @@ char *rw_flag;
 /*================================================================
  *                    mkfs  -  make filesystem
  *===============================================================*/
-int main(argc, argv)
-int argc;
-char *argv[];
+int main(int argc, char *argv[])
 {
   int nread, mode, usrid, grpid, ch;
   block_t blocks, maxblocks;
@@ -539,8 +532,7 @@ char *argv[];
 /*================================================================
  *                    sizeup  -  determine device size
  *===============================================================*/
-block_t sizeup(device)
-char *device;
+block_t sizeup(char *device)
 {
   int fd;
   struct partition entry;
@@ -577,9 +569,7 @@ char *device;
  * unlikely, but negative bit counts are now possible (though unlikely)
  * and give silly results.
  */ 
-int bitmapsize(nr_bits, block_size)
-bit_t nr_bits;
-int block_size;
+int bitmapsize(bit_t nr_bits, int block_size)
 {
   int nr_blocks;
 
@@ -591,10 +581,7 @@ int block_size;
 /*================================================================
  *                 super  -  construct a superblock
  *===============================================================*/
-
-void super(zones, inodes)
-zone_t zones;
-ino_t inodes;
+void super(zone_t zones, ino_t inodes)
 {
   unsigned int i;
   int inodeblks;
@@ -676,12 +663,10 @@ ino_t inodes;
   free(buf);
 }
 
-
 /*================================================================
  *              rootdir  -  install the root directory
  *===============================================================*/
-void rootdir(inode)
-ino_t inode;
+void rootdir(ino_t inode)
 {
   zone_t z;
 
@@ -697,8 +682,7 @@ ino_t inode;
 /*================================================================
  *	    eat_dir  -  recursively install directory
  *===============================================================*/
-void eat_dir(parent)
-ino_t parent;
+void eat_dir(ino_t parent)
 {
   /* Read prototype lines and set up directory. Recurse if need be. */
   char *token[MAX_TOKENS], *p;
@@ -759,9 +743,7 @@ ino_t parent;
  * 		eat_file  -  copy file to MINIX
  *===============================================================*/
 /* Zonesize >= blocksize */
-void eat_file(inode, f)
-ino_t inode;
-int f;
+void eat_file(ino_t inode, int f)
 {
   int ct, i, j, k;
   zone_t z;
@@ -784,14 +766,10 @@ int f;
   close(f);
 }
 
-
-
 /*================================================================
  *	    directory & inode management assist group
  *===============================================================*/
-void enter_dir(parent, name, child)
-ino_t parent, child;
-char *name;
+void enter_dir(ino_t parent, char *name, ino_t child)
 {
   /* Enter child in parent directory */
   /* Works for dir > 1 block and zone > block */
@@ -866,10 +844,7 @@ char *name;
 }
 
 
-void add_zone(n, z, bytes, cur_time)
-ino_t n;
-zone_t z;
-long bytes, cur_time;
+void add_zone(ino_t n, zone_t z, long bytes, long cur_time)
 {
   if (fs_version == 1) {
 	add_z_1(n, z, bytes, cur_time);
@@ -878,10 +853,7 @@ long bytes, cur_time;
   }
 }
 
-void add_z_1(n, z, bytes, cur_time)
-ino_t n;
-zone_t z;
-long bytes, cur_time;
+void add_z_1(ino_t n, zone_t z, long bytes, long cur_time)
 {
   /* Add zone z to inode n. The file has grown by 'bytes' bytes. */
 
@@ -922,10 +894,7 @@ long bytes, cur_time;
   pexit("File has grown beyond single indirect");
 }
 
-void add_z_2(n, z, bytes, cur_time)
-ino_t n;
-zone_t z;
-long bytes, cur_time;
+void add_z_2(ino_t n, zone_t z, long bytes, long cur_time)
 {
   /* Add zone z to inode n. The file has grown by 'bytes' bytes. */
 
@@ -976,8 +945,7 @@ long bytes, cur_time;
 }
 
 
-void incr_link(n)
-ino_t n;
+void incr_link(ino_t n)
 {
   /* Increment the link count to inode n */
   int off;
@@ -1010,9 +978,7 @@ ino_t n;
 }
 
 
-void incr_size(n, count)
-ino_t n;
-long count;
+void incr_size(ino_t n, long count)
 {
   /* Increment the file-size in inode n */
   block_t b;
@@ -1042,8 +1008,7 @@ long count;
 /*================================================================
  * 	 	     allocation assist group
  *===============================================================*/
-PRIVATE ino_t alloc_inode(mode, usrid, grpid)
-int mode, usrid, grpid;
+static ino_t alloc_inode(int mode, int usrid, int grpid)
 {
   ino_t num;
   int off;
@@ -1086,7 +1051,7 @@ int mode, usrid, grpid;
 }
 
 
-PRIVATE zone_t alloc_zone()
+static zone_t alloc_zone(void)
 {
   /* Allocate a new zone */
   /* Works for zone > block */
@@ -1109,9 +1074,7 @@ PRIVATE zone_t alloc_zone()
 }
 
 
-void insert_bit(block, bit)
-block_t block;
-int bit;
+void insert_bit(block_t block, int bit)
 {
   /* Insert 'count' bits in the bitmap */
   int w, s;
@@ -1133,8 +1096,7 @@ int bit;
 /*================================================================
  * 		proto-file processing assist group
  *===============================================================*/
-int mode_con(p)
-char *p;
+int mode_con(char *p)
 {
   /* Convert string to mode */
   int o1, o2, o3, mode;
@@ -1203,8 +1165,7 @@ char line[LINE_LEN];
 /*================================================================
  *			other stuff
  *===============================================================*/
-void check_mtab(devname)
-char *devname;			/* /dev/hd1 or whatever */
+void check_mtab(char *devname	/* /dev/hd1 or whatever */)
 {
 /* Check to see if the special file named in s is mounted. */
 
@@ -1241,8 +1202,7 @@ char *devname;			/* /dev/hd1 or whatever */
 }
 
 
-long file_time(f)
-int f;
+long file_time(int f)
 {
 #ifdef UNIX
   struct stat statbuf;
@@ -1254,8 +1214,7 @@ int f;
 }
 
 
-void pexit(s)
-char *s;
+void pexit(char *s)
 {
   fprintf(stderr, "%s: %s\n", progname, s);
   if (lct != 0)
@@ -1265,14 +1224,12 @@ char *s;
 }
 
 
-void copy(from, to, count)
-char *from, *to;
-int count;
+void copy(const char *from, char *to, int count)
 {
   while (count--) *to++ = *from++;
 }
 
-char *alloc_block()
+char *alloc_block(void)
 {
 	char *buf;
 
@@ -1284,7 +1241,7 @@ char *alloc_block()
 	return buf;
 }
 
-void print_fs()
+void print_fs(void)
 {
   int i, j;
   ino_t k;
@@ -1369,8 +1326,7 @@ void print_fs()
 }
 
 
-int read_and_set(n)
-block_t n;
+int read_and_set(block_t n)
 {
 /* The first time a block is read, it returns all 0s, unless there has
  * been a write.  This routine checks to see if a block has been accessed.
@@ -1387,7 +1343,7 @@ block_t n;
   return(r);
 }
 
-void usage()
+void usage(void)
 {
   fprintf(stderr,
 	  "Usage: %s [-12dlot] [-b blocks] [-i inodes] [-B blocksize] special [proto]\n",
@@ -1396,258 +1352,10 @@ void usage()
 }
 
 /*================================================================
- *		      get_block & put_block for MS-DOS
+ *		      get_block & put_block
  *===============================================================*/
-#ifdef DOS
 
-/*
- *	These are the get_block and put_block routines
- *	when compiling & running mkfs.c under MS-DOS.
- *
- *	It requires the (asembler) routines absread & abswrite
- *	from the file diskio.asm. Since these routines just do
- *	as they are told (read & write the sector specified),
- *	a local cache is used to minimize the i/o-overhead for
- *	frequently used blocks.
- *
- *	The global variable "file" determines whether the output
- *	is to a disk-device or to a binary file.
- */
-
-
-#define PH_SECTSIZE	   512	/* size of a physical disk-sector */
-
-
-char *derrtab[14] = {
-	     "no error",
-	     "disk is read-only",
-	     "unknown unit",
-	     "device not ready",
-	     "bad command",
-	     "data error",
-	     "internal error: bad request structure length",
-	     "seek error",
-	     "unknown media type",
-	     "sector not found",
-	     "printer out of paper (?)",
-	     "write fault",
-	     "read error",
-	     "general error"
-};
-
-#define	CACHE_SIZE	20	/* 20 block-buffers */
-
-
-struct cache {
-  char blockbuf[BLOCK_SIZE];
-  block_t blocknum;
-  int dirty;
-  int usecnt;
-} cache[CACHE_SIZE];
-
-
-void special(string)
-char *string;
-{
-
-  if (string[1] == ':' && string[2] == 0) {
-	/* Format: d: or d:fname */
-	disk = (string[0] & ~32) - 'A';
-	if (disk > 1 && !override)	/* safety precaution */
-		pexit("Bad drive specifier for special");
-  } else {
-	file = 1;
-	if ((fd = creat(string, BWRITE)) == 0)
-		pexit("Can't open special file");
-  }
-}
-
-void get_block(n, buf)
-block_t n;
-char *buf;
-{
-  /* Get a block to the user */
-  struct cache *bp, *fp;
-
-  /* First access returns a zero block */
-  if (read_and_set(n) == 0) {
-	copy(zero, buf, block_size);
-	return;
-  }
-
-  /* Look for block in cache */
-  fp = 0;
-  for (bp = cache; bp < &cache[CACHE_SIZE]; bp++) {
-	if (bp->blocknum == n) {
-		copy(bp, buf, block_size);
-		bp->usecnt++;
-		return;
-	}
-
-	/* Remember clean block */
-	if (bp->dirty == 0)
-		if (fp) {
-			if (fp->usecnt > bp->usecnt) fp = bp;
-		} else
-			fp = bp;
-  }
-
-  /* Block not in cache, get it */
-  if (!fp) {
-	/* No clean buf, flush one */
-	for (bp = cache, fp = cache; bp < &cache[CACHE_SIZE]; bp++)
-		if (fp->usecnt > bp->usecnt) fp = bp;
-	mx_write(fp->blocknum, fp);
-  }
-  mx_read(n, fp);
-  fp->dirty = 0;
-  fp->usecnt = 0;
-  fp->blocknum = n;
-  copy(fp, buf, block_size);
-}
-
-void put_block(n, buf)
-block_t n;
-char *buf;
-{   
-  /* Accept block from user */
-  struct cache *fp, *bp;
-
-  (void) read_and_set(n);
-
-  /* Look for block in cache */
-  fp = 0;
-  for (bp = cache; bp < &cache[CACHE_SIZE]; bp++) {
-	if (bp->blocknum == n) {
-		copy(buf, bp, block_size);
-		bp->dirty = 1;
-		return;
-	}
-
-	/* Remember clean block */
-	if (bp->dirty == 0)
-		if (fp) {
-			if (fp->usecnt > bp->usecnt) fp = bp;
-		} else
-			fp = bp;
-  }
-
-  /* Block not in cache */
-  if (!fp) {
-	/* No clean buf, flush one */
-	for (bp = cache, fp = cache; bp < &cache[CACHE_SIZE]; bp++)
-		if (fp->usecnt > bp->usecnt) fp = bp;
-	mx_write(fp->blocknum, fp);
-  }
-  fp->dirty = 1;
-  fp->usecnt = 1;
-  fp->blocknum = n;
-  copy(buf, fp, block_size);
-}
-
-void cache_init()
-{
-  struct cache *bp;
-  for (bp = cache; bp < &cache[CACHE_SIZE]; bp++) bp->blocknum = -1;
-}
-
-void flush()
-{
-  /* Flush all dirty blocks to disk */
-  struct cache *bp;
-
-  for (bp = cache; bp < &cache[CACHE_SIZE]; bp++)
-	if (bp->dirty) {
-		mx_write(bp->blocknum, bp);
-		bp->dirty = 0;
-	}
-}
-
-/*==================================================================
- *			hard read & write etc.
- *=================================================================*/
-#define MAX_RETRIES	5
-
-
-void mx_read(blocknr, buf)
-int blocknr;
-char *buf;
-{
-
-  /* Read the requested MINIX-block in core */
-  char (*bp)[PH_SECTSIZE];
-  int sectnum, retries, err;
-
-  if (file) {
-	lseek(fd, (off_t) blocknr * block_size, 0);
-	if (read(fd, buf, block_size) != block_size)
-		pexit("mx_read: error reading file");
-  } else {
-	sectnum = blocknr * (block_size / PH_SECTSIZE);
-	for (bp = buf; bp < &buf[block_size]; bp++) {
-		retries = MAX_RETRIES;
-		do
-			err = absread(disk, sectnum, bp);
-		while (err && --retries);
-
-		if (retries) {
-			sectnum++;
-		} else {
-			dexit("mx_read", sectnum, err);
-		}
-	}
-  }
-}
-
-void mx_write(blocknr, buf)
-int blocknr;
-char *buf;
-{
-  /* Write the MINIX-block to disk */
-  char (*bp)[PH_SECTSIZE];
-  int retries, sectnum, err;
-
-  if (file) {
-	lseek(fd, blocknr * block_size, 0);
-	if (write(fd, buf, block_size) != block_size) {
-		pexit("mx_write: error writing file");
-	}
-  } else {
-	sectnum = blocknr * (block_size / PH_SECTSIZE);
-	for (bp = buf; bp < &buf[block_size]; bp++) {
-		retries = MAX_RETRIES;
-		do {
-			err = abswrite(disk, sectnum, bp);
-		} while (err && --retries);
-
-		if (retries) {
-			sectnum++;
-		} else {
-			dexit("mx_write", sectnum, err);
-		}
-	}
-  }
-}
-
-
-void dexit(s, sectnum, err)
-int sectnum, err;
-char *s;
-{
-  printf("Error: %s, sector: %d, code: %d, meaning: %s\n",
-         s, sectnum, err, derrtab[err]);
-  exit(2);
-}
-
-#endif
-
-/*================================================================
- *		      get_block & put_block for UNIX
- *===============================================================*/
-#ifdef UNIX
-
-void special(string)
-char *string;
+void special(char *string)
 {
   fd = creat(string, 0777);
   close(fd);
@@ -1666,11 +1374,7 @@ char *string;
 #endif
 }
 
-
-
-void get_block(n, buf)
-block_t n;
-char *buf;
+void get_block(block_t n, char *buf)
 {
 /* Read a block. */
 
@@ -1688,8 +1392,7 @@ char *buf;
   }
 }
 
-void get_super_block(buf)
-char *buf;
+void get_super_block(char *buf)
 {
 /* Read a block. */
 
@@ -1705,9 +1408,7 @@ char *buf;
   }
 }
 
-void put_block(n, buf)
-block_t n;
-char *buf;
+void put_block(block_t n, char *buf)
 {
 /* Write a block. */
 
@@ -1722,7 +1423,6 @@ char *buf;
   }
 }
 
-
 /* Dummy routines to keep source file clean from #ifdefs */
 
 void flush()
@@ -1734,5 +1434,3 @@ void cache_init()
 {
   return;
 }
-
-#endif
