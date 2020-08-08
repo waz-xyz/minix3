@@ -149,15 +149,6 @@ typedef u_int64_t sha2_word64;	/* Exactly 8 bytes */
 	(x) = ((tmp & 0xffff0000ffff0000ULL) >> 16) | \
 	      ((tmp & 0x0000ffff0000ffffULL) << 16); \
 }
-#if MINIX_64BIT
-#undef REVERSE64
-#define REVERSE64(w,x)	{ \
-	u32_t hi, lo; \
-	REVERSE32(ex64hi((w)), lo); \
-	REVERSE32(ex64lo((w)), hi); \
-	(x) = make64(lo, hi); \
-}
-#endif /* MINIX_64BIT */
 #endif /* SHA2_BYTE_ORDER == SHA2_LITTLE_ENDIAN */
 
 /*
@@ -247,7 +238,6 @@ const static sha2_word32 sha256_initial_hash_value[8] = {
 	0x5be0cd19UL
 };
 
-#if !NO_64BIT
 /* Hash constant words K for SHA-384 and SHA-512: */
 const static sha2_word64 K512[80] = {
 	0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL,
@@ -315,7 +305,6 @@ const static sha2_word64 sha512_initial_hash_value[8] = {
 	0x1f83d9abfb41bd6bULL,
 	0x5be0cd19137e2179ULL
 };
-#endif /* !NO_64BIT */
 
 /*
  * Constant used by SHA256/384/512_End() functions for converting the
@@ -331,11 +320,7 @@ void SHA256_Init(SHA256_CTX* context) {
 	}
 	bcopy(sha256_initial_hash_value, context->state, SHA256_DIGEST_LENGTH);
 	bzero(context->buffer, SHA256_BLOCK_LENGTH);
-#if MINIX_64BIT
-	context->bitcount= cvu64(0);
-#else /* !MINIX_64BIT */
 	context->bitcount = 0;
-#endif /* MINIX_64BIT */
 }
 
 #ifdef SHA2_UNROLL_TRANSFORM
@@ -524,11 +509,7 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	/* Sanity check: */
 	assert(context != (SHA256_CTX*)0 && data != (sha2_byte*)0);
 
-#if MINIX_64BIT
-	usedspace= rem64u(context->bitcount, SHA256_BLOCK_LENGTH*8)/8;
-#else /* !MINIX_64BIT */
 	usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
-#endif /* MINIX_64BIT */
 	if (usedspace > 0) {
 		/* Calculate how much free space is available in the buffer */
 		freespace = SHA256_BLOCK_LENGTH - usedspace;
@@ -536,23 +517,14 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 		if (len >= freespace) {
 			/* Fill the buffer completely and process it */
 			bcopy(data, &context->buffer[usedspace], freespace);
-#if MINIX_64BIT
-			context->bitcount= add64u(context->bitcount,
-				freespace << 3);
-#else /* !MINIX_64BIT */
 			context->bitcount += freespace << 3;
-#endif /* MINIX_64BIT */
 			len -= freespace;
 			data += freespace;
 			SHA256_Transform(context, (sha2_word32*)context->buffer);
 		} else {
 			/* The buffer is not yet full */
 			bcopy(data, &context->buffer[usedspace], len);
-#if MINIX_64BIT
-			context->bitcount= add64u(context->bitcount, len << 3);
-#else /* !MINIX_64BIT */
 			context->bitcount += len << 3;
-#endif /* MINIX_64BIT */
 			/* Clean up: */
 			usedspace = freespace = 0;
 			return;
@@ -561,23 +533,14 @@ void SHA256_Update(SHA256_CTX* context, const sha2_byte *data, size_t len) {
 	while (len >= SHA256_BLOCK_LENGTH) {
 		/* Process as many complete blocks as we can */
 		SHA256_Transform(context, (const sha2_word32*)data);
-#if MINIX_64BIT
-		context->bitcount= add64u(context->bitcount,
-			SHA256_BLOCK_LENGTH << 3);
-#else /* !MINIX_64BIT */
 		context->bitcount += SHA256_BLOCK_LENGTH << 3;
-#endif /* MINIX_64BIT */
 		len -= SHA256_BLOCK_LENGTH;
 		data += SHA256_BLOCK_LENGTH;
 	}
 	if (len > 0) {
 		/* There's left-overs, so save 'em */
 		bcopy(data, context->buffer, len);
-#if MINIX_64BIT
-		context->bitcount= add64u(context->bitcount, len << 3);
-#else /* !MINIX_64BIT */
 		context->bitcount += len << 3;
-#endif /* MINIX_64BIT */
 	}
 	/* Clean up: */
 	usedspace = freespace = 0;
@@ -592,11 +555,7 @@ void SHA256_Final(sha2_byte digest[], SHA256_CTX* context) {
 
 	/* If no digest buffer is passed, we don't bother doing this: */
 	if (digest != (sha2_byte*)0) {
-#if MINIX_64BIT
-		usedspace= rem64u(context->bitcount, SHA256_BLOCK_LENGTH*8)/8;
-#else /* !MINIX_64BIT */
 		usedspace = (context->bitcount >> 3) % SHA256_BLOCK_LENGTH;
-#endif /* MINIX_64BIT */
 #if SHA2_BYTE_ORDER == SHA2_LITTLE_ENDIAN
 		/* Convert FROM host byte order */
 		REVERSE64(context->bitcount,context->bitcount);
@@ -680,8 +639,6 @@ char* SHA256_Data(const sha2_byte* data, size_t len, char digest[SHA256_DIGEST_S
 	SHA256_Update(&context, data, len);
 	return SHA256_End(&context, digest);
 }
-
-#if !NO_64BIT
 
 /*** SHA-512: *********************************************************/
 void SHA512_Init(SHA512_CTX* context) {
@@ -1085,8 +1042,6 @@ char* SHA384_Data(const sha2_byte* data, size_t len, char digest[SHA384_DIGEST_S
 	SHA384_Update(&context, data, len);
 	return SHA384_End(&context, digest);
 }
-
-#endif /* !NO_64BIT */
 
 /*
  * $PchId: sha2.c,v 1.1 2005/06/28 14:29:23 philip Exp $

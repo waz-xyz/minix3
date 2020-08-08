@@ -169,7 +169,7 @@ register struct inode *rip;	/* the inode to be erased */
   register int i;
 
   rip->i_size = 0;
-  rip->i_update = ATIME | CTIME | MTIME;	/* update all times later */
+  rip->i_update = FS_ATIME | FS_CTIME | FS_MTIME;	/* update all times later */
   rip->i_dirt = DIRTY;
   for (i = 0; i < V2_NR_TZONES; i++) rip->i_zone[i] = NO_ZONE;
 }
@@ -214,9 +214,9 @@ register struct inode *rip;	/* pointer to inode to be read/written */
   if (sp->s_rd_only) return;	/* no updates for read-only file systems */
 
   cur_time = clock_time();
-  if (rip->i_update & ATIME) rip->i_atime = cur_time;
-  if (rip->i_update & CTIME) rip->i_ctime = cur_time;
-  if (rip->i_update & MTIME) rip->i_mtime = cur_time;
+  if (rip->i_update & FS_ATIME) rip->i_atime = cur_time;
+  if (rip->i_update & FS_CTIME) rip->i_ctime = cur_time;
+  if (rip->i_update & FS_MTIME) rip->i_mtime = cur_time;
   rip->i_update = 0;		/* they are all up-to-date now */
 }
 

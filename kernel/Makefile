@@ -27,15 +27,16 @@ SYSTEM = system.a
 LIBS = -lgcc -lc -ltimers
 
 # What to make.
-all: build 
+all: kernel
+ 
 kernel build install: $(HEAD) $(OBJS) 
 	cd system && $(MAKE) -$(MAKEFLAGS) $@
-	$(LD) $(LDFLAGS) -o kernel.elf $(HEAD) $(OBJS) $(SYSTEM) $(LIBS)
-	#install -S 0 kernel.elf
+	$(LD) $(LDFLAGS) -o kernel $(HEAD) $(OBJS) $(SYSTEM) $(LIBS)
+	#install -S 0 kernel
 
 clean:
 	cd system && $(MAKE) -$(MAKEFLAGS) $@
-	rm -f *.a *.o *~ *.bak kernel.elf
+	rm -f *.a *.o *~ *.bak kernel
 
 depend:
 	cd system && $(MAKE) -$(MAKEFLAGS) $@

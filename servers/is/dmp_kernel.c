@@ -2,7 +2,11 @@
 
 #include "inc.h"
 #include <timers.h>
+#if (CHIP == INTEL)
 #include <ibm/interrupt.h>
+#elif (CHIP == ARM)
+#include <arm/interrupt.h>
+#endif
 #include <minix/endpoint.h>
 #include "../../kernel/const.h"
 #include "../../kernel/config.h"
@@ -463,9 +467,9 @@ PRIVATE char *p_rts_flags_str(int flags)
 /*===========================================================================*
  *				proctab_dmp    				     *
  *===========================================================================*/
-#if (CHIP == INTEL)
-PUBLIC void proctab_dmp()
+PUBLIC void proctab_dmp(void)
 {
+#if (CHIP == INTEL)
 /* Proc table dump */
 
   register struct proc *rp;
@@ -506,8 +510,10 @@ PUBLIC void proctab_dmp()
   }
   if (rp == END_PROC_ADDR) rp = BEG_PROC_ADDR; else printf("--more--\r");
   oldrp = rp;
-}
+#elif (CHIP == ARM)
+
 #endif				/* (CHIP == INTEL) */
+}
 
 /*===========================================================================*
  *				memmap_dmp    				     *

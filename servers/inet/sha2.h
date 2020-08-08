@@ -59,7 +59,6 @@ extern "C" {
 #include <assert.h>
 #include <string.h>
 #include <sys/types.h>
-#include <minix/u64.h>
 
 typedef u8_t u_int8_t;	/* 1-byte  (8-bits)  */
 typedef u32_t u_int32_t;	/* 4-bytes (32-bits) */
@@ -68,9 +67,6 @@ typedef u64_t u_int64_t;	/* 8-bytes (64-bits) */
 #ifndef __P
 #define __P(x) x
 #endif
-
-#define NO_64BIT	1
-#define MINIX_64BIT	1
 
 #define SHA2_BYTE_ORDER		0x04030201
 #define SHA2_LITTLE_ENDIAN	0x04030201

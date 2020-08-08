@@ -30,7 +30,7 @@ EXTERN struct inode {
   char i_pipe;			/* set to I_PIPE if pipe */
   char i_mount;			/* this bit is set if file mounted on */
   char i_seek;			/* set on LSEEK, cleared on READ/WRITE */
-  char i_update;		/* the ATIME, CTIME, and MTIME bits are here */
+  char i_update;		/* the FS_ATIME, FS_CTIME, and FS_MTIME bits are here */
 } inode[NR_INODES];
 
 #define NIL_INODE (struct inode *) 0	/* indicates absence of inode slot */

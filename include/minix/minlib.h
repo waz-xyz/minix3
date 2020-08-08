@@ -6,7 +6,7 @@
 #endif
 
 /* Miscellaneous BSD. */
-_PROTOTYPE(void swab, (char *_from, char *_to, int _count));
+_PROTOTYPE(void swab, (const void *_from, void *_to, ssize_t _count));
 _PROTOTYPE(char *itoa, (int _n));
 _PROTOTYPE(char *getpass, (const char *_prompt));
 

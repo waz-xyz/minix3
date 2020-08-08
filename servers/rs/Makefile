@@ -4,15 +4,18 @@ UTIL = service
 
 # directories
 u = /usr
-i = $u/include
+i = ../../include
 s = $i/sys
 m = $i/minix
 b = $i/ibm
+l = ../../lib/bin
+d = ../bin
 
 # programs, flags, etc.
-CC =	exec cc
-CFLAGS = -I$i
-LDFLAGS = -i
+CC = ${TOOLCHAIN_PREFIX}gcc
+MKDEP = $(CC) -M -MG
+CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -L$l
 UTIL_LIBS = -lsys 
 LIBS = -lsys -lsysutil 
 
@@ -20,12 +23,12 @@ UTIL_OBJ = service.o
 OBJ = main.o manager.o 
 
 # build local binary
-all build:	$(SERVER) $(UTIL)
-$(UTIL):	$(UTIL_OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(UTIL_OBJ) $(UTIL_LIBS)
-$(SERVER):	$(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
-	install -S 16k $@
+all build:	$d/$(SERVER) $d/$(UTIL)
+$d/$(UTIL):	$(UTIL_OBJ)
+	$(CC) -o $@ $(LDFLAGS) -Wl,-Map=$d/$(UTIL).map -Wl,--cref $(UTIL_OBJ) $(UTIL_LIBS)
+$d/$(SERVER):	$(OBJ)
+	$(CC) -o $@ $(LDFLAGS) -Wl,-Map=$d/$(SERVER).map -Wl,--cref $(OBJ) $(LIBS)
+	#install -S 16k $@
 
 # install with other servers
 install:	/bin/$(UTIL) /usr/sbin/$(SERVER)
@@ -36,11 +39,11 @@ install:	/bin/$(UTIL) /usr/sbin/$(SERVER)
 
 # clean up local files
 clean:
-	rm -f $(UTIL) $(SERVER) *.o *.bak 
+	rm -f $d/$(UTIL) $d/$(SERVER) $d/$(UTIL).map $d/$(SERVER).map *.o *.bak 
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c > .depend
+	$(MKDEP) $(CFLAGS) *.c > .depend
 
 # Include generated dependencies.
-include .depend
+-include .depend
 

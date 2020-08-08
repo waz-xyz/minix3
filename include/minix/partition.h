@@ -6,13 +6,11 @@
 #ifndef _MINIX__PARTITION_H
 #define _MINIX__PARTITION_H
 
-#ifndef _TYPES_H
-#include <sys/types.h>
-#endif
+#include <stdint.h>
 
 struct partition {
-  u64_t base;		/* byte offset to the partition start */
-  u64_t size;		/* number of bytes in the partition */
+  uint64_t base;		/* byte offset to the partition start */
+  uint64_t size;		/* number of bytes in the partition */
   unsigned cylinders;	/* disk geometry */
   unsigned heads;
   unsigned sectors;

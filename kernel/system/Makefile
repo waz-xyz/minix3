@@ -15,7 +15,7 @@ LDFLAGS = -nostdlib
 SYSTEM	= ../system.a
 
 # What to make.
-all build install: $(SYSTEM)
+all kernel build install: $(SYSTEM)
 
 # OBJECTS	= \
 # 	$(SYSTEM)(do_unused.o) \

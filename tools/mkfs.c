@@ -8,24 +8,48 @@
  *
  */
 
+#define	_XOPEN_SOURCE	500
+
+#ifndef __minix
+
+#define _MIN_BLOCK_SIZE		1024
+#define _MAX_BLOCK_SIZE		4096
+#define _STATIC_BLOCK_SIZE	1024
+typedef unsigned long  Ino_t;
+typedef unsigned long block_t;
+typedef unsigned long zone_t;
+typedef unsigned short zone1_t;
+typedef unsigned long  bit_t;
+typedef unsigned short bitchunk_t;
+
+#define	u8_t	uint8_t
+#define	u16_t	uint16_t
+#define	u32_t	uint32_t
+
+#endif
+
 #include <sys/types.h>
 #include <sys/dir.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <minix/config.h>
 #include <minix/const.h>
 #include <minix/type.h>
 #include <minix/minlib.h>
-#include "../../servers/fs/const.h"
-#if (MACHINE == IBM_PC)
 #include <minix/partition.h>
+#include "../servers/fs/const.h"
+#if (MACHINE == IBM_PC)
 #include <minix/u64.h>
 #include <sys/ioctl.h>
 #endif
@@ -35,8 +59,8 @@
 
 #undef EXTERN
 #define EXTERN			/* get rid of EXTERN by making it null */
-#include "../../servers/fs/type.h"
-#include "../../servers/fs/super.h"
+#include "../servers/fs/type.h"
+#include "../servers/fs/super.h"
 #include <minix/fslib.h>
 
 #ifndef max
@@ -114,7 +138,7 @@ _PROTOTYPE(void add_z_2, (Ino_t n, zone_t z, long bytes, long cur_time));
 _PROTOTYPE(void incr_link, (Ino_t n));
 _PROTOTYPE(void insert_bit, (block_t block, int bit));
 _PROTOTYPE(int mode_con, (char *p));
-_PROTOTYPE(void getline, (char line[LINE_LEN], char *parse[MAX_TOKENS]));
+_PROTOTYPE(void get_line, (char line[LINE_LEN], char *parse[MAX_TOKENS]));
 _PROTOTYPE(void check_mtab, (char *devname));
 _PROTOTYPE(long file_time, (int f));
 _PROTOTYPE(void pexit, (char *s));
@@ -132,6 +156,102 @@ _PROTOTYPE(void mx_write, (int blocknr, char *buf));
 _PROTOTYPE(void dexit, (char *s, int sectnum, int err));
 _PROTOTYPE(void usage, (void));
 _PROTOTYPE(char *alloc_block, (void));
+
+#ifndef __minix
+
+#define BUF_SIZE   512		  /* size of the /etc/mtab buffer */
+char *etc_mtab = "/etc/mtab";	  /* name of the /etc/mtab file */
+static char mtab_in[BUF_SIZE+1];  /* holds /etc/mtab when it is read in */
+static char *iptr = mtab_in;	  /* pointer to next line to feed out. */
+
+void std_err(char *s)
+{
+  register char *p = s;
+
+  while (*p != 0) p++;
+  write(2, s, (int) (p - s));
+}
+
+void err(char *prog_name, char *str)
+{
+  std_err(prog_name); 
+  std_err(str);
+  std_err(etc_mtab);
+  perror(" ");
+}
+
+int load_mtab(char *prog_name)
+{
+/* Read in /etc/mtab and store it in /etc/mtab. */
+
+  int fd, n;
+  char *ptr;
+
+  /* Open the file. */
+  fd = open(etc_mtab, O_RDONLY);
+  if (fd < 0) {
+	err(prog_name, ": cannot open ");
+	return(-1);
+  }
+
+  /* File opened.  Read it in. */
+  n = read(fd, mtab_in, BUF_SIZE);
+  if (n <= 0) {
+	/* Read failed. */
+	err(prog_name, ": cannot read ");
+	return(-1);
+  }
+  if (n == BUF_SIZE) {
+	/* Some nut has mounted 50 file systems or something like that. */
+	std_err(prog_name);
+	std_err(": file too large: ");
+	std_err(etc_mtab);
+	return(-1);
+  }
+
+  close(fd);
+
+  /* Replace all the whitespace by '\0'. */
+  ptr = mtab_in;
+  while (*ptr != '\0') {
+	if (isspace(*ptr)) *ptr = '\0';
+	ptr++;
+  }
+  return(0);
+}
+
+int get_mtab_entry(special, mounted_on, version, rw_flag)
+char *special;
+char *mounted_on;
+char *version;
+char *rw_flag;
+{
+/* Return the next entry from mtab_in. */
+
+  if (iptr >= &mtab_in[BUF_SIZE]) {
+	special[0] = '\0';
+	return(-1);
+  }
+
+  strcpy(special, iptr);
+  while (isprint(*iptr)) iptr++;
+  while (*iptr == '\0'&& iptr < &mtab_in[BUF_SIZE]) iptr++;
+
+  strcpy(mounted_on, iptr);
+  while (isprint(*iptr)) iptr++;
+  while (*iptr == '\0'&& iptr < &mtab_in[BUF_SIZE]) iptr++;
+
+  strcpy(version, iptr);
+  while (isprint(*iptr)) iptr++;
+  while (*iptr == '\0'&& iptr < &mtab_in[BUF_SIZE]) iptr++;
+
+  strcpy(rw_flag, iptr);
+  while (isprint(*iptr)) iptr++;
+  while (*iptr == '\0'&& iptr < &mtab_in[BUF_SIZE]) iptr++;
+  return(0);
+}
+
+#endif
 
 /*================================================================
  *                    mkfs  -  make filesystem
@@ -168,7 +288,7 @@ char *argv[];
   inodes_per_block = 0;
   max_nrblocks = N_BLOCKS;
   block_size = 0;
-  while ((ch = getopt(argc, argv, "12b:di:lotB:")) != EOF)
+  while ((ch = getopt(argc, argv, "12b:di:lotB:")) != -1)
 	switch (ch) {
 	    case '1':
 		fs_version = 1;
@@ -195,6 +315,10 @@ char *argv[];
 	    default:	usage();
 	}
 
+  if (optind >= argc) {
+	usage();
+	return 1;
+  }
   if(fs_version == 3) {
   	if(!block_size) block_size = _MAX_BLOCK_SIZE; /* V3 default block size */
   	if(block_size%SECTOR_SIZE || block_size < _MIN_BLOCK_SIZE) {
@@ -257,10 +381,10 @@ char *argv[];
   if (optind < argc && (proto = fopen(optarg, "r")) != NULL) {
 	/* Prototype file is readable. */
 	lct = 1;
-	getline(line, token);	/* skip boot block info */
+	get_line(line, token);	/* skip boot block info */
 
 	/* Read the line with the block and inode counts. */
-	getline(line, token);
+	get_line(line, token);
 	blocks = atol(token[0]);
 	if (blocks > max_nrblocks) pexit("Block count too large");
 	if (sizeof(char *) == 2 && blocks > N_BLOCKS16) {
@@ -271,7 +395,7 @@ char *argv[];
 	inodes = atoi(token[1]);
 
 	/* Process mode line for root directory. */
-	getline(line, token);
+	get_line(line, token);
 	mode = mode_con(token[0]);
 	usrid = atoi(token[1]);
 	grpid = atoi(token[2]);
@@ -345,7 +469,7 @@ char *argv[];
 	testb[block_size-1] = 0x1F2F;
 	if ((w=write(fd, (char *) testb, block_size)) != block_size) {
 		if(w < 0) perror("write");
-		printf("%d/%d\n", w, block_size);
+		printf("%zd/%u\n", w, block_size);
 		pexit("File system is too big for minor device (write)");
 	}
 	sync();			/* flush write, so if error next read fails */
@@ -427,21 +551,45 @@ char *device;
 		perror("sizeup open");
   	return 0;
   }
-  if (ioctl(fd, DIOCGETP, &entry) == -1) {
-  	perror("sizeup ioctl");
-  	if(fstat(fd, &st) < 0) {
-  		perror("fstat");
-	  	entry.size = cvu64(0);
-  	} else {
-  		fprintf(stderr, "used fstat instead\n");
-	  	entry.size = cvu64(st.st_size);
-  	}
-  }
+//   if (ioctl(fd, DIOCGETP, &entry) == -1) {
+//   	perror("sizeup ioctl");
+//   	if(fstat(fd, &st) < 0) {
+//   		perror("fstat");
+// 	  	entry.size = cvu64(0);
+//   	} else {
+//   		fprintf(stderr, "used fstat instead\n");
+// 	  	entry.size = cvu64(st.st_size);
+//   	}
+//   }
   close(fd);
-  d = div64u(entry.size, block_size);
+  d = entry.size / block_size;
   return d;
 }
 
+/* Convert from bit count to a block count. The usual expression
+ *
+ *	(nr_bits + (1 << BITMAPSHIFT) - 1) >> BITMAPSHIFT
+ *
+ * doesn't work because of overflow.
+ *
+ * Other overflow bugs, such as the expression for N_ILIST overflowing when
+ * s_inodes is just over V*_INODES_PER_BLOCK less than the maximum+1, are not
+ * fixed yet, because that number of inodes is silly.
+ */
+/* The above comment doesn't all apply now bit_t is long.  Overflow is now
+ * unlikely, but negative bit counts are now possible (though unlikely)
+ * and give silly results.
+ */ 
+int bitmapsize(nr_bits, block_size)
+bit_t nr_bits;
+int block_size;
+{
+  int nr_blocks;
+
+  nr_blocks = (int) (nr_bits / FS_BITS_PER_BLOCK(block_size));
+  if (((bit_t) nr_blocks * FS_BITS_PER_BLOCK(block_size)) < nr_bits) ++nr_blocks;
+  return(nr_blocks);
+}
 
 /*================================================================
  *                 super  -  construct a superblock
@@ -564,7 +712,7 @@ ino_t parent;
   long size;
 
   while (1) {
-	getline(line, token);
+	get_line(line, token);
 	p = token[0];
 	if (*p == '$') return;
 	p = token[1];
@@ -715,7 +863,7 @@ char *name;
 	}
   }
 
-  printf("Directory-inode %d beyond direct blocks.  Could not enter %s\n",
+  printf("Directory-inode %lu beyond direct blocks.  Could not enter %s\n",
          parent, name);
   pexit("Halt");
 }
@@ -1011,7 +1159,7 @@ char *p;
   return(mode);
 }
 
-void getline(line, parse)
+void get_line(line, parse)
 char *parse[MAX_TOKENS];
 char line[LINE_LEN];
 {
@@ -1184,7 +1332,7 @@ void print_fs()
 		if (k > nrinodes) break;
 		if (fs_version == 1) {
 			if (inode1[i].d1_mode != 0) {
-				printf("Inode %2d:  mode=", k);
+				printf("Inode %2lu:  mode=", k);
 				printf("%06o", inode1[i].d1_mode);
 				printf("  uid=%2d  gid=%2d  size=",
 				inode1[i].d1_uid, inode1[i].d1_gid);
@@ -1196,11 +1344,11 @@ void print_fs()
 				get_block(inode1[i].d1_zone[0], (char *) dir);
 				for (j = 0; j < NR_DIR_ENTRIES(block_size); j++)
 					if (dir[j].d_ino)
-						printf("\tInode %2d: %s\n", dir[j].d_ino, dir[j].d_name);
+						printf("\tInode %2lu: %s\n", dir[j].d_ino, dir[j].d_name);
 			}
 		} else {
 			if (inode2[i].d2_mode != 0) {
-				printf("Inode %2d:  mode=", k);
+				printf("Inode %2lu:  mode=", k);
 				printf("%06o", inode2[i].d2_mode);
 				printf("  uid=%2d  gid=%2d  size=",
 				inode2[i].d2_uid, inode2[i].d2_gid);
@@ -1212,7 +1360,7 @@ void print_fs()
 				get_block(inode2[i].d2_zone[0], (char *) dir);
 				for (j = 0; j < NR_DIR_ENTRIES(block_size); j++)
 					if (dir[j].d_ino)
-						printf("\tInode %2d: %s\n", dir[j].d_ino, dir[j].d_name);
+						printf("\tInode %2lu: %s\n", dir[j].d_ino, dir[j].d_name);
 			}
 		}
 	}

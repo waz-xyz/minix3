@@ -63,6 +63,11 @@
 #define NR_BUF_HASH	 512	/* size of buf hash table; MUST BE POWER OF 2*/
 #endif
 
+#if (MACHINE == ZYNQ)
+#define NR_BUFS         1200	/* # blocks in the buffer cache */
+#define NR_BUF_HASH     2048	/* size of buf hash table; MUST BE POWER OF 2*/
+#endif
+
 #endif	/* _MINIX_SMALL */
 
 /* Number of controller tasks (/dev/cN device classes). */

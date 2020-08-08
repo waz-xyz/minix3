@@ -10,6 +10,7 @@ Copyright 1995 Philip Homburg
 
 PUBLIC void stacktrace()
 {
+#if (CHIP == INTEL)
 	typedef unsigned int reg_t;
 	reg_t bp, pc, hbp;
 	extern reg_t get_bp ARGS(( void ));
@@ -28,6 +29,9 @@ PUBLIC void stacktrace()
 		bp= hbp;
 	}
 	printf("\n");
+#elif (CHIP == ARM)
+	printf("\n");
+#endif
 }
 
 /*

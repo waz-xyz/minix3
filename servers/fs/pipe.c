@@ -84,7 +84,7 @@ PUBLIC int do_pipe()
   rw_inode(rip, WRITING);	/* mark inode as allocated */
   m_out.reply_i1 = fil_des[0];
   m_out.reply_i2 = fil_des[1];
-  rip->i_update = ATIME | CTIME | MTIME;
+  rip->i_update = FS_ATIME | FS_CTIME | FS_MTIME;
   return(OK);
 }
 

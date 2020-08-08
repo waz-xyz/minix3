@@ -222,8 +222,8 @@ int rw_flag;			/* READING or WRITING */
 	r = r2;
   }
   if (r == OK) {
-	if (rw_flag == READING) rip->i_update |= ATIME;
-	if (rw_flag == WRITING) rip->i_update |= CTIME | MTIME;
+	if (rw_flag == READING) rip->i_update |= FS_ATIME;
+	if (rw_flag == WRITING) rip->i_update |= FS_CTIME | FS_MTIME;
 	rip->i_dirt = DIRTY;		/* inode is thus now dirty */
 	if (partial_pipe) {
 		partial_pipe = 0;

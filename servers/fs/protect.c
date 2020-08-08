@@ -50,7 +50,7 @@ PUBLIC int do_chmod()
   /* Now make the change. Clear setgid bit if file is not in caller's grp */
   rip->i_mode = (rip->i_mode & ~ALL_MODES) | (m_in.mode & ALL_MODES);
   if (!super_user && rip->i_gid != fp->fp_effgid)rip->i_mode &= ~I_SET_GID_BIT;
-  rip->i_update |= CTIME;
+  rip->i_update |= FS_CTIME;
   rip->i_dirt = DIRTY;
 
   put_inode(rip);
@@ -88,7 +88,7 @@ PUBLIC int do_chown()
   if (r == OK) {
 	rip->i_gid = m_in.group;
 	rip->i_mode &= ~(I_SET_UID_BIT | I_SET_GID_BIT);
-	rip->i_update |= CTIME;
+	rip->i_update |= FS_CTIME;
 	rip->i_dirt = DIRTY;
   }
 

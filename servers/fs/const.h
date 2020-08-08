@@ -66,9 +66,9 @@
 
 #define CLEAN              0	/* disk and memory copies identical */
 #define DIRTY              1	/* disk and memory copies differ */
-#define ATIME            002	/* set if atime field needs updating */
-#define CTIME            004	/* set if ctime field needs updating */
-#define MTIME            010	/* set if mtime field needs updating */
+#define FS_ATIME         002	/* set if atime field needs updating */
+#define FS_CTIME         004	/* set if ctime field needs updating */
+#define FS_MTIME         010	/* set if mtime field needs updating */
 
 #define BYTE_SWAP          0	/* tells conv2/conv4 to swap bytes */
 

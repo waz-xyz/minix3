@@ -5,9 +5,8 @@
 #include <minix/sys_config.h>
 #endif
 
-#ifndef _TYPES_H
 #include <sys/types.h>
-#endif
+#include <stdint.h>
 
 /* Type definitions. */
 typedef unsigned int vir_clicks; 	/*  virtual addr/length in clicks */
@@ -61,7 +60,7 @@ struct hole {
 /* Memory info from PM. */
 struct pm_mem_info {
 	struct hole pmi_holes[_NR_HOLES];/* memory (un)allocations */
-	u32_t pmi_hi_watermark;		 /* highest ever-used click + 1 */
+	uint32_t pmi_hi_watermark;		 /* highest ever-used click + 1 */
 };
 
 #define phys_cp_req vir_cp_req 
@@ -125,8 +124,8 @@ struct kinfo {
 
 /* Runnable processes and other load-average information. */
 struct loadinfo {
-  u16_t proc_load_history[_LOAD_HISTORY];	/* history of proc_s_cur */
-  u16_t proc_last_slot;
+  uint16_t proc_load_history[_LOAD_HISTORY];	/* history of proc_s_cur */
+  uint16_t proc_last_slot;
   clock_t last_clock;
 };
 

@@ -429,7 +429,7 @@ int flag;			 /* LOOK_UP, ENTER, DELETE or IS_EMPTY */
 				*((ino_t *) &dp->d_name[t]) = dp->d_ino;
 				dp->d_ino = 0;	/* erase entry */
 				bp->b_dirt = DIRTY;
-				ldir_ptr->i_update |= CTIME | MTIME;
+				ldir_ptr->i_update |= FS_CTIME | FS_MTIME;
 				ldir_ptr->i_dirt = DIRTY;
 			} else {
 				sp = ldir_ptr->i_sp;	/* 'flag' is LOOK_UP */
@@ -475,7 +475,7 @@ int flag;			 /* LOOK_UP, ENTER, DELETE or IS_EMPTY */
   dp->d_ino = conv4(sp->s_native, (int) *numb);
   bp->b_dirt = DIRTY;
   put_block(bp, DIRECTORY_BLOCK);
-  ldir_ptr->i_update |= CTIME | MTIME;	/* mark mtime for update later */
+  ldir_ptr->i_update |= FS_CTIME | FS_MTIME;	/* mark mtime for update later */
   ldir_ptr->i_dirt = DIRTY;
   if (new_slots > old_slots) {
 	ldir_ptr->i_size = (off_t) new_slots * DIR_ENTRY_SIZE;

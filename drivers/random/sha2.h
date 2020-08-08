@@ -68,9 +68,6 @@ typedef u64_t u_int64_t;	/* 8-bytes (64-bits) */
 #define __P(x) x
 #endif
 
-#define NO_64BIT	1
-#define MINIX_64BIT	1
-
 #define SHA2_BYTE_ORDER		0x04030201
 #define SHA2_LITTLE_ENDIAN	0x04030201
 #define SHA2_BIG_ENDIAN		0x01020204

@@ -3,7 +3,7 @@ DRIVER = log
 
 # directories
 u = /usr
-i = $u/include
+i = ../../include
 s = $i/sys
 m = $i/minix
 d = ..

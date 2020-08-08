@@ -2,7 +2,7 @@
 
 # Directories
 u = /usr
-i = $u/include
+i = ../../include
 s = $i/sys
 b = $i/ibm
 m = $i/minix
@@ -23,8 +23,7 @@ clean:
 	rm -f *.o *.bak 
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c > .depend
+	$(MKDEP) $(CFLAGS) *.c > .depend
 
 # Include generated dependencies.
 include .depend
-

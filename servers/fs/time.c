@@ -46,7 +46,7 @@ PUBLIC int do_utime()
 		rip->i_atime = m_in.utime_actime;
 		rip->i_mtime = m_in.utime_modtime;
 	}
-	rip->i_update = CTIME;	/* discard any stale ATIME and MTIME flags */
+	rip->i_update = FS_CTIME;	/* discard any stale FS_ATIME and FS_MTIME flags */
 	rip->i_dirt = DIRTY;
   }
 

@@ -3,14 +3,17 @@ SERVER = fs
 
 # directories
 u = /usr
-i = $u/include
+i = ../../include
 s = $i/sys
 h = $i/minix
+l = ../../lib/bin
+d = ../bin
 
 # programs, flags, etc.
-CC =	exec cc
-CFLAGS = -I$i $(EXTRA_OPTS)
-LDFLAGS = -i
+CC = ${TOOLCHAIN_PREFIX}gcc
+MKDEP = $(CC) -M -MG
+CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i $(EXTRA_OPTS)
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(SERVER).map -Wl,--cref -L$l
 LIBS = -lsys -lsysutil -ltimers
 
 OBJ =	main.o open.o read.o write.o pipe.o dmap.o \
@@ -19,17 +22,17 @@ OBJ =	main.o open.o read.o write.o pipe.o dmap.o \
 	lock.o misc.o utility.o select.o timers.o table.o
 
 # build local binary 
-install all build:	$(SERVER)
-$(SERVER):	$(OBJ)
+install all build:	$d/$(SERVER)
+$d/$(SERVER):	$(OBJ)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
-	install -S 512w $@
+	#install -S 512w $@
 
 # clean up local files
 clean:
-	rm -f $(SERVER) *.o *.bak 
+	rm -f $d/$(SERVER) $d/$(SERVER).map *.o *.bak 
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c > .depend
+	$(MKDEP) $(CFLAGS) *.c > .depend
 
 # Include generated dependencies.
-include .depend
+-include .depend

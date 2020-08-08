@@ -47,17 +47,17 @@ fresh:
 
 all: services image
 
-image:  includes
+image:  includes mkimage
 	cd ../kernel && $(MAKE) 
 	cd ../servers && $(MAKE) image
 	cd ../drivers && $(MAKE) image
-	installboot -image $@ $(PROGRAMS)
+	./mkimage -image $@ $(PROGRAMS)
 
-image_small:  includes
+image_small:  includes mkimage
 	cd ../kernel && $(MAKE) 
 	cd ../servers && $(MAKE) EXTRA_OPTS=-D_MINIX_SMALL=1 image
 	cd ../drivers && $(MAKE) EXTRA_OPTS=$(EXTRA_OPTS) image
-	installboot -image $@ $(PROGRAMS)
+	./mkimage -image $@ $(PROGRAMS)
 
 # rebuild the program or system libraries
 includes:
@@ -76,6 +76,11 @@ libraries: includes
 	cd ../lib && $(MAKE) all
 	cd ../lib && $(MAKE) install
 
+mkimage: mkimage.c
+	$(CC) -idirafter ../include -o $@ $<
+
+mkfs: mkfs.c
+	$(CC) -D_MINIX -D_POSIX_SOURCE -idirafter ../include -o $@ $<
 
 # make bootable and place system images
 bootable:
@@ -97,4 +102,4 @@ clean:
 	cd ../servers && $(MAKE) $@
 	cd ../drivers && $(MAKE) $@
 	rm -rf *.bak image image_small *.iso *.iso.gz cdfdimage rootimage src
-
+	rm -f mkimage

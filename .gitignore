@@ -3,7 +3,9 @@
 *.map
 .depend
 Makedepend
-kernel/kernel.elf
+kernel/kernel
 lib/*/Makefile
 lib/*/*/Makefile
 servers/bin/*
+tools/mkfs
+tools/mkimage

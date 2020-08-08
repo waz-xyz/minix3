@@ -98,7 +98,7 @@ PUBLIC int do_link()
   /* If success, register the linking. */
   if (r == OK) {
 	rip->i_nlinks++;
-	rip->i_update |= CTIME;
+	rip->i_update |= FS_CTIME;
 	rip->i_dirt = DIRTY;
   }
 
@@ -607,7 +607,7 @@ char file_name[NAME_MAX];	/* name of file to be removed */
 
   if (r == OK) {
 	rip->i_nlinks--;	/* entry deleted from parent's dir */
-	rip->i_update |= CTIME;
+	rip->i_update |= FS_CTIME;
 	rip->i_dirt = DIRTY;
   }
 

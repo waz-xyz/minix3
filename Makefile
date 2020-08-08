@@ -39,9 +39,9 @@ install::
 	if [ -f commands/Makefile ] ; then cd commands && $(MAKE) install; fi
 
 depend::
-	mkdep kernel
-	mkdep servers
-	mkdep drivers
+	# mkdep kernel
+	# mkdep servers
+	# mkdep drivers
 	cd kernel && $(MAKE) $@
 	cd servers && $(MAKE) $@
 	cd drivers && $(MAKE) $@

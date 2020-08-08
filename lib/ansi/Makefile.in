@@ -64,8 +64,10 @@ libc_FILES=" \
 	mbstowcs.c \
 	mbtowc.c \
 	memchr.c \
+	memcmp.c \
 	memcpy.c \
 	memmove.c \
+	memset.c \
 	misc.c \
 	mktime.c \
 	qsort.c \
@@ -74,6 +76,7 @@ libc_FILES=" \
 	setlocale.c \
 	sigmisc.c \
 	signal.c \
+	strcat.c \
 	strcoll.c \
 	strcmp.c \
 	strcpy.c \
@@ -81,6 +84,7 @@ libc_FILES=" \
 	strerror.c \
 	strftime.c \
 	strlen.c \
+	strncat.c \
 	strncpy.c \
 	strncmp.c \
 	strpbrk.c \

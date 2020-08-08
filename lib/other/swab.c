@@ -3,20 +3,18 @@
  *
  *  Author: Terrence W. Holm          Sep. 1988
  */
-_PROTOTYPE( void swab, (char *from, char *to, int count));
 
-void swab(from, to, count)
-char *from;
-char *to;
-int count;
+void swab(const void *from, void *to, ssize_t count)
 {
   register char temp;
+  char *cfrom = from;
+  char *cto = to;
 
   count >>= 1;
 
   while (--count >= 0) {
-	temp = *from++;
-	*to++ = *from++;
-	*to++ = temp;
+	temp = *cfrom++;
+	*cto++ = *cfrom++;
+	*cto++ = temp;
   }
 }

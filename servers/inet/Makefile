@@ -1,17 +1,18 @@
 # Makefile for inet.
+SERVER = inet
 
 # Directories
 g = generic
+i = ../../include
+l = ../../lib/bin
+d = ../bin
 
 # Programs, flags, and libraries
-CC =		cc
-CPPFLAGS =	-I. -D_MINIX
-CFLAGS =	$(OPT) $(CPPFLAGS)
-LDFLAGS =
-LIBS =		-lsys -lsysutil
-
-.c.o:
-	$(CC) $(CFLAGS) -o $@ -c $<
+CC = ${TOOLCHAIN_PREFIX}gcc
+MKDEP = $(CC) -M -MG
+CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i -I. -D__minix -D_MINIX $(OPT)
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(SERVER).map -Wl,--cref -L$l
+LIBS = -lsys -lsysutil
 
 OBJ = 	buf.o clock.o inet.o inet_config.o \
 	mnx_eth.o mq.o qp.o sr.o stacktrace.o \
@@ -21,25 +22,21 @@ OBJ = 	buf.o clock.o inet.o inet_config.o \
 	$g/ipr.o $g/rand256.o $g/tcp.o $g/tcp_lib.o \
 	$g/tcp_recv.o $g/tcp_send.o $g/ip_eth.o \
 	$g/ip_ps.o $g/psip.o \
-	minix3/queryparam.o sha2.o
+	minix3/queryparam.o sha2.o version.o
 
-all:	inet
+all:	$d/$(SERVER)
 
-inet:	$(OBJ)
-	$(CC) -o $@ $(LDFLAGS) $(OBJ) version.c $(LIBS)
+$d/$(SERVER):	$(OBJ)
+	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
 
-install: inet
+install: $d/$(SERVER)
 	install -c $? /usr/sbin/inet
 
 clean:
-	rm -f $(OBJ) inet *.bak
+	rm -f $(OBJ) $d/$(SERVER) $d/$(SERVER).map *.bak
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c generic/*.c > .depend
+	$(MKDEP) $(CFLAGS) *.c generic/*.c > .depend
 
 # Include generated dependencies.
-include .depend
-
-#
-# $PchId: Makefile.mnx3,v 1.1 2005/06/28 14:28:45 philip Exp $
-#
+-include .depend
