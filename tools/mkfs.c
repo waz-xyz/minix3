@@ -319,6 +319,7 @@ char *argv[];
 	usage();
 	return 1;
   }
+
   if(fs_version == 3) {
   	if(!block_size) block_size = _MAX_BLOCK_SIZE; /* V3 default block size */
   	if(block_size%SECTOR_SIZE || block_size < _MIN_BLOCK_SIZE) {
@@ -551,16 +552,12 @@ char *device;
 		perror("sizeup open");
   	return 0;
   }
-//   if (ioctl(fd, DIOCGETP, &entry) == -1) {
-//   	perror("sizeup ioctl");
-//   	if(fstat(fd, &st) < 0) {
-//   		perror("fstat");
-// 	  	entry.size = cvu64(0);
-//   	} else {
-//   		fprintf(stderr, "used fstat instead\n");
-// 	  	entry.size = cvu64(st.st_size);
-//   	}
-//   }
+  if(fstat(fd, &st) < 0) {
+	perror("fstat");
+	entry.size = 0;
+  } else {
+	entry.size = st.st_size;
+  }
   close(fd);
   d = entry.size / block_size;
   return d;
