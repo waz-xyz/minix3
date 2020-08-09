@@ -1,9 +1,8 @@
 # Makefile for the kernel image.
 
 u=/usr
-CC=	exec cc
-CFLAGS=	-O -D_MINIX -D_POSIX_SOURCE
-MDEC=	/usr/mdec
+CC=gcc
+CFLAGS=-O -D_MINIX -D_POSIX_SOURCE
 
 # Specify the programs that are part of the system image.
 PROGRAMS=	../kernel/kernel \
@@ -15,6 +14,13 @@ PROGRAMS=	../kernel/kernel \
 	../drivers/memory/memory \
 	../drivers/log/log \
 	../servers/init/init
+
+PROGRAMS_LITE=	../kernel/kernel \
+	../servers/bin/pm \
+	../servers/bin/fs \
+	../servers/bin/rs \
+	../servers/bin/ds \
+	../servers/bin/init
 
 usage:	
 	@echo " " >&2
@@ -59,6 +65,11 @@ image_small:  includes mkimage
 	cd ../drivers && $(MAKE) EXTRA_OPTS=$(EXTRA_OPTS) image
 	./mkimage -image $@ $(PROGRAMS)
 
+image_lite:  mkimage
+	cd ../kernel && $(MAKE)
+	cd ../servers && $(MAKE) image
+	./mkimage -image $@ $(PROGRAMS_LITE)
+
 # rebuild the program or system libraries
 includes:
 	cd ../include && $(MAKE) install
@@ -80,7 +91,7 @@ mkimage: mkimage.c
 	$(CC) -idirafter ../include -o $@ $<
 
 mkfs: mkfs.c
-	$(CC) -D_MINIX -D_POSIX_SOURCE -idirafter ../include -o $@ $<
+	$(CC) -g -D_MINIX -D_POSIX_SOURCE -idirafter ../include -o $@ $<
 
 # make bootable and place system images
 bootable:
@@ -101,5 +112,5 @@ clean:
 	cd ../kernel && $(MAKE) $@
 	cd ../servers && $(MAKE) $@
 	cd ../drivers && $(MAKE) $@
-	rm -rf *.bak image image_small *.iso *.iso.gz cdfdimage rootimage src
-	rm -f mkimage
+	rm -rf *.bak image image_small image_lite *.iso *.iso.gz cdfdimage rootimage src
+	rm -f mkfs mkimage

@@ -4,11 +4,12 @@ PROGRAMS=at_wini bios_wini cdprobe dev2name floppy loadramdisk newroot \
 	pci sh service sysenv
 
 MAKEDEV=/usr/bin/MAKEDEV
+MKDEP = $(CC) -M -MG
 
 all:	image.c image.s
 
 clean:
-	rm -rf $(PROGRAMS) bintoc image image.c t proto.gen
+	rm -rf $(PROGRAMS) bintoc image image.c proto.gen
 
 image.c:	bintoc image
 	./bintoc -o $@ image
@@ -21,8 +22,8 @@ image.s:	image.c
 bintoc:	bintoc.c
 	$(CC) -o $@ bintoc.c
 
-image:	proto.gen mtab rc $(PROGRAMS)
-	mkfs -B 2048 image proto.gen || { rm -f image; false; }
+image:	proto.gen mtab rc $(PROGRAMS) ../../../tools/mkfs
+	../../../tools/mkfs -B 2048 image proto.gen || { rm -f image; false; }
 
 at_wini: ../../at_wini/at_wini
 	install -s ../../$@/$@ $@
@@ -91,11 +92,13 @@ service: ../../../servers/rs/service
 	cd ../../../servers/rs && make service
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c > .depend
+	$(MKDEP) $(CFLAGS) *.c > .depend
 
-proto.gen: $(MAKEDEV) proto.sh proto
+proto.gen: proto.sh proto
 	sh -e proto.sh >proto.gen
 
-# Include generated dependencies.
-include .depend
+../../../tools/mkfs:
+	cd ../../../tools && make mkfs
 
+# Include generated dependencies.
+-include .depend

@@ -9,3 +9,8 @@ lib/*/*/Makefile
 servers/bin/*
 tools/mkfs
 tools/mkimage
+tools/image
+tools/image_small
+tools/image_lite
+drivers/memory/ramdisk/bintoc
+drivers/memory/ramdisk/proto.gen

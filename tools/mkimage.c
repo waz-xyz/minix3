@@ -1,11 +1,9 @@
 /*	mkimage 1.0 - Make a boot image                 Author: Kees J. Bot
  *								21 Dec 1991
  *
- * Either make a device bootable or make an image from kernel, mm, fs, etc.
+ * Make an image from kernel, mm, fs, etc.
  */
-#define nil 0
-#define _POSIX_SOURCE	1
-#define _MINIX		1
+
 #include <stdio.h>
 #include <stddef.h>
 #include <sys/types.h>
@@ -17,36 +15,19 @@
 #include <string.h>
 #include <errno.h>
 #include <dirent.h>
-#include <a.out.h>
-#include <minix/config.h>
-#include <minix/const.h>
-#include <minix/partition.h>
+#include <elf.h>
 
 #define IM_NAME_MAX	63
 
 struct image_header {
 	char		name[IM_NAME_MAX + 1];	/* Null terminated. */
-	struct exec	process;
+	Elf32_Ehdr	process;
 };
 
-#define BOOTBLOCK	0	/* Of course */
-#define SECTOR_SIZE	512	/* Disk sector size. */
-#define RATIO(b)	((b)/SECTOR_SIZE)
-#define SIGNATURE	0xAA55	/* Boot block signature. */
-#define BOOT_MAX	64	/* Absolute maximum size of secondary boot */
-#define SIGPOS		510	/* Where to put signature word. */
-#define PARTPOS		446	/* Offset to the partition table in a master
-				 * boot block.
-				 */
+#define PAGE_SIZE	4096	/* MMU's page size */
 
-#define between(a, c, z)	((unsigned) ((c) - (a)) <= ((z) - (a)))
-#define control(c)		between('\0', (c), '\37')
-
-#define BOOT_BLOCK_SIZE 1024
-
-#ifndef	_MAX_BLOCK_SIZE
-#define _MAX_BLOCK_SIZE		 4096
-#endif
+#define FLAGS_CODE	(PF_R | PF_X)
+#define FLAGS_DATA	(PF_R | PF_W)
 
 void report(char *label)
 /* mkimage: label: No such file or directory */
@@ -69,12 +50,12 @@ char *basename(char *name)
 	static char base[IM_NAME_MAX];
 	char *p, *bp= base;
 
-	if ((p= strchr(name, ':')) != nil) {
+	if ((p= strchr(name, ':')) != NULL) {
 		while (name <= p && bp < base + IM_NAME_MAX - 1)
 			*bp++ = *name++;
 	}
 	for (;;) {
-		if ((p= strrchr(name, '/')) == nil) { p= name; break; }
+		if ((p= strrchr(name, '/')) == NULL) { p= name; break; }
 		if (*++p != 0) break;
 		*--p= 0;
 	}
@@ -98,22 +79,19 @@ void bwrite(FILE *f, char *name, void *buf, size_t len)
 	if (len > 0 && fwrite(buf, len, 1, f) != 1) fatal(name);
 }
 
-long total_text= 0, total_data= 0, total_bss= 0;
-int making_image= 0;
+long total_text = 0, total_data = 0, total_bss = 0;
 
-void read_header(int talk, char *proc, FILE *procf, struct image_header *ihdr)
-/* Read the a.out header of a program and check it.  If procf happens to be
- * nil then the header is already in *image_hdr and need only be checked.
+void read_header(char *proc, FILE *procf, struct image_header *ihdr)
+/* Read the ELF header of a program and check it.  If procf happens to be
+ * NULL then the header is already in *image_hdr and need only be checked.
  */
 {
-	int n, big= 0;
-	static int banner= 0;
-	struct exec *phdr= &ihdr->process;
+	unsigned n;
+	Elf32_Ehdr *ehdr = &(ihdr->process);
 
-	if (procf == nil) {
+	if (procf == NULL) {
 		/* Header already present. */
-		//n= phdr->a_hdrlen;
-		n = sizeof(struct exec);
+		n = ehdr->e_ehsize;
 	} else {
 		memset(ihdr, 0, sizeof(*ihdr));
 
@@ -121,56 +99,23 @@ void read_header(int talk, char *proc, FILE *procf, struct image_header *ihdr)
 		strncpy(ihdr->name, basename(proc), IM_NAME_MAX);
 
 		/* Read the header. */
-		n= fread(phdr, sizeof(char), sizeof(struct exec), procf);
+		n = fread(ehdr, sizeof(char), sizeof(Elf32_Ehdr), procf);
 		if (ferror(procf)) fatal(proc);
 	}
 
-	if (n < sizeof(struct exec)) { //|| BADMAG(*phdr)) {
-		fprintf(stderr, "mkimage: %s is not an executable\n", proc);
+	if (n < sizeof(Elf32_Ehdr)
+		|| memcmp(ehdr->e_ident, ELFMAG, SELFMAG) != 0
+		|| ehdr->e_ident[4] != ELFCLASS32
+		|| ehdr->e_type != ET_EXEC
+		|| ehdr->e_phoff == 0
+		|| ehdr->e_phnum == 0) {
+		fprintf(stderr, "mkimage: %s is not a valid executable\n", proc);
 		exit(1);
-	}
-
-	/* Get the rest of the exec header. */
-	// if (procf != nil) {
-	// 	bread(procf, proc, ((char *) phdr) + A_MINHDR,
-	// 					phdr->a_hdrlen - A_MINHDR);
-	// }
-
-	if (talk && !banner) {
-		printf("     text     data      bss      size\n");
-		banner= 1;
-	}
-
-	if (talk) {
-		printf(" %8u %8u %8u %9u  %s\n",
-			phdr->a_text, phdr->a_data, phdr->a_bss,
-			phdr->a_text + phdr->a_data + phdr->a_bss, proc);
-	}
-	total_text+= phdr->a_text;
-	total_data+= phdr->a_data;
-	total_bss+= phdr->a_bss;
-
-	// if (phdr->a_cpu == A_I8086) {
-	// 	long data= phdr->a_data + phdr->a_bss;
-
-	// 	if (!(phdr->a_flags & A_SEP)) data+= phdr->a_text;
-
-	// 	if (phdr->a_text >= 65536) big|= 1;
-	// 	if (data >= 65536) big|= 2;
-	// }
-	if (big) {
-		fprintf(stderr,
-			"%s will crash, %s%s%s segment%s larger then 64K\n",
-			proc,
-			big & 1 ? "text" : "",
-			big == 3 ? " and " : "",
-			big & 2 ? "data" : "",
-			big == 3 ? "s are" : " is");
 	}
 }
 
 void padimage(char *image, FILE *imagef, int n)
-/* Add n zeros to image to pad it to a sector boundary. */
+/* Add n zeros to image to pad it to a page boundary. */
 {
 	while (n > 0) {
 		if (putc(0, imagef) == EOF) fatal(image);
@@ -178,21 +123,20 @@ void padimage(char *image, FILE *imagef, int n)
 	}
 }
 
-#define align(n)	(((n) + ((SECTOR_SIZE) - 1)) & ~((SECTOR_SIZE) - 1))
+#define align(n)	(((n) + ((PAGE_SIZE) - 1)) & ~((PAGE_SIZE) - 1))
 
-void copyexec(char *proc, FILE *procf, char *image, FILE *imagef, long n)
-/* Copy n bytes from proc to image padded to fill a sector. */
+void copysegment(char *proc, FILE *procf, char *image, FILE *imagef, long n)
+/* Copy n bytes from proc to image padded to fill a page. */
 {
 	int pad, c;
 
 	/* Compute number of padding bytes. */
-	pad= align(n) - n;
+	pad = align(n) - n;
 
 	while (n > 0) {
-		if ((c= getc(procf)) == EOF) {
+		if ((c = getc(procf)) == EOF) {
 			if (ferror(procf)) fatal(proc);
-			fprintf(stderr,	"mkimage: premature EOF on %s\n",
-									proc);
+			fprintf(stderr,	"mkimage: premature EOF on %s\n", proc);
 			exit(1);
 		}
 		if (putc(c, imagef) == EOF) fatal(image);
@@ -203,63 +147,95 @@ void copyexec(char *proc, FILE *procf, char *image, FILE *imagef, long n)
 
 void make_image(char *image, char **procv)
 /* Collect a set of files in an image, each "segment" is nicely padded out
- * to SECTOR_SIZE, so it may be read from disk into memory without trickery.
+ * to PAGE_SIZE, so it may be read from disk into memory without trickery.
  */
 {
 	FILE *imagef, *procf;
 	char *proc, *file;
 	int procn;
 	struct image_header ihdr;
-	struct exec phdr;
+	Elf32_Ehdr ehdr;
+	Elf32_Phdr *phdr;
 	struct stat st;
+	int banner = 0;
+	Elf32_Word text_size, data_size, bss_size;
 
-	making_image= 1;
+	if ((imagef = fopen(image, "w")) == NULL) fatal(image);
 
-	if ((imagef= fopen(image, "w")) == nil) fatal(image);
-
-	for (procn= 0; (proc= *procv++) != nil; procn++) {
+	for (procn = 0; (proc = *procv++) != NULL; procn++) {
 		/* Remove the label from the file name. */
-		if ((file= strchr(proc, ':')) != nil) file++; else file= proc;
+		if ((file = strchr(proc, ':')) != NULL) file++; else file = proc;
 
 		/* Real files please, may need to seek. */
 		if (stat(file, &st) < 0
-			|| (errno= EISDIR, !S_ISREG(st.st_mode))
-			|| (procf= fopen(file, "r")) == nil
+			|| (errno = EISDIR, !S_ISREG(st.st_mode))
+			|| (procf = fopen(file, "r")) == NULL
 		) fatal(proc);
 
-		/* Read a.out header. */
-		read_header(1, proc, procf, &ihdr);
+		/* Read ELF header. */
+		read_header(proc, procf, &ihdr);
 
 		/* Scratch. */
-		phdr= ihdr.process;
+		ehdr = ihdr.process;
 
-		/* The symbol table is always stripped off. */
-		ihdr.process.a_syms= 0;
-		// ihdr.process.a_flags &= ~A_NSYM;
+		if (ehdr.e_phentsize != sizeof(Elf32_Phdr)) {
+			fprintf(stderr,
+				"mkimage: %s: unknown segment header size (%u)\n",
+				proc,
+				ehdr.e_phentsize);
+			exit(1);
+		}
 
-		/* Write header padded to fill a sector */
-		bwrite(imagef, image, &ihdr, sizeof(ihdr));
+		/* Read segment headers into the phdr table */
+		phdr = malloc(sizeof(Elf32_Phdr) * ehdr.e_phnum);
+		if (phdr == NULL) {
+			fatal(proc);
+		}
+		fseek(procf, ehdr.e_phoff, SEEK_SET);
+		size_t nseg = fread(phdr, sizeof(Elf32_Phdr), ehdr.e_phnum, procf);
+		if (ferror(procf)) fatal(proc);
+		if (nseg != ehdr.e_phnum) {
+			fprintf(stderr,
+				"mkimage: %s: expected %u segment headers but got only %zu\n",
+				proc,
+				ehdr.e_phnum,
+				nseg);
+			exit(1);
+		}
 
-		padimage(image, imagef, SECTOR_SIZE - sizeof(ihdr));
+		/* Look through segments */
+		text_size = data_size = bss_size = 0;
+		for (int i = 0; i < ehdr.e_phnum; i++) {
+			Elf32_Word segsize = phdr[i].p_filesz;
+			if (phdr[i].p_type != PT_LOAD || segsize == 0) {
+				continue;
+			}
+			fseek(procf, phdr[i].p_offset, SEEK_SET);
+			copysegment(proc, procf, image, imagef, segsize);
 
-		/* A page aligned executable needs the header in text. */
-		// if (phdr.a_flags & A_PAL) {
-		// 	rewind(procf);
-		// 	phdr.a_text+= sizeof(struct exec);
-		// }
+			Elf32_Word flags = phdr[i].p_flags;
+			if ((flags & FLAGS_CODE) == FLAGS_CODE) {
+				text_size = phdr[i].p_memsz;
+			} else if ((flags & FLAGS_DATA) == FLAGS_DATA) {
+				data_size = phdr[i].p_filesz;
+				bss_size = phdr[i].p_memsz - phdr[i].p_filesz;
+			}
+		}
 
-		/* Copy text and data of proc to image. */
-		// if (phdr.a_flags & A_SEP) {
-			/* Separate I&D: pad text & data separately. */
+		if (!banner) {
+			printf("     text     data      bss      size\n");
+			banner = 1;
+		}
+		printf(" %8u %8u %8u %9u  %s\n",
+		       text_size, data_size, bss_size,
+		       text_size + data_size + bss_size,
+		       proc);
+		
+		total_text += text_size;
+		total_data += data_size;
+		total_bss += bss_size;
 
-			copyexec(proc, procf, image, imagef, phdr.a_text);
-			copyexec(proc, procf, image, imagef, phdr.a_data);
-		// } else {
-		// 	/* Common I&D: keep text and data together. */
-
-		// 	copyexec(proc, procf, image, imagef,
-		// 				phdr.a_text + phdr.a_data);
-		// }
+		free(phdr);
 
 		/* Done with proc. */
 		(void) fclose(procf);
@@ -270,15 +246,15 @@ void make_image(char *image, char **procv)
 
 	printf("   ------   ------   ------   -------\n");
 	printf(" %8ld %8ld %8ld %9ld  total\n",
-		total_text, total_data, total_bss,
-		total_text + total_data + total_bss);
+	       total_text, total_data, total_bss,
+	       total_text + total_data + total_bss);
 }
 
-void extractexec(FILE *imagef, char *image, FILE *procf, char *proc,
+void extractsegment(FILE *imagef, char *image, FILE *procf, char *proc,
 						long count, off_t *alen)
-/* Copy a segment of an executable.  It is padded to a sector in image. */
+/* Copy a segment of an executable.  It is padded to a page in image. */
 {
-	char buf[SECTOR_SIZE];
+	char buf[PAGE_SIZE];
 
 	while (count > 0) {
 		bread(imagef, image, buf, sizeof(buf));
@@ -297,42 +273,40 @@ void extract_image(char *image)
 	off_t len;
 	struct stat st;
 	struct image_header ihdr;
-	struct exec phdr;
-	char buf[SECTOR_SIZE];
+	Elf32_Ehdr ehdr;
+	char buf[PAGE_SIZE];
 
 	if (stat(image, &st) < 0) fatal(image);
 
 	/* Size of the image. */
-	len= S_ISREG(st.st_mode) ? st.st_size : -1;
+	len = S_ISREG(st.st_mode) ? st.st_size : -1;
 
-	if ((imagef= fopen(image, "r")) == nil) fatal(image);
+	if ((imagef = fopen(image, "r")) == NULL) fatal(image);
 
 	while (len != 0) {
 		/* Extract a program, first sector is an extended header. */
 		bread(imagef, image, buf, sizeof(buf));
-		len-= sizeof(buf);
+		len -= sizeof(buf);
 
 		memcpy(&ihdr, buf, sizeof(ihdr));
-		phdr= ihdr.process;
+		ehdr = ihdr.process;
 
 		/* Check header. */
-		read_header(1, ihdr.name, nil, &ihdr);
+		read_header(ihdr.name, NULL, &ihdr);
 
-		if ((procf= fopen(ihdr.name, "w")) == nil) fatal(ihdr.name);
+		if ((procf = fopen(ihdr.name, "w")) == NULL) fatal(ihdr.name);
 
 		// if (phdr.a_flags & A_PAL) {
 		// 	/* A page aligned process contains a header in text. */
 		// 	phdr.a_text += sizeof(struct exec);
 		// } else {
-			bwrite(procf, ihdr.name, &ihdr.process, sizeof(struct exec));
+			// bwrite(procf, ihdr.name, &ihdr.process, sizeof(struct exec));
 		// }
 
 		/* Extract text and data segments. */
 		// if (phdr.a_flags & A_SEP) {
-			extractexec(imagef, image, procf, ihdr.name,
-						phdr.a_text, &len);
-			extractexec(imagef, image, procf, ihdr.name,
-						phdr.a_data, &len);
+			// extractexec(imagef, image, procf, ihdr.name, ehdr.a_text, &len);
+			// extractexec(imagef, image, procf, ihdr.name, ehdr.a_data, &len);
 		// }
 		// else {
 		// 	extractexec(imagef, image, procf, ihdr.name,
@@ -343,8 +317,8 @@ void extract_image(char *image)
 	}
 }
 
-int rawfd;	/* File descriptor to open device. */
-char *rawdev;	/* Name of device. */
+static int rawfd;	/* File descriptor to open device. */
+static char *rawdev;	/* Name of device. */
 
 void readblock(off_t blk, char *buf, int block_size)
 /* For rawfs, so that it can read blocks. */
@@ -395,8 +369,7 @@ int main(int argc, char **argv)
 
 	if (argc >= 4 && isoption(argv[1], "-image")) {
 		make_image(argv[2], argv + 3);
-	} else
-	if (argc == 3 && isoption(argv[1], "-extract")) {
+	} else if (argc == 3 && isoption(argv[1], "-extract")) {
 		extract_image(argv[2]);
 	} else {
 		usage();

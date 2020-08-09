@@ -447,7 +447,6 @@ int main(int argc, char *argv[])
   /* Open special. */
   special(argv[--optind]);
 
-#ifdef UNIX
   if (!donttest) {
 	short *testb;
 	ssize_t w;
@@ -486,7 +485,6 @@ int main(int argc, char *argv[])
 	lseek(fd, 0L, SEEK_SET);
 	free(testb);
   }
-#endif
 
   /* Make the file-system */
 
@@ -510,7 +508,7 @@ int main(int argc, char *argv[])
   } else
 #endif
 
-	put_block((block_t) 0, zero);	/* Write a null boot block. */
+  put_block((block_t) 0, zero);	/* Write a null boot block. */
 
   zone_shift = 0;		/* for future use */
   zones = nrblocks >> zone_shift;
@@ -1233,10 +1231,9 @@ char *alloc_block(void)
 {
 	char *buf;
 
-	if(!(buf = malloc(block_size))) {
+	if(!(buf = calloc(1, block_size))) {
 		pexit("couldn't allocate filesystem buffer");
 	}
-  	bzero(buf, block_size);
 
 	return buf;
 }
