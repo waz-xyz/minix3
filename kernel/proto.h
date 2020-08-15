@@ -196,7 +196,10 @@ _PROTOTYPE( void restart, (void)					);
 _PROTOTYPE( void vm_map_default, (struct proc *pp)			);
 
 /* serial.c */
+void serial_init(void);
 void serial_putc(char c);
+void serial_puts(const char* str);
+void serial_printHex(uint32_t h);
 
 #endif /* (CHIP == ARM) */
 

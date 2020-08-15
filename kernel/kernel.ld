@@ -1,7 +1,7 @@
 ENTRY(_start)
 
-physbase = 0x100000;
-pagealign = 4096;
+virtbase = 0x80000000;
+pagealign = 0x10000;
 
 PHDRS
 {
@@ -11,7 +11,7 @@ PHDRS
 
 SECTIONS
 {
-	. = physbase;
+	. = virtbase;
 	. = ALIGN(pagealign);
 
 	__text_start = .;
@@ -25,7 +25,7 @@ SECTIONS
 	__text_end = .;
 	etext = .;
 
-	. = ALIGN(16);
+	. = ALIGN(32);
 
 	__rodata_start = .;
 	
@@ -49,7 +49,7 @@ SECTIONS
 	__data_end = .;
 	edata = .;
  
-	. = ALIGN(16);
+	. = ALIGN(32);
 
 	__bss_start = .;
 	bss = .;

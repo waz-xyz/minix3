@@ -65,10 +65,11 @@ image_small:  includes mkimage
 	cd ../drivers && $(MAKE) EXTRA_OPTS=$(EXTRA_OPTS) image
 	./mkimage -image $@ $(PROGRAMS)
 
-image_lite:  mkimage
+image_lite:  mkimage $(PROGRAMS_LITE)
 	cd ../kernel && $(MAKE)
 	cd ../servers && $(MAKE) image
 	./mkimage -image $@ $(PROGRAMS_LITE)
+	cp $@ /mnt/c/TFTP-Root/image
 
 # rebuild the program or system libraries
 includes:

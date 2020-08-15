@@ -24,8 +24,10 @@
 /*===========================================================================*
  *				kputc				     	     *
  *===========================================================================*/
-PUBLIC void kputc(c)
-int c;					/* character to append */
+PUBLIC void kputc
+(
+	int c	/* character to append */
+)
 {
 /* Accumulate a single character for a kernel message. Send a notification
  * to the output driver if an END_OF_KMESS is encountered. 
