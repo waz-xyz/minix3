@@ -2,8 +2,8 @@
 #define _CONFIG_H
 
 /* Minix release and version numbers. */
-#define OS_RELEASE "3"
-#define OS_VERSION "1.2a"
+#define OS_RELEASE "4"
+#define OS_VERSION "0.1"
 
 /* This file sets configuration parameters for the MINIX kernel, FS, and PM.
  * It is divided up into two main sections.  The first section contains

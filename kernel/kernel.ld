@@ -1,22 +1,24 @@
 ENTRY(_start)
 
 virtbase = 0x80000000;
-pagealign = 0x10000;
+smallpagealign = 0x1000;
+largepagealign = 0x10000;
+STACK_SIZE = smallpagealign;
 
 PHDRS
 {
 	seg_text PT_LOAD;
 	seg_data PT_LOAD;
+	seg_stack PT_LOAD;
 }
 
 SECTIONS
 {
 	. = virtbase;
-	. = ALIGN(pagealign);
 
 	__text_start = .;
-	
-	.text :
+
+	.text ALIGN(largepagealign) :
 	{
 		KEEP(*(.text.boot))
 		KEEP(*(.text .text.*))
@@ -25,11 +27,9 @@ SECTIONS
 	__text_end = .;
 	etext = .;
 
-	. = ALIGN(32);
-
 	__rodata_start = .;
-	
-	.rodata :
+
+	.rodata ALIGN(32) :
 	{
 		KEEP(*(.rodata .rodata.*))
 	} : seg_text
@@ -37,23 +37,20 @@ SECTIONS
 	__rodata_end = .;
 	erodata = .;
 
-	. = ALIGN(pagealign);
-
 	__data_start = .;
 
-	.data :
+	.data ALIGN(largepagealign) :
 	{
 		KEEP(*(.data .data.*))
 	} : seg_data
 
 	__data_end = .;
 	edata = .;
- 
-	. = ALIGN(32);
 
 	__bss_start = .;
 	bss = .;
-	.bss :
+
+	.bss ALIGN(32) :
 	{
 		KEEP(*(.bss .bss.*))
 		KEEP(*(COMMON))
@@ -64,6 +61,11 @@ SECTIONS
 
 	__end = .;
 	end = .;
+
+	.stack ALIGN(largepagealign) :
+	{
+		. = . + STACK_SIZE;
+	} : seg_stack
 
 	/DISCARD/ :
 	{

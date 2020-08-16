@@ -82,6 +82,10 @@ EXTERN phys_bytes vm_mem_high;
 extern struct boot_image image[]; 	/* system image processes */
 extern char *t_stack[];			/* task stack space */
 
+/* Boot image */
+extern int32_t number_of_programs;
+extern uint32_t programs_locations[];
+
 #endif
 
 #endif /* GLO_H */

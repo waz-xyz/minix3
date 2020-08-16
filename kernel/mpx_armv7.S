@@ -11,44 +11,33 @@
 	.global _start
 	.type	_start, %function
 
+	.global	number_of_programs
+	.global	programs_locations
+
 /*===========================================================================*
  *				SECTION .text.boot			     *
  *===========================================================================*/
-_start:			/* this is the entry point for the MINIX kernel */
-	@ blx	serial_init
-	@ ldr	r0, =welcome
-	@ blx	serial_puts
+	/* This is the entry point for the MINIX kernel */
+_start:
+	b	skip_header
 
-	@ ldr	r0, =sID_MMFR0
-	@ blx	serial_puts
-	@ mrc	p15, 0, r0, c0, c1, 4
-	@ blx	serial_printHex
+	/* To be filled by mkimage: number of executables loaded */
+number_of_programs:
+	.word	0
 
-	@ ldr	r0, =sTTBCR
-	@ blx	serial_puts
-	@ mrc	p15, 0, r0, c2, c0, 2
-	@ blx	serial_printHex
+	/* To be filled by mkimage: offset of headers' locations */
+programs_locations:
+	.word	0	/* kernel */
+	.word	0	/* pm */
+	.word	0	/* fs */
+	.word	0	/* rs */
+	.word	0	/* ds */
+	.word	0	/* tty */
+	.word	0	/* mem */
+	.word	0	/* log */
+	.word	0	/* init */
 
-	@ ldr	r0, =sTTBR0
-	@ blx	serial_puts
-	@ mrc	p15, 0, r0, c2, c0, 0
-	@ blx	serial_printHex
-
-	@ ldr	r0, =sTTBR1
-	@ blx	serial_puts
-	@ mrc	p15, 0, r0, c2, c0, 1
-	@ blx	serial_printHex
-
-	@ ldr	r0, =sSCTLR
-	@ blx	serial_puts
-	@ mrc	p15, 0, r0, c1, c0, 0
-	@ blx	serial_printHex
-
-	@ ldr	r0, =sDACR
-	@ blx	serial_puts
-	@ mrc	p15, 0, r0, c3, c0, 0
-	@ blx	serial_printHex
-
+skip_header:
 	/* Turn on the red LED */
 	mov	r0, #1
 	ldr	r1, =#0x41210000
@@ -91,9 +80,9 @@ _start:			/* this is the entry point for the MINIX kernel */
 	bne	1b
 
 	/* Set small page table entry for L2 table index = 0x21
-	   with base address at 0xFFF000. Small page for kernel stack. */
+	   with base address at 0x120000. Small page for kernel stack. */
 	ldr	r1, =#0x8084
-	ldr	r0, =#0xFFF556
+	ldr	r0, =#0x120556
 	str	r0, [r1]
 
 	/* Set small page table entry for L2 table index = 0x22
@@ -142,10 +131,6 @@ mmu_is_on:
 	ldr	r1, =__bss_end
 	bl	memclr
 
-	@ blx	serial_init
-	@ ldr	r0, =welcome
-	@ blx	serial_puts
-
 	/* Jump to C entry point */
 	ldr	r0, =cstart
 	blx	r0
@@ -167,14 +152,6 @@ memclr:
 	cmp	r0, r1
 	blo	1b
 	bx	lr
-
-welcome:	.asciz	"Starting kernel..."
-sID_MMFR0:	.asciz	"ID_MMFR0:"
-sTTBCR:		.asciz	"TTBCR:"
-sTTBR0:		.asciz	"TTBR0:"
-sTTBR1:		.asciz	"TTBR1:"
-sSCTLR:		.asciz	"SCTLR:"
-sDACR:		.asciz	"DACR:"
 
 /*===========================================================================*
  *				SECTION .text				     *

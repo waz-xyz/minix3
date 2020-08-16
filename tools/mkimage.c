@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -24,7 +25,8 @@ struct image_header {
 	Elf32_Ehdr	process;
 };
 
-#define PAGE_SIZE	4096	/* MMU's page size */
+#define PAGE_SIZE	4096	/* MMU's small page size */
+#define LARGE_PAGE_SIZE	65536	/* MMU's large page size */
 
 #define FLAGS_CODE	(PF_R | PF_X)
 #define FLAGS_DATA	(PF_R | PF_W)
@@ -124,14 +126,15 @@ void padimage(char *image, FILE *imagef, int n)
 }
 
 #define align(n)	(((n) + ((PAGE_SIZE) - 1)) & ~((PAGE_SIZE) - 1))
+#define large_align(n)	(((n) + ((LARGE_PAGE_SIZE) - 1)) & ~((LARGE_PAGE_SIZE) - 1))
 
-void copysegment(char *proc, FILE *procf, char *image, FILE *imagef, long n)
+void copysegment(char *proc, FILE *procf, char *image, FILE *imagef, long n, bool has_large_pages)
 /* Copy n bytes from proc to image padded to fill a page. */
 {
 	int pad, c;
 
 	/* Compute number of padding bytes. */
-	pad = align(n) - n;
+	pad = (has_large_pages ? large_align(n) : align(n)) - n;
 
 	while (n > 0) {
 		if ((c = getc(procf)) == EOF) {
@@ -145,7 +148,7 @@ void copysegment(char *proc, FILE *procf, char *image, FILE *imagef, long n)
 	padimage(image, imagef, pad);
 }
 
-void make_image(char *image, char **procv)
+void make_image(char *image, char **procv, int num_programs)
 /* Collect a set of files in an image, each "segment" is nicely padded out
  * to PAGE_SIZE, so it may be read from disk into memory without trickery.
  */
@@ -159,8 +162,14 @@ void make_image(char *image, char **procv)
 	struct stat st;
 	int banner = 0;
 	Elf32_Word text_size, data_size, bss_size;
+	uint32_t *loc_table;
 
 	if ((imagef = fopen(image, "w")) == NULL) fatal(image);
+
+	loc_table = calloc(num_programs, sizeof(uint32_t));
+	if (loc_table == NULL) {
+		fatal(image);
+	}
 
 	for (procn = 0; (proc = *procv++) != NULL; procn++) {
 		/* Remove the label from the file name. */
@@ -207,19 +216,27 @@ void make_image(char *image, char **procv)
 		text_size = data_size = bss_size = 0;
 		for (int i = 0; i < ehdr.e_phnum; i++) {
 			Elf32_Word segsize = phdr[i].p_filesz;
-			if (phdr[i].p_type != PT_LOAD || segsize == 0) {
+			if (phdr[i].p_type != PT_LOAD) {
 				continue;
 			}
-			fseek(procf, phdr[i].p_offset, SEEK_SET);
-			copysegment(proc, procf, image, imagef, segsize);
+			if (segsize == 0) {
+				fseek(imagef, phdr[i].p_memsz, SEEK_CUR);
+				continue;
+			}
 
 			Elf32_Word flags = phdr[i].p_flags;
 			if ((flags & FLAGS_CODE) == FLAGS_CODE) {
 				text_size = phdr[i].p_memsz;
+				if (procn < num_programs) {
+					loc_table[procn] = ftell(imagef);
+				}
 			} else if ((flags & FLAGS_DATA) == FLAGS_DATA) {
 				data_size = phdr[i].p_filesz;
 				bss_size = phdr[i].p_memsz - phdr[i].p_filesz;
 			}
+
+			fseek(procf, phdr[i].p_offset, SEEK_SET);
+			copysegment(proc, procf, image, imagef, segsize, i < 2);
 		}
 
 		if (!banner) {
@@ -241,6 +258,12 @@ void make_image(char *image, char **procv)
 		(void) fclose(procf);
 	}
 	/* Done with image. */
+	
+	fseek(imagef, 4, SEEK_SET);
+	fwrite(&num_programs, sizeof(int32_t), 1, imagef);
+	fwrite(loc_table, sizeof(uint32_t), num_programs, imagef);
+
+	free(loc_table);
 
 	if (fclose(imagef) == EOF) fatal(image);
 
@@ -368,7 +391,7 @@ int main(int argc, char **argv)
 	if (argc < 2) usage();
 
 	if (argc >= 4 && isoption(argv[1], "-image")) {
-		make_image(argv[2], argv + 3);
+		make_image(argv[2], argv + 3, argc - 3);
 	} else if (argc == 3 && isoption(argv[1], "-extract")) {
 		extract_image(argv[2]);
 	} else {
