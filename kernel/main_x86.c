@@ -88,8 +88,6 @@ PUBLIC void main()
 	priv(rp)->s_ipc_to.chunk[0] = ip->ipc_to;	/* restrict targets */
 	if (iskerneln(proc_nr(rp))) {		/* part of the kernel? */ 
 		if (ip->stksize > 0) {		/* HARDWARE stack size is 0 */
-			rp->p_priv->s_stack_guard = (reg_t *) ktsb;
-			*rp->p_priv->s_stack_guard = STACK_GUARD;
 		}
 		ktsb += ip->stksize;	/* point to high end of stack */
 		rp->p_reg.sp = ktsb;	/* this task's initial stack ptr */

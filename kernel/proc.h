@@ -15,47 +15,47 @@
 #include "priv.h"
  
 struct proc {
-  struct stackframe_s p_reg;	/* process' registers saved in stack frame */
+	struct stackframe_s p_reg;	/* process' registers saved in stack frame */
 
 #if (CHIP == INTEL)
-  reg_t p_ldt_sel;		/* selector in gdt with ldt base and limit */
-  struct segdesc_s p_ldt[2+NR_REMOTE_SEGS]; /* CS, DS and remote segments */
+	reg_t p_ldt_sel;		/* selector in gdt with ldt base and limit */
+	struct segdesc_s p_ldt[2+NR_REMOTE_SEGS]; /* CS, DS and remote segments */
 #endif 
 
 #if (CHIP == M68000)
 /* M68000 specific registers and FPU details go here. */
 #endif 
 
-  proc_nr_t p_nr;		/* number of this process (for fast access) */
-  struct priv *p_priv;		/* system privileges structure */
-  short p_rts_flags;		/* process is runnable only if zero */
-  short p_misc_flags;		/* flags that do suspend the process */
+	proc_nr_t p_nr;			/* number of this process (for fast access) */
+	struct priv *p_priv;		/* system privileges structure */
+	short p_rts_flags;		/* process is runnable only if zero */
+	short p_misc_flags;		/* flags that do suspend the process */
 
-  char p_priority;		/* current scheduling priority */
-  char p_max_priority;		/* maximum scheduling priority */
-  char p_ticks_left;		/* number of scheduling ticks left */
-  char p_quantum_size;		/* quantum size in ticks */
+	char p_priority;		/* current scheduling priority */
+	char p_max_priority;		/* maximum scheduling priority */
+	char p_ticks_left;		/* number of scheduling ticks left */
+	char p_quantum_size;		/* quantum size in ticks */
 
-  struct mem_map p_memmap[NR_LOCAL_SEGS];   /* memory map (T, D, S) */
+	struct mem_map p_memmap[NR_LOCAL_SEGS];	/* memory map (T, D, S) */
 
-  clock_t p_user_time;		/* user time in ticks */
-  clock_t p_sys_time;		/* sys time in ticks */
+	clock_t p_user_time;		/* user time in ticks */
+	clock_t p_sys_time;		/* sys time in ticks */
 
-  struct proc *p_nextready;	/* pointer to next ready process */
-  struct proc *p_caller_q;	/* head of list of procs wishing to send */
-  struct proc *p_q_link;	/* link to next proc wishing to send */
-  message *p_messbuf;		/* pointer to passed message buffer */
-  int p_getfrom_e;		/* from whom does process want to receive? */
-  int p_sendto_e;		/* to whom does process want to send? */
+	struct proc *p_nextready;	/* pointer to next ready process */
+	struct proc *p_caller_q;	/* head of list of procs wishing to send */
+	struct proc *p_q_link;		/* link to next proc wishing to send */
+	message *p_messbuf;		/* pointer to passed message buffer */
+	int p_getfrom_e;		/* from whom does process want to receive? */
+	int p_sendto_e;			/* to whom does process want to send? */
 
-  sigset_t p_pending;		/* bit map for pending kernel signals */
+	sigset_t p_pending;		/* bit map for pending kernel signals */
 
-  char p_name[P_NAME_LEN];	/* name of the process, including \0 */
+	char p_name[P_NAME_LEN];	/* name of the process, including \0 */
 
-  int p_endpoint;		/* endpoint number, generation-aware */
+	int p_endpoint;			/* endpoint number, generation-aware */
 
 #if DEBUG_SCHED_CHECK
-  int p_ready, p_found;
+	int p_ready, p_found;
 #endif
 };
 

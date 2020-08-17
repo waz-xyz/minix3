@@ -11,6 +11,7 @@
 	.global _start
 	.type	_start, %function
 
+	.global	end_of_image
 	.global	number_of_programs
 	.global	programs_locations
 
@@ -20,6 +21,10 @@
 	/* This is the entry point for the MINIX kernel */
 _start:
 	b	skip_header
+
+	/* To be filled by mkimage: offset to end of image */
+end_of_image:
+	.word	0
 
 	/* To be filled by mkimage: number of executables loaded */
 number_of_programs:
@@ -48,24 +53,62 @@ skip_header:
 	orr	r0, r0, #1
 	mcr	p15, 0, r0, c2, c0, 2
 
-	/* Set TTBR1 base address at 0x4000 */
-	mov	r0, #0x4000
+	/* Get end of image in physical memory */
+	ldr	r0, =end_of_image
+	ldr	r1, =#KERNEL_PHYSICAL_OFFSET
+	sub	r0, r1
+	ldr	r0, [r0]
+	add	r0, #KERNEL_PHYSICAL_BASE
+
+	/* Find the next free location for the kernel stack pages
+	   by aligning to 4k. Preserve the value at r9. */
+	mov	r1, #SMALL_PAGE_ALIGN
+	add	r0, r1
+	ldr	r1, =#~(FIRST_LEVEL_TABLE_ALIGN)
+	and	r0, r1
+	mov	r9, r0
+	add	r0, KERNEL_STACK_SIZE
+
+	/* Find the next free location for a first-level table
+	   by aligning to 16k. Preserve the value at r8. */
+	mov	r1, #FIRST_LEVEL_TABLE_ALIGN
+	add	r0, r1
+	ldr	r1, =#~FIRST_LEVEL_TABLE_ALIGN
+	and	r0, r1
+	mov	r8, r0
+
+	/* Set TTBR1 base address at the last found location */
 	mcr	p15, 0, r0, c2, c0, 1
 
 	/* Initialize the page tables to zero */
-	mov	r1, #0x8400
+	add	r1, r0, #KERNEL_PAGE_TABLES_SIZE
 	bl	memclr
-
+	
 	/* Set page table descriptor for L1 table index = 0x800
-	   with base address at 0x8000 */
-	mov	r1, #0x6000
-	ldr	r0, =#0x8001
+	   with base address at the end of the first-level table.
+	   Preserve the page table location at r7. */
+	add	r1, r8, #(4 * 0x800)
+	add	r7, r8, #FIRST_LEVEL_TABLE_SIZE
+	add	r0, r7, #1		/* Make it point to a page table */
 	str	r0, [r1]
+
+	/* Set section descriptors for L1 table index = 0x810 and beyond
+	   with base addresses starting at KERNEL_PHYSICAL_BASE.
+	   Enable access to the first 16 MBs of physical memory. */
+	mov	r2, #16
+	add	r1, r8, #(4 * 0x810)
+	mov	r3, #KERNEL_PHYSICAL_BASE
+	ldr	r4, =#0x540A
+1:	add	r0, r3, r4
+	str	r0, [r1], #4
+	add	r3, #ARM_SECTION_SIZE
+	subs	r2, #1
+	bne	1b
 
 	/* Set large page table entries for L2 table index = 0x00
 	   with base address at 0x100000. Large page for kernel code. */
 	mov	r2, #16
-	mov	r1, #0x8000
+	mov	r1, r7
 	ldr	r0, =#0x105615
 1:	str	r0, [r1], #4
 	subs	r2, #1
@@ -79,21 +122,28 @@ skip_header:
 	subs	r2, #1
 	bne	1b
 
-	/* Set small page table entry for L2 table index = 0x21
-	   with base address at 0x120000. Small page for kernel stack. */
-	ldr	r1, =#0x8084
-	ldr	r0, =#0x120556
-	str	r0, [r1]
+	/* Set small page table entries for L2 table index = 0x21 and beyond
+	   with base addresses starting at r9. Small pages for kernel stack. */
+	ldr	r4, =#0x556
+	mov	r3, r9
+	mov	r2, #KERNEL_NUM_STACK_PAGES
+	add	r1, r7, #(4 * 0x21)
+one_more_page:
+	add	r0, r3, r4
+	str	r0, [r1], #4
+	add	r3, #SMALL_PAGE_SIZE
+	subs	r2, #1
+	bne	one_more_page
 
 	/* Set small page table entry for L2 table index = 0x22
 	   with base address at 0x41210000. Small page for LED output. */
-	ldr	r1, =#0x8088
+	add	r1, r7, #(4 * 0x22)
 	ldr	r0, =#0x41210016
 	str	r0, [r1]
 
 	/* Set small page table entry for L2 table index = 0x23
 	   with base address at 0xE0000000. Small page for PS UART. */
-	ldr	r1, =#0x808C
+	add	r1, r7, #(4 * 0x23)
 	ldr	r0, =#0xE0000016
 	str	r0, [r1]
 
@@ -102,7 +152,7 @@ skip_header:
 	mcr	p15, 0, r0, c3, c0, 0
 
 	/* Set kernel stack */
-	ldr	sp, =#0x80022000
+	ldr	sp, =#INITIAL_KERNEL_SP
 
 	/* Invalidate TLB (TLBIALL) */
 	mcr	p15, 0, r0, c8, c7, 0
@@ -131,9 +181,12 @@ mmu_is_on:
 	ldr	r1, =__bss_end
 	bl	memclr
 
+	mov	r0, r9	/* physical location of kernel stack */
+	mov	r1, r8	/* physical location of kernel's first-level MMU table  */
+	mov	r2, r7	/* physical location of kernel's first page table */
 	/* Jump to C entry point */
-	ldr	r0, =cstart
-	blx	r0
+	ldr	r5, =cstart
+	blx	r5
 
 forever:
 	b	forever
@@ -144,11 +197,11 @@ SetLeds:
 	bx	lr
 
 memclr:
+	mov	r2, #0
+	mov	r3, #0
+	mov	r4, #0
 	mov	r5, #0
-	mov	r6, #0
-	mov	r7, #0
-	mov	r8, #0
-1:	stmia	r0!, {r5-r8}
+1:	stmia	r0!, {r2-r5}
 	cmp	r0, r1
 	blo	1b
 	bx	lr

@@ -18,10 +18,10 @@ OBJS =	klib.o table.o kprintf.o proc.o \
 	system.o utility.o debug.o \
 	serial.o
 ifeq (${ARCH}, x86)
-OBJS += main_x86.o exception_x86.o protect.o interrupts_x86.o clock_x86.o start_x86.o
+OBJS += start_x86.o main_x86.o exception_x86.o protect.o interrupts_x86.o clock_x86.o
 endif
 ifeq (${ARCH}, arm)
-OBJS += main_armv7.o exception_armv7.o interrupts_armv7.o clock_armv7.o start_armv7.o
+OBJS += start_armv7.o main_armv7.o exception_armv7.o mmu.o interrupts_armv7.o clock_armv7.o
 endif
 SYSTEM = system.a
 LIBS = -lgcc -lc -ltimers

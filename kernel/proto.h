@@ -170,30 +170,37 @@ void serial_putc(char c);
 #if (CHIP == ARM)
 
 /* start_armv7.c */
-void cstart(void);
+void cstart(uint32_t kstack_phys_address,
+	    uint32_t k1stleveltable_phys_address,
+	    uint32_t k1stpagetable_phys_address);
 
 /* interrupts_armv7.c */
-_PROTOTYPE( void intr_init, (int mine)					);
-_PROTOTYPE( void put_irq_handler, (irq_hook_t *hook, int irq,
-						irq_handler_t handler)	);
-_PROTOTYPE( void rm_irq_handler, (irq_hook_t *hook)			);
+void intr_init(int mine);
+void put_irq_handler(irq_hook_t *hook, int irq, irq_handler_t handler);
+void rm_irq_handler(irq_hook_t *hook);
 
 /* klib_armv7.s */
 void intr_enable(void);
 void intr_disable(void);
-_PROTOTYPE( void cp_mess, (int src,phys_clicks src_clicks,vir_bytes src_offset,
-		phys_clicks dst_clicks, vir_bytes dst_offset)		);
-_PROTOTYPE( void enable_irq, (irq_hook_t *hook)				);
-_PROTOTYPE( int disable_irq, (irq_hook_t *hook)				);
-_PROTOTYPE( void phys_copy, (phys_bytes source, phys_bytes dest, phys_bytes count) );
-_PROTOTYPE( void phys_memset, (phys_bytes source, unsigned long pattern, phys_bytes count) );
+void cp_mess(int src,phys_clicks src_clicks,vir_bytes src_offset, phys_clicks dst_clicks, vir_bytes dst_offset);
+void enable_irq(irq_hook_t *hook);
+int disable_irq(irq_hook_t *hook);
+void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
+void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
+
+/* mmu.c */
+void allocate_page_tables(struct proc *pr);
+uint32_t allocate_task_stack(void);
+void *get_header_from_image(int progindex);
+void *phys2vir(uint32_t address);
+uint32_t vir2phys(void *address);
 
 /* mpx*.s */
-_PROTOTYPE( void idle_task, (void)					);
-_PROTOTYPE( void restart, (void)					);
+void idle_task(void);
+void restart(void);
 
 /* system/do_vm.c */
-_PROTOTYPE( void vm_map_default, (struct proc *pp)			);
+void vm_map_default(struct proc *pp);
 
 /* serial.c */
 void serial_init(void);

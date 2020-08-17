@@ -3,13 +3,11 @@ ENTRY(_start)
 virtbase = 0x80000000;
 smallpagealign = 0x1000;
 largepagealign = 0x10000;
-STACK_SIZE = smallpagealign;
 
 PHDRS
 {
 	seg_text PT_LOAD;
 	seg_data PT_LOAD;
-	seg_stack PT_LOAD;
 }
 
 SECTIONS
@@ -61,11 +59,6 @@ SECTIONS
 
 	__end = .;
 	end = .;
-
-	.stack ALIGN(largepagealign) :
-	{
-		. = . + STACK_SIZE;
-	} : seg_stack
 
 	/DISCARD/ :
 	{

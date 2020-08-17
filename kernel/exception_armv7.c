@@ -64,7 +64,7 @@ PUBLIC void exception(unsigned vec_nr)
         }
 
         /* Exception in system code. This is not supposed to happen. */
-        if (ep->msg == NIL_PTR || machine.processor < ep->minprocessor)
+        if (ep->msg == NIL_PTR) // || machine.processor < ep->minprocessor)
                 kprintf("\nIntel-reserved exception %d\n", vec_nr);
         else
                 kprintf("\n%s\n", ep->msg);

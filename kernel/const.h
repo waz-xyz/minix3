@@ -16,7 +16,7 @@
 /* To translate an address in kernel space to a physical address.  This is
  * the same as umap_local(proc_ptr, D, vir, sizeof(*vir)), but less costly.
  */
-#define vir2phys(vir)	(kinfo.data_base + (vir_bytes) (vir))
+//#define vir2phys(vir)	(kinfo.data_base + (vir_bytes) (vir))
 
 /* Map a process number to a privilege structure id. */
 #define s_nr_to_id(n)	(NR_TASKS + (n) + 1)
@@ -113,6 +113,29 @@
 /* Sizes of memory tables.
  */
 #define NR_MEMS		1
+
+#if (MACHINE == ZYNQ)
+#define	KERNEL_PHYSICAL_BASE	0x100000
+#endif
+
+#define	KERNEL_VIRTUAL_BASE	0x80000000
+#define	KERNEL_PHYSICAL_OFFSET	(KERNEL_VIRTUAL_BASE - KERNEL_PHYSICAL_BASE)
+#define	KERNEL_PAGE_TABLES_SIZE	(0x4000 + 0x400)
+#define	FIRST_LEVEL_TABLE_SIZE	0x4000
+#define	FIRST_LEVEL_TABLE_ALIGN	(FIRST_LEVEL_TABLE_SIZE - 1)
+#define	ARM_SECTION_SIZE	0x100000
+#define	LARGE_PAGE_SIZE		0x10000
+#define	SMALL_PAGE_SIZE		0x1000
+#define	SMALL_PAGE_ALIGN	(SMALL_PAGE_SIZE - 1)
+#define	KERNEL_NUM_STACK_PAGES	1
+#define	KERNEL_STACK_SIZE	(SMALL_PAGE_SIZE * KERNEL_NUM_STACK_PAGES)
+#define	KERNEL_CODE_SIZE	LARGE_PAGE_SIZE
+#define	KERNEL_DATA_SIZE	LARGE_PAGE_SIZE
+				/* code + data + guard_page + stack */
+#define	INITIAL_KERNEL_SP	(KERNEL_CODE_SIZE + KERNEL_DATA_SIZE + SMALL_PAGE_SIZE + KERNEL_STACK_SIZE)
+#define	KERNEL_RAW_ACCESS_BASE	0x81000000
+
+#define	ALIGN_TO_SMALL_PAGE(n)	(((n) + SMALL_PAGE_ALIGN) & ~SMALL_PAGE_ALIGN)
 
 #endif /* (CHIP == ARM) */
 

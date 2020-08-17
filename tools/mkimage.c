@@ -116,15 +116,6 @@ void read_header(char *proc, FILE *procf, struct image_header *ihdr)
 	}
 }
 
-void padimage(char *image, FILE *imagef, int n)
-/* Add n zeros to image to pad it to a page boundary. */
-{
-	while (n > 0) {
-		if (putc(0, imagef) == EOF) fatal(image);
-		n--;
-	}
-}
-
 #define align(n)	(((n) + ((PAGE_SIZE) - 1)) & ~((PAGE_SIZE) - 1))
 #define large_align(n)	(((n) + ((LARGE_PAGE_SIZE) - 1)) & ~((LARGE_PAGE_SIZE) - 1))
 
@@ -132,9 +123,7 @@ void copysegment(char *proc, FILE *procf, char *image, FILE *imagef, long n, boo
 /* Copy n bytes from proc to image padded to fill a page. */
 {
 	int pad, c;
-
-	/* Compute number of padding bytes. */
-	pad = (has_large_pages ? large_align(n) : align(n)) - n;
+	long pos;
 
 	while (n > 0) {
 		if ((c = getc(procf)) == EOF) {
@@ -145,7 +134,11 @@ void copysegment(char *proc, FILE *procf, char *image, FILE *imagef, long n, boo
 		if (putc(c, imagef) == EOF) fatal(image);
 		n--;
 	}
-	padimage(image, imagef, pad);
+	
+	/* Compute number of padding bytes. */
+	pos = ftell(imagef);
+	pad = (has_large_pages ? large_align(pos) : align(pos)) - pos;
+	fseek(imagef, pad, SEEK_CUR);
 }
 
 void make_image(char *image, char **procv, int num_programs)
@@ -163,6 +156,8 @@ void make_image(char *image, char **procv, int num_programs)
 	int banner = 0;
 	Elf32_Word text_size, data_size, bss_size;
 	uint32_t *loc_table;
+	uint32_t end_of_image;
+	long unalignment;
 
 	if ((imagef = fopen(image, "w")) == NULL) fatal(image);
 
@@ -216,11 +211,7 @@ void make_image(char *image, char **procv, int num_programs)
 		text_size = data_size = bss_size = 0;
 		for (int i = 0; i < ehdr.e_phnum; i++) {
 			Elf32_Word segsize = phdr[i].p_filesz;
-			if (phdr[i].p_type != PT_LOAD) {
-				continue;
-			}
-			if (segsize == 0) {
-				fseek(imagef, phdr[i].p_memsz, SEEK_CUR);
+			if (phdr[i].p_type != PT_LOAD || segsize == 0) {
 				continue;
 			}
 
@@ -236,7 +227,11 @@ void make_image(char *image, char **procv, int num_programs)
 			}
 
 			fseek(procf, phdr[i].p_offset, SEEK_SET);
-			copysegment(proc, procf, image, imagef, segsize, i < 2);
+			unalignment = phdr[i].p_vaddr & (PAGE_SIZE-1);
+			if (unalignment != 0) {
+				fseek(imagef, unalignment, SEEK_CUR);
+			}
+			copysegment(proc, procf, image, imagef, segsize, procn < 1);
 		}
 
 		if (!banner) {
@@ -258,8 +253,11 @@ void make_image(char *image, char **procv, int num_programs)
 		(void) fclose(procf);
 	}
 	/* Done with image. */
-	
+
+	end_of_image = ftell(imagef);
+	printf("end_of_image = 0x%X\n", end_of_image);
 	fseek(imagef, 4, SEEK_SET);
+	fwrite(&end_of_image, sizeof(uint32_t), 1, imagef);
 	fwrite(&num_programs, sizeof(int32_t), 1, imagef);
 	fwrite(loc_table, sizeof(uint32_t), num_programs, imagef);
 

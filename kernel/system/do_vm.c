@@ -99,7 +99,7 @@ PRIVATE void phys_put32(addr, value)
 phys_bytes addr;
 u32_t value;
 {
-	phys_copy(vir2phys((vir_bytes)&value), addr, sizeof(value));
+	phys_copy(vir2phys(&value), addr, sizeof(value));
 }
 
 PRIVATE u32_t phys_get32(addr)
@@ -107,7 +107,7 @@ phys_bytes addr;
 {
 	u32_t value;
 
-	phys_copy(addr, vir2phys((vir_bytes)&value), sizeof(value));
+	phys_copy(addr, vir2phys(&value), sizeof(value));
 
 	return value;
 }

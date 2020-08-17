@@ -11,10 +11,12 @@
 /*===========================================================================*
  *				cstart					     *
  *===========================================================================*/
-PUBLIC void cstart(void)
+PUBLIC void cstart(uint32_t kstack_phys_address,
+		   uint32_t k1stleveltable_phys_address,
+		   uint32_t k1stpagetable_phys_address)
 {
-	extern void *__text_start, *__text_end;
-	extern void *__data_start, *__data_end;
+	extern char *__text_start, *__text_end;
+	extern char *__data_start, *__data_end;
 	extern void *__end;
 	extern const char *__bss_start, *__bss_end;
 
@@ -35,11 +37,18 @@ PUBLIC void cstart(void)
 		serial_puts("All BSS looks good");
 	}
 
+	serial_puts("stack physical address");
+	serial_printHex(kstack_phys_address);
+	serial_puts("1st level table physical address");
+	serial_printHex(k1stleveltable_phys_address);
+	serial_puts("1st page table physical address");
+	serial_printHex(k1stpagetable_phys_address);
+
 	/* Record where the kernel is. */
 	kinfo.code_base = (phys_bytes) __text_start;
-	kinfo.code_size = (phys_bytes) __text_end;	/* size of code segment */
+	kinfo.code_size = (phys_bytes) (__text_end - __text_start);	/* size of code segment */
 	kinfo.data_base = (phys_bytes) __data_start;
-	kinfo.data_size = (phys_bytes) __data_end;	/* size of data segment */
+	kinfo.data_size = (phys_bytes) (__bss_end - __data_start);	/* size of data segment */
 
 	/* Record miscellaneous information for user-space servers. */
 	kinfo.nr_procs = NR_PROCS;

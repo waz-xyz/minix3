@@ -563,12 +563,6 @@ register struct proc *rp;	/* this process is no longer runnable */
   register struct proc **xpp;			/* iterate over queue */
   register struct proc *prev_xp;
 
-  /* Side-effect for kernel: check if the task's stack still is ok? */
-  if (iskernelp(rp)) { 				
-	if (*priv(rp)->s_stack_guard != STACK_GUARD)
-		panic("stack overrun by task", proc_nr(rp));
-  }
-
 #if DEBUG_SCHED_CHECK
   check_runqueues("dequeue");
   if (! rp->p_ready) kprintf("dequeue() already unready process\n");

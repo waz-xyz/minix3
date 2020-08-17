@@ -40,10 +40,6 @@
 #define IDL_S		SMALL_STACK	/* 3 intr, 3 temps, 4 db for Intel */
 #define	HRD_S		NO_STACK	/* dummy task, uses kernel stack */
 #define	TSK_S		SMALL_STACK	/* system and clock task */
-
-/* Stack space for all the task stacks.  Declared as (char *) to align it. */
-#define	TOT_STACK_SPACE	(IDL_S + HRD_S + (2 * TSK_S))
-PUBLIC char *t_stack[TOT_STACK_SPACE / sizeof(char *)];
 	
 /* Define flags for the various process types. */
 #define IDL_F 	(SYS_PROC | PREEMPTIBLE | BILLABLE)	/* idle task */
@@ -107,9 +103,9 @@ PUBLIC struct boot_image image[] = {
  { FS_PROC_NR,    0, SRV_F, 32,      4, 0,     SRV_T, SRV_M,  FS_C, "fs"    },
  { RS_PROC_NR,    0, SRV_F,  4,      3, 0,     SRV_T, SYS_M,  RS_C, "rs"    },
  { DS_PROC_NR,    0, SRV_F,  4,      3, 0,     SRV_T, SYS_M,  DS_C, "ds"    },
- { TTY_PROC_NR,   0, SRV_F,  4,      1, 0,     SRV_T, SYS_M, TTY_C, "tty"   },
- { MEM_PROC_NR,   0, SRV_F,  4,      2, 0,     SRV_T, SYS_M, MEM_C, "mem"   },
- { LOG_PROC_NR,   0, SRV_F,  4,      2, 0,     SRV_T, SYS_M, DRV_C, "log"   },
+// { TTY_PROC_NR,   0, SRV_F,  4,      1, 0,     SRV_T, SYS_M, TTY_C, "tty"   },
+// { MEM_PROC_NR,   0, SRV_F,  4,      2, 0,     SRV_T, SYS_M, MEM_C, "mem"   },
+// { LOG_PROC_NR,   0, SRV_F,  4,      2, 0,     SRV_T, SYS_M, DRV_C, "log"   },
  { INIT_PROC_NR,  0, USR_F,  8, USER_Q, 0,     USR_T, USR_M,     0, "init"  },
 };
 

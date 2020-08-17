@@ -24,27 +24,28 @@
  */
 
 /* Kernel tasks. These all run in the same address space. */
-#define IDLE             -4	/* runs when no one else can run */
-#define CLOCK  		 -3	/* alarms and other clock functions */
-#define SYSTEM           -2	/* request system functionality */
-#define KERNEL           -1	/* pseudo-process for IPC and scheduling */
-#define HARDWARE     KERNEL	/* for hardware interrupt handlers */
+#define IDLE		-4	/* runs when no one else can run */
+#define CLOCK		-3	/* alarms and other clock functions */
+#define SYSTEM		-2	/* request system functionality */
+#define KERNEL		-1	/* pseudo-process for IPC and scheduling */
+#define HARDWARE	KERNEL	/* for hardware interrupt handlers */
 
 /* Number of tasks. Note that NR_PROCS is defined in <minix/config.h>. */
-#define NR_TASKS	  4 
+#define NR_TASKS	4 
 
 /* User-space processes, that is, device drivers, servers, and INIT. */
-#define PM_PROC_NR	  0	/* process manager */
-#define FS_PROC_NR 	  1	/* file system */
-#define RS_PROC_NR 	  2	/* reincarnation server */
-#define MEM_PROC_NR 	  3  	/* memory driver (RAM disk, null, etc.) */
-#define LOG_PROC_NR	  4	/* log device driver */
-#define TTY_PROC_NR	  5	/* terminal (TTY) driver */
-#define DS_PROC_NR	  6    	/* data store server */
-#define INIT_PROC_NR	  7    	/* init -- goes multiuser */
+#define PM_PROC_NR	0	/* process manager */
+#define FS_PROC_NR	1	/* file system */
+#define RS_PROC_NR	2	/* reincarnation server */
+#define DS_PROC_NR	3	/* data store server */
+#define MEM_PROC_NR	4	/* memory driver (RAM disk, null, etc.) */
+#define LOG_PROC_NR	5	/* log device driver */
+#define TTY_PROC_NR	6	/* terminal (TTY) driver */
+//#define INIT_PROC_NR	7	/* init -- goes multiuser */
+#define	INIT_PROC_NR	4	/* for lite image */
 
 /* Number of processes contained in the system image. */
-#define NR_BOOT_PROCS 	(NR_TASKS + INIT_PROC_NR + 1)
+#define NR_BOOT_PROCS	(NR_TASKS + INIT_PROC_NR + 1)
 
 /*===========================================================================*
  *                	   Kernel notification types                         *
