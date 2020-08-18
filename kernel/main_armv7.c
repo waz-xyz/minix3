@@ -110,18 +110,20 @@ PUBLIC void main()
 				{
 					rp->p_memmap[T].mem_vir = phdr->p_vaddr;
 					rp->p_memmap[T].mem_phys = vir2phys(ehdr);
-					rp->p_memmap[T].mem_len = phdr->p_memsz;
+					rp->p_memmap[T].mem_len = rp->p_memmap[T].mem_plen = phdr->p_memsz;
 				}
 				else if (phdr->p_type == PT_LOAD && (phdr->p_flags & FLAGS_DATA) == FLAGS_DATA)
 				{
 					rp->p_memmap[D].mem_vir = phdr->p_vaddr & ~SMALL_PAGE_ALIGN;
 					rp->p_memmap[D].mem_phys = ALIGN_TO_SMALL_PAGE(rp->p_memmap[T].mem_phys +
 										       rp->p_memmap[T].mem_len);
-					rp->p_memmap[D].mem_len = phdr->p_memsz;
+					rp->p_memmap[D].mem_len = (phdr->p_vaddr & SMALL_PAGE_ALIGN) + phdr->p_memsz;
+					rp->p_memmap[D].mem_plen = (phdr->p_vaddr & SMALL_PAGE_ALIGN) + phdr->p_filesz;
 				}
 			}
 			rp->p_memmap[S].mem_vir = KERNEL_VIRTUAL_BASE - USER_DEFAULT_STACK_SIZE;
 			rp->p_memmap[S].mem_len = USER_DEFAULT_STACK_SIZE;
+			rp->p_memmap[S].mem_phys = rp->p_memmap[S].mem_plen = 0;
 			rp->p_reg.pc = ehdr->e_entry;
 
 			allocate_page_tables(rp);
@@ -202,8 +204,8 @@ PUBLIC void main()
 	 * Return to the assembly code to start running the current process. 
 	 */
 	bill_ptr = proc_addr(IDLE); /* it has to point somewhere */
-	//announce();                 /* print MINIX startup banner */
-	//restart();
+	announce();                 /* print MINIX startup banner */
+	restart();
 }
 
 /*===========================================================================*
@@ -213,7 +215,7 @@ PRIVATE void announce(void)
 {
 	/* Display the MINIX startup banner. */
 	kprintf("\nMINIX %s.%s. "
-		"Copyright 2006, Vrije Universiteit, Amsterdam, The Netherlands\n",
+		"Copyright 2006, Vrije Universiteit, Amsterdam, The Netherlands\r\n",
 		OS_RELEASE, OS_VERSION);
 #if (CHIP == INTEL)
 	/* Real mode, or 16/32-bit protected mode? */

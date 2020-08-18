@@ -33,7 +33,8 @@ typedef unsigned long vir_bytes;	/* virtual addresses and lengths in bytes */
 struct mem_map {
 	vir_clicks mem_vir;	/* virtual address */
 	phys_clicks mem_phys;	/* physical address */
-	vir_clicks mem_len;	/* length */
+	vir_clicks mem_len;	/* virtual length */
+	phys_clicks mem_plen;	/* physical length */
 };
 
 /* Memory map for remote memory areas, e.g., for the RAM disk. */
