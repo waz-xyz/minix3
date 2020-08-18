@@ -7,46 +7,279 @@
 
 #define OFFSET_16MB     0x1000000
 
+static uint32_t *kernel_1st_level_tt = NULL;
+static uint32_t *kernel_page_table = NULL;
+static uint32_t kernel_stack_start, kernel_stack_end;
+static uint32_t kernel_mmu_tables_start, kernel_mmu_tables_end;
+static uint32_t next_free_pt_location = 0;
+static uint32_t next_free_user_tt_location = 0;
+static uint32_t user_tt_start, user_tt_end;
+
+static void init_mmu_module(void);
+static void print_1st_level_table(uint32_t *table, int is_user);
+static void print_page_table(uint32_t *table);
+
+static void init_mmu_module(void)
+{
+	uint32_t pos;
+	
+	/* Initialize to the final location of the boot image in virtual memory,
+	 * aligned to next free small page */
+	kernel_stack_start = pos = KERNEL_RAW_ACCESS_BASE + ALIGN_TO_SMALL_PAGE(end_of_image);
+	/* Add space for kernel stack */
+	kernel_stack_end = pos = pos + KERNEL_STACK_SIZE;
+	/* Align next position to a 1st-level table */
+	kernel_mmu_tables_start = pos = ALIGN_TO_POWER_OF_2(kernel_stack_end, KERNEL_FIRST_LEVEL_TT_SIZE);
+	kernel_1st_level_tt = (uint32_t*) kernel_mmu_tables_start;
+	kernel_page_table = (uint32_t*) ALIGN_TO_SMALL_PAGE(pos + KERNEL_FIRST_LEVEL_TT_SIZE);
+	/* Add space for kernel's MMU tables */
+	kernel_mmu_tables_end = pos = pos + KERNEL_MMU_TABLES_SIZE;
+	/* Align to next possible user 1st-level table */
+	user_tt_start = next_free_user_tt_location = ALIGN_TO_POWER_OF_2(pos, USER_FIRST_LEVEL_TT_SIZE);
+	user_tt_end = user_tt_start + (number_of_programs - 1) * USER_FIRST_LEVEL_TT_SIZE;
+	/* Find some holes to use as a free location for page tables */
+	if (kernel_mmu_tables_start - ALIGN_TO_PAGE_TABLE(kernel_stack_end) >= PAGE_TABLE_SIZE)
+	{
+		next_free_pt_location = ALIGN_TO_PAGE_TABLE(kernel_stack_end);
+	}
+	else if (user_tt_start - ALIGN_TO_PAGE_TABLE(kernel_mmu_tables_end) >= PAGE_TABLE_SIZE)
+	{
+		next_free_pt_location = ALIGN_TO_PAGE_TABLE(kernel_mmu_tables_end);
+	}
+	else
+	{
+		next_free_pt_location = ALIGN_TO_PAGE_TABLE(user_tt_end);
+	}
+
+	kprintf("next_free_pt_location: 0x%08X\r\n", next_free_pt_location);
+	kprintf("user_tt_start: 0x%08X\r\n", user_tt_start);
+	kprintf("user_tt_end: 0x%08X\r\n", user_tt_end);
+	kprintf("kernel_mmu_tables_start: 0x%08X\r\n", kernel_mmu_tables_start);
+	kprintf("kernel_page_table: 0x%08X\r\n", kernel_page_table);
+	kprintf("Kernel's first-level table:\r\n");
+	print_1st_level_table(kernel_1st_level_tt, 0);
+	kprintf("Kernel's page table:\r\n");
+	print_page_table(kernel_page_table);
+}
+
+static void print_1st_level_table(uint32_t *table, int is_user)
+{
+	int limit = is_user ? USER_FIRST_LEVEL_TT_NOF_ENTRIES : KERNEL_FIRST_LEVEL_TT_NOF_ENTRIES;
+
+	kprintf("Index\tEntry\t\tType\tBase\t\tDomain\tS\tnG\tTEX[2:0]\tC\tB\tAP[2:0]\r\n"
+		"------------------------------------------------------------------------"
+		"---------------------------------------\r\n");
+	for (int i = 0; i < limit; i++)
+	{
+		uint32_t entry;
+		const char *type;
+		int id;
+		uint32_t base_address;
+		int domain;
+		int s, nG, c, b, tex2, tex1, tex0, ap2, ap1, ap0;
+
+		entry = table[i];
+		id = entry & 0x3;
+		if (id == 0)
+		{
+			continue;
+		}
+		else if (id == 1)
+		{
+			type = "PT";
+			base_address = entry & ~0x3FF;
+			domain = (entry >> 5) & 0xF;
+			kprintf("#%03X\t0x%08X\t%s\t0x%08X\t%d", i, entry, type, base_address, domain);
+		}
+		else if (id == 2)
+		{
+			int isSuper = ((entry >> 18) & 1) == 1;
+			type = isSuper ? "SS" : "SE";
+			base_address = isSuper ? (entry & ~0xFFFFFF) : (entry & ~0xFFFFF);
+			kprintf("#%03X\t0x%08X\t%s\t0x%08X\t", i, entry, type, base_address);
+			if (isSuper)
+			{
+				kprintf("\t");
+			}
+			else
+			{
+				domain = (entry >> 5) & 0xF;
+				kprintf("%d\t", domain);
+			}
+			s = (entry >> 16) & 1;
+			nG = (entry >> 17) & 1;
+			b = (entry >> 2) & 1;
+			c = (entry >> 3) & 1;
+			ap0 = (entry >> 10) & 1;
+			ap1 = (entry >> 11) & 1;
+			ap2 = (entry >> 15) & 1;
+			tex0 = (entry >> 12) & 1;
+			tex1 = (entry >> 13) & 1;
+			tex2 = (entry >> 14) & 1;
+			kprintf("%d\t%d\t%d %d %d\t\t%d\t%d\t%d %d %d",
+				s, nG, tex2, tex1, tex0, c, b, ap2, ap1, ap0);
+		}
+		else /* if (id == 3) */
+		{
+			type = "RE";
+			kprintf("#%03X\t0x%08X\t%s", i, entry, type);
+		}
+		kprintf("\r\n");
+	}
+}
+
+static void print_page_table(uint32_t *table)
+{
+	kprintf("Index\tEntry\t\tType\tBase\t\tS\tnG\tTEX[2:0]\tC\tB\tAP[2:0]\t\tXN\r\n"
+		"----------------------------------------------------------------------"
+		"--------------------------------------------\r\n");
+	for (int i = 0; i < PAGE_TABLE_NOF_ENTRIES; i++)
+	{
+		uint32_t entry;
+		const char *type;
+		int id;
+		uint32_t base_address;
+		int c, b, s, ap2, ap1, ap0, tex2, tex1, tex0, nG, xn;
+
+		entry = table[i];
+		id = entry & 0x3;
+		if (id == 0)
+		{
+			continue;
+		}
+		else if (id == 1)
+		{
+			type = "LP";
+			base_address = entry & ~0xFFFFU;
+			tex0 = (entry >> 12) & 1;
+			tex1 = (entry >> 13) & 1;
+			tex2 = (entry >> 14) & 1;
+			xn = (entry >> 15) & 1;
+		}
+		else
+		{
+			type = "SP";
+			base_address = entry & ~0xFFFU;
+			tex0 = (entry >> 6) & 1;
+			tex1 = (entry >> 7) & 1;
+			tex2 = (entry >> 8) & 1;
+			xn = entry & 1;
+		}
+		b = (entry >> 2) & 1;
+		c = (entry >> 3) & 1;
+		ap0 = (entry >> 4) & 1;
+		ap1 = (entry >> 5) & 1;
+		ap2 = (entry >> 9) & 1;
+		s = (entry >> 10) & 1;
+		nG = (entry >> 11) & 1;
+		kprintf("#%02X\t0x%08X\t%s\t0x%08X\t%d\t%d\t%d %d %d\t\t%d\t%d\t%d %d %d\t\t%d\r\n",
+			i, entry, type, base_address, s, nG, tex2, tex1, tex0, c, b, ap2, ap1, ap0, xn);
+	}
+}
+
+static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int domain)
+{
+	tt[index] = (base & (~0x3FF)) | (domain << 5) | 1;
+}
+
+static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b)
+{
+	int ap2, ap10;
+	ap2 = (ap >> 2) & 1;
+	ap10 = ap & 3;
+	pt[index] = (base & (~0xFFF)) | (ap2 << 9) | (tex << 6) | (ap10 << 4) | (c << 3) | (b << 2) | 2;
+}
+
+static void *GetNextFreeUserTTLocation(void)
+{
+	uint32_t cur = next_free_user_tt_location;
+	next_free_user_tt_location += USER_FIRST_LEVEL_TT_SIZE;
+	memset((void*)cur, 0, USER_FIRST_LEVEL_TT_SIZE);
+	return (void*) cur;
+}
+
+static void *GetNextFreePageTableLocation(void)
+{
+	uint32_t pt_start;
+	pt_start = next_free_pt_location;
+	if (kernel_mmu_tables_start <= pt_start && pt_start < kernel_mmu_tables_end)
+	{
+		pt_start = ALIGN_TO_PAGE_TABLE(kernel_mmu_tables_end);
+	}
+	if (user_tt_start <= pt_start && pt_start < user_tt_end)
+	{
+		pt_start = ALIGN_TO_PAGE_TABLE(user_tt_end);
+	}
+	next_free_pt_location = pt_start + PAGE_TABLE_SIZE;
+	memset((void*)pt_start, 0, PAGE_TABLE_SIZE);
+	return (void*) pt_start;
+}
+
 void allocate_page_tables(struct proc *pr)
 {
+	uint32_t *tt, *pt;
+	uint32_t virt_start, virt_end;
+	struct mem_map *mm;
 
+	if (next_free_user_tt_location == 0)
+		init_mmu_module();
+	
+	pr->p_ttbase = tt = GetNextFreeUserTTLocation();
+	for (int seg = T; seg <= S; seg++)
+	{
+		mm = &(pr->p_memmap[seg]);
+		virt_start = mm->mem_vir;
+		virt_end = ALIGN_TO_SMALL_PAGE(virt_start + mm->mem_len);
+		for (uint32_t vloc = virt_start; vloc < virt_end; vloc += SMALL_PAGE_SIZE)
+		{
+			int inx = (vloc >> 20) & 0xFFFU;
+			if (tt[inx] == 0)
+			{
+				pt = GetNextFreePageTableLocation();
+				SetPageTableDescriptor(tt, inx, vir2phys(pt), 0);
+			}
+		}
+	}
+
+	kprintf("First level TT for process %s:\r\n", pr->p_name);
+	print_1st_level_table(tt, 1);
 }
 
 uint32_t allocate_task_stack(void)
 {
-        return 0;
+	return 0;
 }
 
 void *get_header_from_image(int progindex)
 {
-        if (progindex <= 0 || progindex >= number_of_programs)
-                return NULL;
-        
-        return (void*) (KERNEL_RAW_ACCESS_BASE + programs_locations[progindex]);
+	if (progindex <= 0 || progindex >= number_of_programs)
+		return NULL;
+	
+	return (void*) (KERNEL_RAW_ACCESS_BASE + programs_locations[progindex]);
 }
 
 uint32_t vir2phys(void *address)
 {
-        uint32_t addr = (uint32_t) address;
+	uint32_t addr = (uint32_t) address;
 
-        if (addr >= KERNEL_RAW_ACCESS_BASE)
-        {
-                return addr - KERNEL_RAW_ACCESS_BASE + KERNEL_PHYSICAL_BASE;
-        }
-        else
-        {
-                return addr - KERNEL_VIRTUAL_BASE + KERNEL_PHYSICAL_BASE;
-        }       
+	if (addr >= KERNEL_RAW_ACCESS_BASE)
+	{
+		return addr - KERNEL_RAW_ACCESS_BASE + KERNEL_PHYSICAL_BASE;
+	}
+	else
+	{
+		return addr - KERNEL_VIRTUAL_BASE + KERNEL_PHYSICAL_BASE;
+	}       
 }
 
 void *phys2vir(uint32_t address)
 {
-        if (KERNEL_PHYSICAL_BASE <= address && address < (KERNEL_PHYSICAL_BASE + OFFSET_16MB))
-        {
-                return (void*)(address - KERNEL_PHYSICAL_BASE + KERNEL_RAW_ACCESS_BASE);
-        }
-        else
-        {
-                return NULL;
-        }       
+	if (KERNEL_PHYSICAL_BASE <= address && address < (KERNEL_PHYSICAL_BASE + OFFSET_16MB))
+	{
+		return (void*)(address - KERNEL_PHYSICAL_BASE + KERNEL_RAW_ACCESS_BASE);
+	}
+	else
+	{
+		return NULL;
+	}       
 }

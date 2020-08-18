@@ -135,9 +135,9 @@ PUBLIC void main()
 										       rp->p_memmap[T].mem_len);
 					rp->p_memmap[D].mem_len = phdr->p_memsz;
 				}
-			}		
-			rp->p_memmap[S].mem_phys = text_base + text_clicks + data_clicks;
-			rp->p_memmap[S].mem_vir = data_clicks; /* empty - stack is in data */
+			}
+			rp->p_memmap[S].mem_vir = KERNEL_VIRTUAL_BASE - USER_DEFAULT_STACK_SIZE;
+			rp->p_memmap[S].mem_len = USER_DEFAULT_STACK_SIZE;
 			rp->p_reg.pc = ehdr->e_entry;
 
 			allocate_page_tables(rp);
@@ -159,8 +159,7 @@ PUBLIC void main()
 		if (isusern(proc_nr(rp)))
 		{ /* user-space process? */
 			rp->p_reg.sp = (rp->p_memmap[S].mem_vir +
-					rp->p_memmap[S].mem_len)
-				       << CLICK_SHIFT;
+					rp->p_memmap[S].mem_len);
 			rp->p_reg.sp -= sizeof(reg_t);
 		}
 

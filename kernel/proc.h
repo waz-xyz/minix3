@@ -36,6 +36,7 @@ struct proc {
 	char p_ticks_left;		/* number of scheduling ticks left */
 	char p_quantum_size;		/* quantum size in ticks */
 
+	uint32_t *p_ttbase;
 	struct mem_map p_memmap[NR_LOCAL_SEGS];	/* memory map (T, D, S) */
 
 	clock_t p_user_time;		/* user time in ticks */

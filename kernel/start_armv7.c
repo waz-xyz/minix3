@@ -27,8 +27,7 @@ PUBLIC void cstart(uint32_t kstack_phys_address,
 	const char *end = __bss_end;
 	while (p < end) {
 		if (*p != 0){
-			serial_puts("Bad initialized BSS at address");
-			serial_printHex((uint32_t)p);
+			kprintf("Bad initialized BSS at address: 0x%08X\r\n", p);
 			break;
 		}
 		p++;
@@ -37,12 +36,9 @@ PUBLIC void cstart(uint32_t kstack_phys_address,
 		serial_puts("All BSS looks good");
 	}
 
-	serial_puts("stack physical address");
-	serial_printHex(kstack_phys_address);
-	serial_puts("1st level table physical address");
-	serial_printHex(k1stleveltable_phys_address);
-	serial_puts("1st page table physical address");
-	serial_printHex(k1stpagetable_phys_address);
+	kprintf("stack physical address: 0x%08X\r\n", kstack_phys_address);
+	kprintf("1st level table physical address: 0x%08X\r\n", k1stleveltable_phys_address);
+	kprintf("1st page table physical address: 0x%08X\r\n", k1stpagetable_phys_address);
 
 	/* Record where the kernel is. */
 	kinfo.code_base = (phys_bytes) __text_start;

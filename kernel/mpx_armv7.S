@@ -64,16 +64,16 @@ skip_header:
 	   by aligning to 4k. Preserve the value at r9. */
 	mov	r1, #SMALL_PAGE_ALIGN
 	add	r0, r1
-	ldr	r1, =#~(FIRST_LEVEL_TABLE_ALIGN)
+	ldr	r1, =#~SMALL_PAGE_ALIGN
 	and	r0, r1
 	mov	r9, r0
 	add	r0, KERNEL_STACK_SIZE
 
 	/* Find the next free location for a first-level table
 	   by aligning to 16k. Preserve the value at r8. */
-	mov	r1, #FIRST_LEVEL_TABLE_ALIGN
+	mov	r1, #KERNEL_FIRST_LEVEL_TT_ALIGN
 	add	r0, r1
-	ldr	r1, =#~FIRST_LEVEL_TABLE_ALIGN
+	ldr	r1, =#~KERNEL_FIRST_LEVEL_TT_ALIGN
 	and	r0, r1
 	mov	r8, r0
 
@@ -81,14 +81,14 @@ skip_header:
 	mcr	p15, 0, r0, c2, c0, 1
 
 	/* Initialize the page tables to zero */
-	add	r1, r0, #KERNEL_PAGE_TABLES_SIZE
+	add	r1, r0, #KERNEL_MMU_TABLES_SIZE
 	bl	memclr
 	
 	/* Set page table descriptor for L1 table index = 0x800
 	   with base address at the end of the first-level table.
 	   Preserve the page table location at r7. */
 	add	r1, r8, #(4 * 0x800)
-	add	r7, r8, #FIRST_LEVEL_TABLE_SIZE
+	add	r7, r8, #KERNEL_FIRST_LEVEL_TT_SIZE
 	add	r0, r7, #1		/* Make it point to a page table */
 	str	r0, [r1]
 
