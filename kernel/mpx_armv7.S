@@ -98,7 +98,7 @@ skip_header:
 	mov	r2, #16
 	add	r1, r8, #(4 * 0x810)
 	mov	r3, #KERNEL_PHYSICAL_BASE
-	ldr	r4, =#0x540A
+	ldr	r4, =#0x640A
 1:	add	r0, r3, r4
 	str	r0, [r1], #4
 	add	r3, #ARM_SECTION_SIZE
