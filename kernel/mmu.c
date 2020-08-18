@@ -13,13 +13,14 @@ static uint32_t kernel_stack_start, kernel_stack_end;
 static uint32_t kernel_mmu_tables_start, kernel_mmu_tables_end;
 static uint32_t next_free_pt_location = 0;
 static uint32_t next_free_user_tt_location = 0;
+static uint32_t next_free_smallpage_location = 0;
 static uint32_t user_tt_start, user_tt_end;
 
 static void init_mmu_module(void);
 static void print_1st_level_table(uint32_t *table, int is_user);
 static void print_page_table(uint32_t *table);
 
-static void init_mmu_module(void)
+void init_mmu_module(void)
 {
 	uint32_t pos;
 	
@@ -177,6 +178,23 @@ static void print_page_table(uint32_t *table)
 	}
 }
 
+static void print_mmu_tables(uint32_t *table, int is_user)
+{
+	int limit = is_user ? USER_FIRST_LEVEL_TT_NOF_ENTRIES : KERNEL_FIRST_LEVEL_TT_NOF_ENTRIES;
+
+	print_1st_level_table(table, is_user);
+	for (int i = 0; i < limit; i++)
+	{
+		uint32_t entry = table[i];
+		if ((entry & 3) == 1)
+		{
+			uint32_t *base = phys2vir(entry & ~0x3FF);
+			kprint("~~~ Page table for index #%03X ~~~\r\n", i);
+			print_page_table(base);
+		}
+	}
+}
+
 static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int domain)
 {
 	tt[index] = (base & (~0x3FF)) | (domain << 5) | 1;
@@ -215,14 +233,23 @@ static void *GetNextFreePageTableLocation(void)
 	return (void*) pt_start;
 }
 
+static uint32_t GetNextFreeSmallPageLocation(void)
+{
+	uint32_t sp_start;
+	if (next_free_smallpage_location == 0)
+	{
+		next_free_smallpage_location = ALIGN_TO_SMALL_PAGE(next_free_pt_location);
+	}
+	sp_start = next_free_smallpage_location;
+	next_free_smallpage_location += SMALL_PAGE_SIZE;
+	return sp_start;
+}
+
 void allocate_page_tables(struct proc *pr)
 {
 	uint32_t *tt, *pt;
 	uint32_t virt_start, virt_end;
 	struct mem_map *mm;
-
-	if (next_free_user_tt_location == 0)
-		init_mmu_module();
 	
 	pr->p_ttbase = tt = GetNextFreeUserTTLocation();
 	for (int seg = T; seg <= S; seg++)
@@ -240,14 +267,56 @@ void allocate_page_tables(struct proc *pr)
 			}
 		}
 	}
+	// kprintf("First level TT for process %s:\r\n", pr->p_name);
+	// print_1st_level_table(tt, 1);
+}
 
-	kprintf("First level TT for process %s:\r\n", pr->p_name);
-	print_1st_level_table(tt, 1);
+void allocate_pages(struct proc *pr)
+{
+	uint32_t *tt, *pt;
+	uint32_t virt_start, virt_end;
+	struct mem_map *mm;
+	
+	tt = pr->p_ttbase;
+	for (int seg = T; seg <= S; seg++)
+	{
+		mm = &(pr->p_memmap[seg]);
+		virt_start = mm->mem_vir;
+		virt_end = ALIGN_TO_SMALL_PAGE(virt_start + mm->mem_len);
+		for (uint32_t vloc = virt_start; vloc < virt_end; vloc += SMALL_PAGE_SIZE)
+		{
+			int inx = (vloc >> 20) & 0xFFFU;
+			if (tt[inx] == 0)
+			{
+				pt = GetNextFreePageTableLocation();
+				SetPageTableDescriptor(tt, inx, vir2phys(pt), 0);
+			}
+		}
+	}
+
+	kprintf("MMU tables for %s:\r\n", pr->p_name);
+	print_mmu_tables(tt, 1);
 }
 
 uint32_t allocate_task_stack(void)
 {
-	return 0;
+	int i;
+	uint32_t vaddr;
+
+	/* Find the lowest 2 empty entries in the kernel's page table.
+	 * One for a guard page and another for the task stack. */
+	for (i = 0; i < PAGE_TABLE_NOF_ENTRIES-1; i++)
+	{
+		if ((kernel_page_table[i] & 3) == 0 && 
+		    (kernel_page_table[i+1] & 3) == 0)
+		{
+			break;
+		}
+	}
+	i++;	/* Skip guard page */
+	vaddr = KERNEL_VIRTUAL_BASE + (i << 12);
+	SetSmallPageDescriptor((uint32_t*)kernel_page_table, i, GetNextFreeSmallPageLocation(), 1, 5, 0, 1);
+	return vaddr + SMALL_PAGE_SIZE;
 }
 
 void *get_header_from_image(int progindex)

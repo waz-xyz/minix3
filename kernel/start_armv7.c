@@ -46,6 +46,8 @@ PUBLIC void cstart(uint32_t kstack_phys_address,
 	kinfo.data_base = (phys_bytes) __data_start;
 	kinfo.data_size = (phys_bytes) (__bss_end - __data_start);	/* size of data segment */
 
+	init_mmu_module();
+
 	/* Record miscellaneous information for user-space servers. */
 	kinfo.nr_procs = NR_PROCS;
 	kinfo.nr_tasks = NR_TASKS;

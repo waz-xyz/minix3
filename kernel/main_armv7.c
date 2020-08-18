@@ -41,10 +41,8 @@ PUBLIC void main()
 	register struct priv *sp;	/* privilege structure pointer */
 	register int i, s;
 	int hdrindex;			/* index to array of a.out headers */
-	phys_clicks text_base;
-	vir_clicks text_clicks, data_clicks;
 	Elf32_Ehdr *ehdr;		/* ELF header of one of the programs in the image */
-	Elf32_Phdr *phdr;
+	Elf32_Phdr *phdr;		/* ELF segment header */
 
 	serial_puts("[Entering main]");
 
@@ -79,8 +77,6 @@ PUBLIC void main()
 
 	for (i = 0; i < NR_BOOT_PROCS; ++i)
 	{
-		// serial_puts("[Setting proc table entry #]");
-		// serial_printHex(i);
 		ip = &image[i];                                 /* process' attributes */
 		rp = proc_addr(ip->proc_nr);                    /* get process pointer */
 		ip->endpoint = rp->p_endpoint;                  /* ipc endpoint */
@@ -96,16 +92,6 @@ PUBLIC void main()
 		priv(rp)->s_ipc_to.chunk[0] = ip->ipc_to;       /* restrict targets */
 		if (iskerneln(proc_nr(rp)))  /* part of the kernel? */
 		{
-			if (ip->stksize > 0)
-			{
-				rp->p_reg.sp = allocate_task_stack();
-			}
-			else  /* HARDWARE stack size is 0 */
-			{
-				rp->p_reg.sp = 0;
-			}
-			text_base = kinfo.code_base >> CLICK_SHIFT;
-					/* processes that are in the kernel */
 			hdrindex = 0;	/* all use the first a.out header */
 		}
 		else
@@ -113,9 +99,7 @@ PUBLIC void main()
 			hdrindex = 1 + i - NR_TASKS; /* servers, drivers, INIT */
 		}
 
-		/* The bootstrap loader created an array of the a.out headers at
-		 * absolute address 'aout'. Get one element to e_hdr.
-		 */
+		/* Allocate pages tables to each user process */
 		if (hdrindex != 0)
 		{
 			ehdr = get_header_from_image(hdrindex);
@@ -153,8 +137,8 @@ PUBLIC void main()
 		 */
 		rp->p_reg.psw = (iskernelp(rp)) ? INIT_TASK_PSW : INIT_PSW;
 
-		/* Initialize the server stack pointer. Take it down one word
-		 * to give crtso.s something to use as "argc".
+		/* Initialize the stack pointer for user processes. Take it down one
+		 * word to give crtso.s something to use as "argc".
 		 */
 		if (isusern(proc_nr(rp)))
 		{ /* user-space process? */
@@ -172,6 +156,31 @@ PUBLIC void main()
 		else
 		{
 			rp->p_rts_flags = NO_MAP; /* prevent from running */
+		}
+	}
+
+	/* Allocate pages to each process */
+	for (i = 0; i < NR_BOOT_PROCS; ++i)
+	{
+		ip = &image[i];
+		rp = proc_addr(ip->proc_nr);
+
+		if (iskerneln(proc_nr(rp)))
+		{
+			/* Kernel tasks only may need stack pages */
+			if (ip->stksize > 0)
+			{
+				rp->p_reg.sp = allocate_task_stack();
+			}
+			else  /* HARDWARE stack size is 0 */
+			{
+				rp->p_reg.sp = 0;
+			}
+		}
+		else
+		{
+			/* Allocate I, D and S pages for user processes */
+			allocate_pages(rp);
 		}
 	}
 
