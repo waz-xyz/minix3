@@ -270,13 +270,21 @@ restart1:
 	sub	r2, 1
 	strb	r2, [r1]		// k_reenter -= 1
 
+	ldr	r1, [r0, #P_NR_OFFSET]
+	cmp	r1, 0
+	blo	1f
+	/* switching to a user process */
 	ldm	r0, {r0-r14}^		// r0_usr-r14_usr = proc_ptr->p_reg.r[0..14]
-	add	r0, #PCREG_OFFSET
-	
-	/* at this point sp = &(proc_ptr->p_reg.pc) */
-	rfe	r0			// continue process
+	add	r0, #PCREG_OFFSET	// r0 = &(proc_ptr->p_reg.pc)
+	rfe	r0			// continue process:
 					//	pc_usr = proc_ptr->p_reg.pc
 					//	cpsr_usr = proc_ptr->p_reg.psw
+1:	/* switching to a kernel task */
+	ldr	r1, [r0, #PSWREG_OFFSET]
+	msr	spsr, r1		// spsr = proc_ptr->p_reg.psw
+	ldm	r0, {r0-r15}^		// continue process:
+					//	r0_svc..r15_svc = proc_ptr->p_reg[0..15]
+					//	cpsr_svc = spsr_svc = proc_ptr->p_reg.psw
 
 /*===========================================================================*
  *			exception vector table			     	     *
