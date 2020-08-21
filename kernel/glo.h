@@ -82,7 +82,8 @@ EXTERN phys_bytes vm_mem_high;
 
 /* Variables that are initialized elsewhere are just extern here. */
 extern struct boot_image image[]; 	/* system image processes */
-extern char *t_stack[];			/* task stack space */
+/* exception vector table to be relocated */
+extern char *exception_vector_start, *exception_vector_end;
 
 /* Boot image */
 extern uint32_t end_of_image;

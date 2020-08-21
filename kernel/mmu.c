@@ -25,7 +25,7 @@ void init_mmu_module(void)
 	
 	/* Initialize to the final location of the boot image in virtual memory,
 	 * aligned to next free small page */
-	kernel_stack_start = pos = KERNEL_RAW_ACCESS_BASE + ALIGN_TO_SMALL_PAGE(end_of_image);
+	kernel_stack_start = pos = KERNEL_RAW_ACCESS_BASE + KERNEL_PHYSICAL_BASE + ALIGN_TO_SMALL_PAGE(end_of_image);
 	/* Add space for kernel stack */
 	kernel_stack_end = pos = pos + KERNEL_STACK_SIZE;
 	/* Align next position to a 1st-level table */
@@ -342,31 +342,37 @@ void *get_header_from_image(int progindex)
 	if (progindex <= 0 || progindex >= number_of_programs)
 		return NULL;
 	
-	return (void*) (KERNEL_RAW_ACCESS_BASE + programs_locations[progindex]);
+	return (void*) (KERNEL_RAW_ACCESS_BASE + KERNEL_PHYSICAL_BASE + programs_locations[progindex]);
 }
 
 uint32_t vir2phys(void *address)
 {
 	uint32_t addr = (uint32_t) address;
 
-	if (addr >= KERNEL_RAW_ACCESS_BASE)
+	if (KERNEL_RAW_ACCESS_BASE <= addr && addr < (KERNEL_RAW_ACCESS_BASE + OFFSET_16MB))
 	{
-		return addr - KERNEL_RAW_ACCESS_BASE + KERNEL_PHYSICAL_BASE;
+		return addr - KERNEL_RAW_ACCESS_BASE;
 	}
 	else
 	{
-		return addr - KERNEL_VIRTUAL_BASE + KERNEL_PHYSICAL_BASE;
+		panic("illegal address in vir2phys", NO_NUM);
 	}       
 }
 
 void *phys2vir(uint32_t address)
 {
-	if (KERNEL_PHYSICAL_BASE <= address && address < (KERNEL_PHYSICAL_BASE + OFFSET_16MB))
+	if (address < OFFSET_16MB)
 	{
-		return (void*)(address - KERNEL_PHYSICAL_BASE + KERNEL_RAW_ACCESS_BASE);
+		return (void*)(address + KERNEL_RAW_ACCESS_BASE);
 	}
 	else
 	{
-		return NULL;
+		panic("illegal address in phys2vir", NO_NUM);
 	}       
+}
+
+void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len)
+{
+	void *vir_dest = phys2vir(phys_dest);
+	memcpy(vir_src, vir_dest, len);
 }

@@ -96,11 +96,11 @@ skip_header:
 	str	r0, [r1]
 
 	/* Set section descriptors for L1 table index = 0x810 and beyond
-	   with base addresses starting at KERNEL_PHYSICAL_BASE.
+	   with base addresses starting at 0.
 	   Enable access to the first 16 MBs of physical memory. */
 	mov	r2, #16
 	add	r1, r8, #(4 * 0x810)
-	mov	r3, #KERNEL_PHYSICAL_BASE
+	mov	r3, #0
 	ldr	r4, =#0x640A
 1:	add	r0, r3, r4
 	str	r0, [r1], #4

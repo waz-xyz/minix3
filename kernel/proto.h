@@ -192,6 +192,7 @@ void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
 void allocate_page_tables(struct proc *pr);
 void allocate_pages(struct proc *pr);
 uint32_t allocate_task_stack(void);
+void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len);
 void *get_header_from_image(int progindex);
 void init_mmu_module(void);
 void *phys2vir(uint32_t address);

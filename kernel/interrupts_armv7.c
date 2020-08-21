@@ -30,15 +30,8 @@ void intr_init(int mine)
 
 	intr_disable();
 
-	set_exception_table();
-}
-
-/*===========================================================================*
- *				set_exception_table			     *
- *===========================================================================*/
-void set_exception_table(void)
-{
-
+	/* Set exception vector table at physical address 0 */
+	copy_vir2phys(exception_vector_start, 0, exception_vector_end-exception_vector_start);
 }
 
 /*===========================================================================*
