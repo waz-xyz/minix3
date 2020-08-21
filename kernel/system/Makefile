@@ -9,7 +9,7 @@ CPP =	${TOOLCHAIN_PREFIX}cpp
 AR =	${TOOLCHAIN_PREFIX}ar
 LD =	$(CC)
 MKDEP = $(CC) -M -MG
-CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
 LDFLAGS = -nostdlib
 
 SYSTEM	= ../system.a

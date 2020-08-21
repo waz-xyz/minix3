@@ -56,7 +56,7 @@ register message *m_ptr;	/* pointer to request message */
   rpc->p_rts_flags &= ~(SIGNALED | SIG_PENDING | P_STOP);
   sigemptyset(&rpc->p_pending);
 
-  rpc->p_reg.retreg = 0;	/* child sees pid = 0 to know it is child */
+  rpc->p_reg.RET_REG = 0;	/* child sees pid = 0 to know it is child */
   rpc->p_user_time = 0;		/* set all the accounting times to 0 */
   rpc->p_sys_time = 0;
 

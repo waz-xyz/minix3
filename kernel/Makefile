@@ -10,7 +10,7 @@ CC =	${TOOLCHAIN_PREFIX}gcc
 CPP =	${TOOLCHAIN_PREFIX}cpp
 LD =	$(CC)
 MKDEP = $(CC) -M -MG
-CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
 LDFLAGS = -static -nostartfiles -nostdlib -T kernel.ld -Wl,--build-id=none -Wl,-Map=kernel.map -Wl,--cref -Wl,--gc-sections -L$l
 
 HEAD =	mpx.o

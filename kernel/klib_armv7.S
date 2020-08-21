@@ -32,9 +32,11 @@
 	.type	phys_memset, %function
 
 intr_disable:
+	cpsid	i
 	bx      lr
 
 intr_enable:
+	cpsie	i
 	bx      lr
 
 /*===========================================================================*

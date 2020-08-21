@@ -2,6 +2,7 @@
 #include <minix/const.h>
 #include <minix/com.h>
 #include "const.h"
+#include "sconst.h"
 
 	.arch armv7a
 	.syntax unified
@@ -18,7 +19,9 @@
 /*===========================================================================*
  *				SECTION .text.boot			     *
  *===========================================================================*/
+
 	/* This is the entry point for the MINIX kernel */
+
 _start:
 	b	skip_header
 
@@ -215,6 +218,33 @@ memclr:
 	.global restart
 	.type	restart, %function
 
+/*===========================================================================*
+ *				save					     *
+ *===========================================================================*
+ * Save registers before context switch.
+ */
+save:
+	ldr	r1, =proc_ptr
+	ldr	r1, [r1]		// r1 = proc_ptr
+	mov	r2, r1
+	pop	{r3-r12}		// Store r0..r9
+	ldm	r1!, {r3-r12}		//  at proc_ptr->p_reg.r[0..9]
+	pop	{r10-r12}		// Store r10..r12
+	ldm	r1!, {r10-r12}		//  at proc_ptr->p_reg.r[10..12]
+	ldr	r2, [r2, #P_NR_OFFSET]	// r2 = proc_ptr->p_nr
+	cmp	r2, 0
+	blo	is_task			// If proc_ptr->p_nr < 0, it's a task
+	ldm	r1, {sp}^		// r1 = sp_usr
+	add	r1, #4
+	b	0f
+is_task:
+	add	r2, sp, #12		// sp+12 = old sp position
+	ldm	r1!, {r2}	
+0:
+	pop	{r2-r4}			// Store saved lr,pc(return),spsr
+	ldm	r1!, {r2-r4}		//  at proc_ptr->p_reg.[lr,pc,psw]
+
+	bx	lr
 
 /*===========================================================================*
  *				restart					     *
@@ -222,4 +252,138 @@ memclr:
  * Restart the current process or the next process if it is set. 
  */
 restart:
-        bx      lr
+	ldr	r0, =proc_ptr		// r0 = &proc_ptr
+	ldr	r1, =next_ptr		// r1 = &next_ptr
+	ldr	r2, [r1]		// r2 = next_ptr
+	cmp	r2, 0			// see if another process is scheduled
+	beq	0f
+	str	r2, [r0]		// schedule new process: proc_ptr = next_ptr
+	mov	r2, 0
+	str	r2, [r1]		// next_ptr = 0
+0:	ldr	r0, [r0]		// r0 = proc_ptr
+	ldr	r1, [r0, #P_TTBASE_OFFSET]
+	mcr	p15, 0, r1, c2, c0, 0	// set TTBR0 base address to proc_ptr->p_ttbase */
+	/* at this point r0 = &(proc_ptr->p_reg.r0) */
+restart1:
+	ldr	r1, =k_reenter
+	ldr	r2, [r1]
+	sub	r2, 1
+	strb	r2, [r1]		// k_reenter -= 1
+
+	ldm	r0, {r0-r14}^		// r0_usr-r14_usr = proc_ptr->p_reg.r[0..14]
+	add	r0, #PCREG_OFFSET
+	
+	/* at this point sp = &(proc_ptr->p_reg.pc) */
+	rfe	r0			// continue process
+					//	pc_usr = proc_ptr->p_reg.pc
+					//	cpsr_usr = proc_ptr->p_reg.psw
+
+/*===========================================================================*
+ *			exception vector table			     	     *
+ *===========================================================================*/
+
+	.global	exception_vector_start
+	.global	exception_vector_end
+
+exception_vector_start:
+
+	ldr	pc, reset_handler_addr
+	ldr	pc, undefined_instruction_handler_addr
+	ldr	pc, supervisor_call_handler_addr
+	ldr	pc, prefetch_abort_handler_addr
+	ldr	pc, data_abort_handler_addr
+	nop
+	ldr	pc, irq_handler_addr
+	ldr	pc, fast_irq_handler_addr
+
+reset_handler_addr:			.word reset_handler
+undefined_instruction_handler_addr:	.word undefined_instruction_handler
+supervisor_call_handler_addr:		.word supervisor_call_handler
+prefetch_abort_handler_addr:		.word prefetch_abort_handler
+data_abort_handler_addr:		.word data_abort_handler
+irq_handler_addr:			.word irq_handler
+fast_irq_handler_addr:			.word fast_irq_handler
+
+exception_vector_end:
+
+/*===========================================================================*
+ *				exception handlers		     	     *
+ *===========================================================================*/
+
+reset_handler:
+	srsdb	sp!, #MODE_SVC
+	cps	#MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, RESET_EXCEPTION
+	b	generic_exception_handler
+
+undefined_instruction_handler:
+	srsdb	sp!, #MODE_SVC
+	cps	#MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, UNDEFINED_INSTRUCTION_EXCEPTION
+	b	generic_exception_handler
+
+supervisor_call_handler:
+	srsdb	sp!, #MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, SUPERVISOR_CALL_EXCEPTION
+	b	generic_exception_handler
+
+prefetch_abort_handler:
+	srsdb	sp!, #MODE_SVC
+	cps	#MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, PREFETCH_ABORT_EXCEPTION
+	b	generic_exception_handler
+
+data_abort_handler:
+	srsdb	sp!, #MODE_SVC
+	cps	#MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, DATA_ABORT_EXCEPTION
+	b	generic_exception_handler
+
+irq_handler:
+	sub	lr, #4
+	srsdb	sp!, #MODE_SVC
+	cps	#MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, IRQ_EXCEPTION
+	b	generic_interrupt_handler
+
+fast_irq_handler:
+	sub	lr, #4
+	srsdb	sp!, #MODE_SVC
+	cps	#MODE_SVC
+	push	{r0-r12, lr}
+	mov	r0, FAST_IRQ_EXCEPTION
+	b	generic_interrupt_handler
+
+generic_exception_handler:
+	bl	save
+	/* k_reenter += 1; keep the new value at r4 */
+	ldr	r1, =k_reenter
+	ldr	r4, [r1]
+	add	r4, 1
+	str	r4, [r1]
+	/* The stack must be aligned at 8 bytes by ARM ABI requirements. */
+	and	r5, sp, #4
+	sub	sp, r5
+	ldr	r1, =exception
+	blx	r1
+	add	sp, r5
+	/* If ++k_reenter != 0 we are reentering the kernel */
+	cmp	r4, 0
+	beq	restart
+	bne	restart1
+
+generic_interrupt_handler:
+	push	{r0-r4, r12, lr}
+	and	r4, sp, #4
+	sub	sp, r4
+	ldr	lr, =intr_handle
+	blx	lr
+	add	sp, r4
+	pop	{r0-r4, r12, lr}
+	rfe	sp!

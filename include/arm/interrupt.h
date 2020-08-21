@@ -20,6 +20,14 @@
 #define AT_WINI_0_IRQ     14	/* at winchester controller 0 */
 #define AT_WINI_1_IRQ     15	/* at winchester controller 1 */
 
+#define RESET_EXCEPTION			0
+#define UNDEFINED_INSTRUCTION_EXCEPTION	1
+#define	SUPERVISOR_CALL_EXCEPTION	2
+#define	PREFETCH_ABORT_EXCEPTION	3
+#define	DATA_ABORT_EXCEPTION		4
+#define	IRQ_EXCEPTION			5
+#define	FAST_IRQ_EXCEPTION		6
+
 #endif /* (CHIP == ARM) */
 
 #endif /* _INTERRUPT_H */

@@ -292,6 +292,7 @@ PUBLIC void kenv_dmp()
     }
 
     printf("Dump of kinfo and machine structures.\n\n");
+  #if (MACHINE == IBM_PC)
     printf("Machine structure:\n");
     printf("- pc_at:      %3d\n", machine.pc_at); 
     printf("- ps_mca:     %3d\n", machine.ps_mca); 
@@ -299,6 +300,7 @@ PUBLIC void kenv_dmp()
     printf("- protected:  %3d\n", machine.prot); 
     printf("- vdu_ega:    %3d\n", machine.vdu_ega); 
     printf("- vdu_vga:    %3d\n\n", machine.vdu_vga); 
+  #endif
     printf("Kernel info structure:\n");
     printf("- code_base:  %5u\n", kinfo.code_base); 
     printf("- code_size:  %5u\n", kinfo.code_size); 

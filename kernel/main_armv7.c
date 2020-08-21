@@ -215,7 +215,7 @@ PRIVATE void announce(void)
 {
 	/* Display the MINIX startup banner. */
 	kprintf("\nMINIX %s.%s. "
-		"Copyright 2006, Vrije Universiteit, Amsterdam, The Netherlands\r\n",
+		"Copyright 2006, Vrije Universiteit, Amsterdam, The Netherlands\n",
 		OS_RELEASE, OS_VERSION);
 #if (CHIP == INTEL)
 	/* Real mode, or 16/32-bit protected mode? */

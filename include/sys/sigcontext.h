@@ -95,10 +95,9 @@ struct sigregs {
   long sr_r11;
   long sr_r12;
   long sr_r13;
-  long sr_r14;
-  long sr_pc;
-  long sr_retreg;
   long sr_sp;
+  long sr_lr;
+  long sr_pc;
   long sr_psw;
 };
 
@@ -167,7 +166,7 @@ struct sigcontext {
 #endif /* _MINIX_CHIP == M68000 */
 
 #if (_MINIX_CHIP == ARM)
-#define sc_retreg sc_regs.sr_retreg
+#define sc_retreg sc_regs.sr_r0
 #define sc_pc sc_regs.sr_pc
 #define sc_psw sc_regs.sr_psw
 #define sc_sp sc_regs.sr_sp

@@ -45,7 +45,7 @@ message *m_ptr;			/* pointer to request message */
    * register variables within functions containing setjmp.
    */
   if (sc.sc_flags & SC_NOREGLOCALS) {
-      rp->p_reg.retreg = sc.sc_retreg;
+      rp->p_reg.RET_REG = sc.sc_retreg;
 #if (CHIP == INTEL)
       rp->p_reg.fp = sc.sc_fp;
 #endif

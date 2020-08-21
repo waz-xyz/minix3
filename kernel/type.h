@@ -126,13 +126,17 @@ struct stackframe_s {		/* proc_ptr points here */
 	reg_t r10;
 	reg_t r11;
 	reg_t r12;
-	reg_t r13;
-	reg_t r14;
-	reg_t pc;
-	reg_t retreg;
 	reg_t sp;
+	reg_t lr;
+	reg_t pc;
 	reg_t psw;
 };
+
+#if (CHIP == INTEL)
+#	define	RET_REG		retreg
+#elif (CHIP == ARM)
+#	define	RET_REG		r0
+#endif
 
 typedef unsigned long irq_policy_t;	
 typedef unsigned long irq_id_t;	

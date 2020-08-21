@@ -53,4 +53,5 @@ PUBLIC void kputc
 	// 	}
 	// }
 	serial_putc(c);
+	if (c == '\n') serial_putc('\r');
 }

@@ -544,7 +544,7 @@ register struct proc *rc;		/* slot of process to clean up */
 
       /* Check if process is receiving from exiting process. */
       if ((rp->p_rts_flags & RECEIVING) && rp->p_getfrom_e == rc->p_endpoint) {
-          rp->p_reg.retreg = ESRCDIED;		/* report source died */
+          rp->p_reg.RET_REG = ESRCDIED;		/* report source died */
 	  rp->p_rts_flags &= ~RECEIVING;	/* no longer receiving */
 #if DEBUG_ENABLE_IPC_WARNINGS
 	  kprintf("Proc %d receive dead src %d\n", proc_nr(rp), proc_nr(rc));
@@ -552,7 +552,7 @@ register struct proc *rc;		/* slot of process to clean up */
   	  if (rp->p_rts_flags == 0) lock_enqueue(rp);/* let process run again */
       } 
       if ((rp->p_rts_flags & SENDING) && rp->p_sendto_e == rc->p_endpoint) {
-          rp->p_reg.retreg = EDSTDIED;		/* report destination died */
+          rp->p_reg.RET_REG = EDSTDIED;		/* report destination died */
 	  rp->p_rts_flags &= ~SENDING;		/* no longer sending */
 #if DEBUG_ENABLE_IPC_WARNINGS
 	  kprintf("Proc %d send dead dst %d\n", proc_nr(rp), proc_nr(rc));

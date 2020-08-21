@@ -20,7 +20,7 @@ if [ -z "$BINDIR" ]; then echo "BINDIR is not set!" > /dev/tty; exit 1; fi
 #to enable library debugging, enable the next line
 #CFLAGS=$CFLAGS" -g"
 
-CFLAGS="$CFLAGS -fno-plt -fno-pie -ffreestanding -nostdinc -I../../include"
+CFLAGS="$CFLAGS -mcpu=cortex-a9 -fno-plt -fno-pie -ffreestanding -nostdinc -I../../include"
 echo
 echo "all: all-gnu"
 echo

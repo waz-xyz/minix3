@@ -400,7 +400,7 @@ restart1:
     o16	pop	es
     o16	pop	ds
 	popad
-	add	esp, 4		! skip return adr
+	add	esp, 4		! skip p_reg.retadr
 	iretd			! continue process
 
 !*===========================================================================*

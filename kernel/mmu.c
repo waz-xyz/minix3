@@ -51,14 +51,14 @@ void init_mmu_module(void)
 		next_free_pt_location = ALIGN_TO_PAGE_TABLE(user_tt_end);
 	}
 
-	kprintf("next_free_pt_location: 0x%08X\r\n", next_free_pt_location);
-	kprintf("user_tt_start: 0x%08X\r\n", user_tt_start);
-	kprintf("user_tt_end: 0x%08X\r\n", user_tt_end);
-	kprintf("kernel_mmu_tables_start: 0x%08X\r\n", kernel_mmu_tables_start);
-	kprintf("kernel_page_table: 0x%08X\r\n", kernel_page_table);
-	kprintf("Kernel's first-level table:\r\n");
+	kprintf("next_free_pt_location: 0x%08X\n", next_free_pt_location);
+	kprintf("user_tt_start: 0x%08X\n", user_tt_start);
+	kprintf("user_tt_end: 0x%08X\n", user_tt_end);
+	kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
+	kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
+	kprintf("Kernel's first-level table:\n");
 	print_1st_level_table(kernel_1st_level_tt, 0);
-	kprintf("Kernel's page table:\r\n");
+	kprintf("Kernel's page table:\n");
 	print_page_table(kernel_page_table);
 }
 
@@ -66,9 +66,9 @@ static void print_1st_level_table(uint32_t *table, int is_user)
 {
 	int limit = is_user ? USER_FIRST_LEVEL_TT_NOF_ENTRIES : KERNEL_FIRST_LEVEL_TT_NOF_ENTRIES;
 
-	kprintf("Index\tEntry\t\tType\tBase\t\tDomain\tS\tnG\tTEX[2:0]\tC\tB\tAP[2:0]\r\n"
+	kprintf("Index\tEntry\t\tType\tBase\t\tDomain\tS\tnG\tTEX[2:0]\tC\tB\tAP[2:0]\n"
 		"------------------------------------------------------------------------"
-		"---------------------------------------\r\n");
+		"---------------------------------------\n");
 	for (int i = 0; i < limit; i++)
 	{
 		uint32_t entry;
@@ -124,15 +124,15 @@ static void print_1st_level_table(uint32_t *table, int is_user)
 			type = "RE";
 			kprintf("#%03X\t0x%08X\t%s", i, entry, type);
 		}
-		kprintf("\r\n");
+		kprintf("\n");
 	}
 }
 
 static void print_page_table(uint32_t *table)
 {
-	kprintf("Index\tEntry\t\tType\tBase\t\tS\tnG\tTEX[2:0]\tC\tB\tAP[2:0]\t\tXN\r\n"
+	kprintf("Index\tEntry\t\tType\tBase\t\tS\tnG\tTEX[2:0]\tC\tB\tAP[2:0]\t\tXN\n"
 		"----------------------------------------------------------------------"
-		"--------------------------------------------\r\n");
+		"--------------------------------------------\n");
 	for (int i = 0; i < PAGE_TABLE_NOF_ENTRIES; i++)
 	{
 		uint32_t entry;
@@ -172,7 +172,7 @@ static void print_page_table(uint32_t *table)
 		ap2 = (entry >> 9) & 1;
 		s = (entry >> 10) & 1;
 		nG = (entry >> 11) & 1;
-		kprintf("#%02X\t0x%08X\t%s\t0x%08X\t%d\t%d\t%d %d %d\t\t%d\t%d\t%d %d %d\t\t%d\r\n",
+		kprintf("#%02X\t0x%08X\t%s\t0x%08X\t%d\t%d\t%d %d %d\t\t%d\t%d\t%d %d %d\t\t%d\n",
 			i, entry, type, base_address, s, nG, tex2, tex1, tex0, c, b, ap2, ap1, ap0, xn);
 	}
 }
@@ -188,7 +188,7 @@ static void print_mmu_tables(uint32_t *table, int is_user)
 		if ((entry & 3) == 1)
 		{
 			uint32_t *base = phys2vir(entry & ~0x3FF);
-			kprintf("~~~ Page table for index #%03X ~~~\r\n", i);
+			kprintf("~~~ Page table for index #%03X ~~~\n", i);
 			print_page_table(base);
 		}
 	}
@@ -250,7 +250,8 @@ void allocate_page_tables(struct proc *pr)
 	uint32_t virt_start, virt_end;
 	struct mem_map *mm;
 	
-	pr->p_ttbase = tt = GetNextFreeUserTTLocation();
+	tt = GetNextFreeUserTTLocation();
+	pr->p_ttbase = vir2phys(tt);
 	for (int seg = T; seg <= S; seg++)
 	{
 		mm = &(pr->p_memmap[seg]);
@@ -274,7 +275,7 @@ void allocate_pages(struct proc *pr)
 	struct mem_map *mm;
 	int ap;
 	
-	tt = pr->p_ttbase;
+	tt = phys2vir(pr->p_ttbase);
 	for (int seg = T; seg <= S; seg++)
 	{
 		ap = (seg == T) ? 2 : 3;
@@ -304,12 +305,12 @@ void allocate_pages(struct proc *pr)
 		}
 	}
 
-	kprintf("MMU tables for %s:\r\n", pr->p_name);
+	kprintf("MMU tables for %s:\n", pr->p_name);
 	print_mmu_tables(tt, 1);
 
 	if (pr->p_nr == 4)
 	{
-		kprintf("Kernel page table:\r\n");
+		kprintf("Kernel page table:\n");
 		print_page_table(kernel_page_table);	
 	}
 }
@@ -332,7 +333,7 @@ uint32_t allocate_task_stack(void)
 	i++;	/* Skip guard page */
 	SetSmallPageDescriptor((uint32_t*)kernel_page_table, i, GetNextFreeSmallPageLocation(), 1, 5, 0, 1);
 	vaddr = KERNEL_VIRTUAL_BASE + (i << 12);
-	kprintf("New task stack pointer: 0x%08X\r\n", vaddr + SMALL_PAGE_SIZE);
+	kprintf("New task stack pointer: 0x%08X\n", vaddr + SMALL_PAGE_SIZE);
 	return vaddr + SMALL_PAGE_SIZE;
 }
 

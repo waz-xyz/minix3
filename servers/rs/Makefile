@@ -14,7 +14,7 @@ d = ../bin
 # programs, flags, etc.
 CC = ${TOOLCHAIN_PREFIX}gcc
 MKDEP = $(CC) -M -MG
-CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
 LDFLAGS = -static -nostartfiles -Wl,--build-id=none -L$l
 UTIL_LIBS = -lsys 
 LIBS = -lsys -lsysutil 

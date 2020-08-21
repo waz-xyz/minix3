@@ -9,13 +9,16 @@
  * fields are defined in the assembler include file sconst.h.  When changing
  * struct proc, be sure to change sconst.h to match.
  */
+#include <stddef.h>
 #include <minix/com.h>
 #include "protect.h"
 #include "const.h"
 #include "priv.h"
+#include "sconst.h"
  
 struct proc {
 	struct stackframe_s p_reg;	/* process' registers saved in stack frame */
+	uint32_t p_ttbase;		/* physical address of MMU's translation table */
 
 #if (CHIP == INTEL)
 	reg_t p_ldt_sel;		/* selector in gdt with ldt base and limit */
@@ -26,7 +29,7 @@ struct proc {
 /* M68000 specific registers and FPU details go here. */
 #endif 
 
-	proc_nr_t p_nr;			/* number of this process (for fast access) */
+	proc_nr_t p_nr;			/* number of this process (for fast access) */ 
 	struct priv *p_priv;		/* system privileges structure */
 	short p_rts_flags;		/* process is runnable only if zero */
 	short p_misc_flags;		/* flags that do suspend the process */
@@ -36,7 +39,6 @@ struct proc {
 	char p_ticks_left;		/* number of scheduling ticks left */
 	char p_quantum_size;		/* quantum size in ticks */
 
-	uint32_t *p_ttbase;
 	struct mem_map p_memmap[NR_LOCAL_SEGS];	/* memory map (T, D, S) */
 
 	clock_t p_user_time;		/* user time in ticks */
@@ -116,5 +118,9 @@ EXTERN struct proc proc[NR_TASKS + NR_PROCS];	/* process table */
 EXTERN struct proc *pproc_addr[NR_TASKS + NR_PROCS];
 EXTERN struct proc *rdy_head[NR_SCHED_QUEUES]; /* ptrs to ready list headers */
 EXTERN struct proc *rdy_tail[NR_SCHED_QUEUES]; /* ptrs to ready list tails */
+
+/* Verify offsets in sconst.h */
+extern int __dummy_p_ttbase[(P_TTBASE_OFFSET-offsetof(struct proc, p_ttbase)) == 0 ? 1 : -1];
+extern int __dummy_p_nr[(P_NR_OFFSET-offsetof(struct proc, p_nr)) == 0 ? 1 : -1];
 
 #endif /* PROC_H */

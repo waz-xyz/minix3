@@ -31,7 +31,7 @@ EXTERN struct proc *prev_ptr;	/* previously running process */
 EXTERN struct proc *proc_ptr;	/* pointer to currently running process */
 EXTERN struct proc *next_ptr;	/* next process to run after restart() */
 EXTERN struct proc *bill_ptr;	/* process to bill for clock ticks */
-EXTERN char k_reenter;		/* kernel reentry count (entry count less 1) */
+EXTERN int k_reenter;		/* kernel reentry count (entry count less 1) */
 EXTERN unsigned lost_ticks;	/* clock ticks counted outside clock task */
 
 #if (CHIP == INTEL)
@@ -68,7 +68,9 @@ EXTERN _PROTOTYPE( void (*level0_func), (void) );
 
 /* Interrupt related variables. */
 EXTERN irq_hook_t irq_hooks[NR_IRQ_HOOKS];	/* hooks for general use */
+EXTERN irq_hook_t *irq_handlers[NR_IRQ_VECTORS];/* list of IRQ handlers */
 EXTERN int irq_actids[NR_IRQ_VECTORS];		/* IRQ ID bits active */
+EXTERN int irq_use;				/* map of all in-use irq's */
 
 /* Miscellaneous. */
 EXTERN int who_e, who_p;		/* message source endpoint and proc */

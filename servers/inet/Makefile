@@ -10,7 +10,7 @@ d = ../bin
 # Programs, flags, and libraries
 CC = ${TOOLCHAIN_PREFIX}gcc
 MKDEP = $(CC) -M -MG
-CFLAGS = -ffreestanding -nostdinc -fno-plt -fno-pie -I$i -I. -D__minix -D_MINIX $(OPT)
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i -I. -D__minix -D_MINIX $(OPT)
 LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(SERVER).map -Wl,--cref -L$l
 LIBS = -lsys -lsysutil
 
