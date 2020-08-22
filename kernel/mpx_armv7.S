@@ -358,7 +358,7 @@ irq_handler:
 	cps	#MODE_SVC
 	push	{r0-r12, lr}
 	mov	r0, IRQ_EXCEPTION
-	b	generic_interrupt_handler
+	b	generic_exception_handler
 
 fast_irq_handler:
 	sub	lr, #4
@@ -366,7 +366,7 @@ fast_irq_handler:
 	cps	#MODE_SVC
 	push	{r0-r12, lr}
 	mov	r0, FAST_IRQ_EXCEPTION
-	b	generic_interrupt_handler
+	b	generic_exception_handler
 
 generic_exception_handler:
 	bl	save
@@ -386,6 +386,7 @@ generic_exception_handler:
 	beq	restart
 	bne	restart1
 
+// TODO: Make it useful
 generic_interrupt_handler:
 	push	{r0-r4, r12, lr}
 	and	r4, sp, #4

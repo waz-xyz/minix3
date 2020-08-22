@@ -187,6 +187,8 @@ void enable_irq(irq_hook_t *hook);
 int disable_irq(irq_hook_t *hook);
 void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
 void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
+uint32_t read_psr(int type);
+uint32_t read_system_register(int type);
 
 /* mmu.c */
 void allocate_page_tables(struct proc *pr);

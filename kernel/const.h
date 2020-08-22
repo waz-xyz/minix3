@@ -147,6 +147,15 @@
 #define	ALIGN_TO_PAGE_TABLE(n)		(((n) + PAGE_TABLE_ALIGN) & ~PAGE_TABLE_ALIGN)
 #define	ALIGN_TO_POWER_OF_2(n, p)	(((n) + ((p)-1)) & ~((p)-1))
 
+#define	READ_APSR	0
+#define	READ_CPSR	1
+#define	READ_SPSR	2
+
+#define	READ_SCTLR	0
+#define	READ_TTBR0	1
+#define	READ_TTBR1	2
+#define	READ_TTBCR	3
+
 #endif /* (CHIP == ARM) */
 
 #endif /* CONST_H */

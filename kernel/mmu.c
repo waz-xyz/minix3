@@ -58,8 +58,8 @@ void init_mmu_module(void)
 	kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
 	kprintf("Kernel's first-level table:\n");
 	print_1st_level_table(kernel_1st_level_tt, 0);
-	kprintf("Kernel's page table:\n");
-	print_page_table(kernel_page_table);
+	// kprintf("Kernel's page table:\n");
+	// print_page_table(kernel_page_table);
 }
 
 static void print_1st_level_table(uint32_t *table, int is_user)
@@ -274,7 +274,7 @@ void allocate_pages(struct proc *pr)
 	uint32_t virt_start, virt_end, paddr, paddr_end;
 	struct mem_map *mm;
 	int ap;
-	
+
 	tt = phys2vir(pr->p_ttbase);
 	for (int seg = T; seg <= S; seg++)
 	{
@@ -305,8 +305,8 @@ void allocate_pages(struct proc *pr)
 		}
 	}
 
-	kprintf("MMU tables for %s:\n", pr->p_name);
-	print_mmu_tables(tt, 1);
+	// kprintf("MMU tables for %s:\n", pr->p_name);
+	// print_mmu_tables(tt, 1);
 
 	if (pr->p_nr == 4)
 	{
@@ -374,5 +374,6 @@ void *phys2vir(uint32_t address)
 void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len)
 {
 	void *vir_dest = phys2vir(phys_dest);
+	kprintf("virt_dest = 0x%08X\n", vir_dest);
 	memcpy(vir_src, vir_dest, len);
 }

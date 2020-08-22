@@ -31,6 +31,12 @@
 	.global phys_memset
 	.type	phys_memset, %function
 
+	.global read_psr
+	.type	read_psr, %function
+
+	.global read_system_register
+	.type	read_system_register, %function
+
 intr_disable:
 	cpsid	i
 	bx      lr
@@ -46,6 +52,7 @@ intr_enable:
  * instruction puts the processor in a state where it draws minimum power.
  */
 idle_task:
+	wfe
 	bx	lr
 
 /*==========================================================================*
@@ -57,7 +64,6 @@ idle_task:
  *   if ((irq_actids[hook->irq] &= ~hook->id) == 0)
  *	outb(INT_CTLMASK, inb(INT_CTLMASK) & ~(1 << irq));
  */
-
 enable_irq:
 	bx      lr
 
@@ -71,7 +77,6 @@ enable_irq:
  *   outb(INT_CTLMASK, inb(INT_CTLMASK) | (1 << irq));
  * Returns true iff the interrupt was not already disabled.
  */
-
 disable_irq:
 	bx	lr
 
@@ -88,7 +93,6 @@ disable_irq:
  * correctly.  Changing the definition of message in the type file and not
  * changing it here will lead to total disaster.
  */
-
 cp_mess:
 	bx      lr
 
@@ -99,7 +103,6 @@ cp_mess:
  *			phys_bytes bytecount);
  * Copy a block of physical memory.
  */
-
 phys_copy:
 	bx	lr
 
@@ -110,6 +113,46 @@ phys_copy:
  *	phys_bytes bytecount);
  * Fill a block of physical memory with pattern.
  */
-
 phys_memset:
+	bx	lr
+
+/*===========================================================================*
+ *			      read_psr					     *
+ *===========================================================================*
+ * PUBLIC uint32_t read_psr(int type);
+ * Read *PSR from C.
+ */
+read_psr:
+	cmp	r0, READ_APSR
+	mrseq	r0, apsr
+	beq	0f
+	cmp	r0, READ_CPSR
+	mrseq	r0, cpsr
+	beq	0f
+	cmp	r0, READ_SPSR
+	mrseq	r0, spsr
+	movne	r0, 0
+0:
+	bx	lr
+
+/*===========================================================================*
+ *			      read_system_register			     *
+ *===========================================================================*
+ * PUBLIC uint32_t read_system_register(int type);
+ * Read a system register from C.
+ */
+read_system_register:
+	cmp	r0, READ_SCTLR
+	mrceq	p15, 0, r0, c1, c0, 0
+	beq	0f
+	cmp	r0, READ_TTBR0
+	mrceq	p15, 0, r0, c2, c0, 0
+	beq	0f
+	cmp	r0, READ_TTBR1
+	mrceq	p15, 0, r0, c2, c0, 1
+	beq	0f
+	cmp	r0, READ_TTBCR
+	mrceq	p15, 0, r0, c2, c0, 2
+	movne	r0, 0
+0:
 	bx	lr

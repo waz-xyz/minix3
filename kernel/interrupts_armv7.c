@@ -18,8 +18,13 @@ PUBLIC void intr_init(int mine)
 
 	intr_disable();
 
+	uint32_t cpsr = read_psr(READ_CPSR);
+	uint32_t sctlr = read_system_register(READ_SCTLR);
+	kprintf("CPSR = 0x%08X\nSCTLR = 0x%08X\n", cpsr, sctlr);
 	/* Set exception vector table at physical address 0 */
-	copy_vir2phys(exception_vector_start, 0, exception_vector_end-exception_vector_start);
+	char *ex_start = &exception_vector_start, *ex_end = &exception_vector_end;
+	kprintf("exception_vector_start = 0x%08X\nexception_vector_end = 0x%08X\n", ex_start, ex_end);
+	copy_vir2phys(ex_start, 0, ex_end-ex_start);
 }
 
 /*===========================================================================*

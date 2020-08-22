@@ -71,26 +71,25 @@ PUBLIC void clock_task()
 {
 /* Main program of clock task. If the call is not HARD_INT it is an error.
  */
-  message m;			/* message buffer for both input and output */
-  int result;			/* result returned by the handler */
+	message m;			/* message buffer for both input and output */
+	int result;			/* result returned by the handler */
 
-  init_clock();			/* initialize clock task */
+	init_clock();			/* initialize clock task */
 
-  /* Main loop of the clock task.  Get work, process it. Never reply. */
-  while (TRUE) {
+	/* Main loop of the clock task.  Get work, process it. Never reply. */
+	while (TRUE) {
+		/* Go get a message. */
+		receive(ANY, &m);	
 
-      /* Go get a message. */
-      receive(ANY, &m);	
-
-      /* Handle the request. Only clock ticks are expected. */
-      switch (m.m_type) {
-      case HARD_INT:
-          result = do_clocktick(&m);	/* handle clock tick */
-          break;
-      default:				/* illegal request type */
-          kprintf("CLOCK: illegal request %d from %d.\n", m.m_type,m.m_source);
-      }
-  }
+		/* Handle the request. Only clock ticks are expected. */
+		switch (m.m_type) {
+		case HARD_INT:
+				result = do_clocktick(&m);	/* handle clock tick */
+				break;
+		default:				/* illegal request type */
+				kprintf("CLOCK: illegal request %d from %d.\n", m.m_type,m.m_source);
+		}
+	}
 }
 
 /*===========================================================================*
@@ -102,27 +101,26 @@ message *m_ptr;				/* pointer to request message */
 /* Despite its name, this routine is not called on every clock tick. It
  * is called on those clock ticks when a lot of work needs to be done.
  */
+	/* A process used up a full quantum. The interrupt handler stored this
+	 * process in 'prev_ptr'.  First make sure that the process is not on the 
+	 * scheduling queues.  Then announce the process ready again. Since it has 
+	 * no more time left, it gets a new quantum and is inserted at the right 
+	 * place in the queues.  As a side-effect a new process will be scheduled.
+	 */ 
+	if (prev_ptr->p_ticks_left <= 0 && priv(prev_ptr)->s_flags & PREEMPTIBLE) {
+		lock_dequeue(prev_ptr);		/* take it off the queues */
+		lock_enqueue(prev_ptr);		/* and reinsert it again */ 
+	}
 
-  /* A process used up a full quantum. The interrupt handler stored this
-   * process in 'prev_ptr'.  First make sure that the process is not on the 
-   * scheduling queues.  Then announce the process ready again. Since it has 
-   * no more time left, it gets a new quantum and is inserted at the right 
-   * place in the queues.  As a side-effect a new process will be scheduled.
-   */ 
-  if (prev_ptr->p_ticks_left <= 0 && priv(prev_ptr)->s_flags & PREEMPTIBLE) {
-      lock_dequeue(prev_ptr);		/* take it off the queues */
-      lock_enqueue(prev_ptr);		/* and reinsert it again */ 
-  }
-
-  /* Check if a clock timer expired and run its watchdog function. */
-  if (next_timeout <= realtime) { 
-  	tmrs_exptimers(&clock_timers, realtime, NULL);
-  	next_timeout = clock_timers == NULL ? 
+	/* Check if a clock timer expired and run its watchdog function. */
+	if (next_timeout <= realtime) { 
+		tmrs_exptimers(&clock_timers, realtime, NULL);
+		next_timeout = clock_timers == NULL ? 
 		TMR_NEVER : clock_timers->tmr_exp_time;
-  }
+	}
 
-  /* Inhibit sending a reply. */
-  return(EDONTREPLY);
+	/* Inhibit sending a reply. */
+	return(EDONTREPLY);
 }
 
 /*===========================================================================*
@@ -130,17 +128,17 @@ message *m_ptr;				/* pointer to request message */
  *===========================================================================*/
 PRIVATE void init_clock()
 {
-  /* Initialize the CLOCK's interrupt hook. */
-  clock_hook.proc_nr_e = CLOCK;
+	/* Initialize the CLOCK's interrupt hook. */
+	clock_hook.proc_nr_e = CLOCK;
 
-  /* Initialize the timer to 60 Hz, and register
-   * the CLOCK task's interrupt handler to be run on every clock tick. 
-   */
-  put_irq_handler(&clock_hook, CLOCK_IRQ, clock_handler);
-  enable_irq(&clock_hook);		/* ready for clock interrupts */
+	/* Initialize the timer to 60 Hz, and register
+	 * the CLOCK task's interrupt handler to be run on every clock tick. 
+	 */
+	put_irq_handler(&clock_hook, CLOCK_IRQ, clock_handler);
+	enable_irq(&clock_hook);		/* ready for clock interrupts */
 
-  /* Set a watchdog timer to periodically balance the scheduling queues. */
-  balance_queues(NULL);			/* side-effect sets new timer */
+	/* Set a watchdog timer to periodically balance the scheduling queues. */
+	balance_queues(NULL);			/* side-effect sets new timer */
 }
 
 /*===========================================================================*
@@ -180,38 +178,38 @@ irq_hook_t *hook;
  *		is changing them, provided they are always valid pointers,
  *		since at worst the previous process would be billed.
  */
-  register unsigned ticks;
+	register unsigned ticks;
 
-  /* Get number of ticks and update realtime. */
-  ticks = lost_ticks + 1;
-  lost_ticks = 0;
-  realtime += ticks;
+	/* Get number of ticks and update realtime. */
+	ticks = lost_ticks + 1;
+	lost_ticks = 0;
+	realtime += ticks;
 
-  /* Update user and system accounting times. Charge the current process for
-   * user time. If the current process is not billable, that is, if a non-user
-   * process is running, charge the billable process for system time as well.
-   * Thus the unbillable process' user time is the billable user's system time.
-   */
-  proc_ptr->p_user_time += ticks;
-  if (priv(proc_ptr)->s_flags & PREEMPTIBLE) {
-      proc_ptr->p_ticks_left -= ticks;
-  }
-  if (! (priv(proc_ptr)->s_flags & BILLABLE)) {
-      bill_ptr->p_sys_time += ticks;
-      bill_ptr->p_ticks_left -= ticks;
-  }
+	/* Update user and system accounting times. Charge the current process for
+	 * user time. If the current process is not billable, that is, if a non-user
+	 * process is running, charge the billable process for system time as well.
+	 * Thus the unbillable process' user time is the billable user's system time.
+	 */
+	proc_ptr->p_user_time += ticks;
+	if (priv(proc_ptr)->s_flags & PREEMPTIBLE) {
+		proc_ptr->p_ticks_left -= ticks;
+	}
+	if (! (priv(proc_ptr)->s_flags & BILLABLE)) {
+		bill_ptr->p_sys_time += ticks;
+		bill_ptr->p_ticks_left -= ticks;
+	}
 
-  /* Update load average. */
-  load_update();
+	/* Update load average. */
+	load_update();
 
-  /* Check if do_clocktick() must be called. Done for alarms and scheduling.
-   * Some processes, such as the kernel tasks, cannot be preempted. 
-   */ 
-  if ((next_timeout <= realtime) || (proc_ptr->p_ticks_left <= 0)) {
-      prev_ptr = proc_ptr;			/* store running process */
-      lock_notify(HARDWARE, CLOCK);		/* send notification */
-  } 
-  return(1);					/* reenable interrupts */
+	/* Check if do_clocktick() must be called. Done for alarms and scheduling.
+	 * Some processes, such as the kernel tasks, cannot be preempted. 
+	 */ 
+	if ((next_timeout <= realtime) || (proc_ptr->p_ticks_left <= 0)) {
+		prev_ptr = proc_ptr;			/* store running process */
+		lock_notify(HARDWARE, CLOCK);		/* send notification */
+	} 
+	return(1);					/* reenable interrupts */
 }
 
 /*===========================================================================*
@@ -220,7 +218,7 @@ irq_hook_t *hook;
 PUBLIC clock_t get_uptime()
 {
 /* Get and return the current clock uptime in ticks. */
-  return(realtime);
+	return(realtime);
 }
 
 /*===========================================================================*
@@ -234,8 +232,8 @@ tmr_func_t watchdog;		/* watchdog to be called */
 /* Insert the new timer in the active timers list. Always update the 
  * next timeout time by setting it to the front of the active list.
  */
-  tmrs_settimer(&clock_timers, tp, exp_time, watchdog, NULL);
-  next_timeout = clock_timers->tmr_exp_time;
+	tmrs_settimer(&clock_timers, tp, exp_time, watchdog, NULL);
+	next_timeout = clock_timers->tmr_exp_time;
 }
 
 /*===========================================================================*
@@ -248,8 +246,8 @@ struct timer *tp;		/* pointer to timer structure */
  * active and expired lists. Always update the next timeout time by setting
  * it to the front of the active list.
  */
-  tmrs_clrtimer(&clock_timers, tp, NULL);
-  next_timeout = (clock_timers == NULL) ? 
+	tmrs_clrtimer(&clock_timers, tp, NULL);
+	next_timeout = (clock_timers == NULL) ? 
 	TMR_NEVER : clock_timers->tmr_exp_time;
 }
 
@@ -258,7 +256,7 @@ struct timer *tp;		/* pointer to timer structure */
  *===========================================================================*/
 PUBLIC unsigned long read_clock()
 {
-        return 0;
+				return 0;
 }
 
 /*===========================================================================*
@@ -292,4 +290,3 @@ PRIVATE void load_update(void)
 	/* Up-to-dateness. */
 	kloadinfo.last_clock = realtime;
 }
-
