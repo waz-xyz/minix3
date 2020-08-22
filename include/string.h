@@ -19,7 +19,7 @@ typedef unsigned int size_t;	/* type returned by sizeof */
 
 _PROTOTYPE( void *memchr, (const void *_s, int _c, size_t _n)		);
 _PROTOTYPE( int memcmp, (const void *_s1, const void *_s2, size_t _n)	);
-_PROTOTYPE( void *memcpy, (void *_s1, const void *_s2, size_t _n)	);
+_PROTOTYPE( void *memcpy, (void *dest, const void *src, size_t _n)	);
 _PROTOTYPE( void *memmove, (void *_s1, const void *_s2, size_t _n)	);
 _PROTOTYPE( void *memset, (void *_s, int _c, size_t _n)			);
 _PROTOTYPE( char *strcat, (char *_s1, const char *_s2)			);

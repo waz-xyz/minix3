@@ -7,6 +7,9 @@
 
 	.section .text
 
+	.global	halt_cpu
+	.type	halt_cpu, %function
+
 	.global idle_task
 	.type	idle_task, %function
 
@@ -46,12 +49,23 @@ intr_enable:
 	bx      lr
 
 /*===========================================================================*
+ *				halt_cpu				     *
+ *===========================================================================*
+ * This function is called when the system has nothing else to do.
+ */
+halt_cpu:
+	cpsid	if
+	wfe
+	b	.
+
+/*===========================================================================*
  *				idle_task				     *
  *===========================================================================*
  * This task is called when the system has nothing else to do.  The HLT
  * instruction puts the processor in a state where it draws minimum power.
  */
 idle_task:
+	cpsie	if
 	wfe
 	bx	lr
 
@@ -155,4 +169,11 @@ read_system_register:
 	mrceq	p15, 0, r0, c2, c0, 2
 	movne	r0, 0
 0:
+	bx	lr
+
+	.global set_leds
+	.type	set_leds, %function
+set_leds:
+	ldr	r1, =#0x80022000
+	str	r0, [r1]
 	bx	lr

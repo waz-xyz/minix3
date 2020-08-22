@@ -23,5 +23,6 @@ PUBLIC void panic(const char *mess, int nr)
 	}
 
 	/* Abort MINIX. */
-	prepare_shutdown(RBT_PANIC);
+	halt_cpu();
+	//prepare_shutdown(RBT_PANIC);
 }

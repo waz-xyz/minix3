@@ -375,5 +375,12 @@ void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len)
 {
 	void *vir_dest = phys2vir(phys_dest);
 	kprintf("virt_dest = 0x%08X\n", vir_dest);
-	memcpy(vir_src, vir_dest, len);
+	memcpy(vir_dest, vir_src, len);
+
+	// int *p = vir_dest;
+	// kprintf("Contents of physical address 0:\n");
+	// for (int i = 0; i < len/4; i++, p++)
+	// {
+	// 	kprintf("%2d: 0x%08X\n", i, *p);
+	// }
 }

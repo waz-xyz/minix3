@@ -97,7 +97,7 @@
 
 /* Program stack words and masks. */
 #define INIT_PSW      0x10	/* initial psw with mode = 0x10 */
-#define INIT_TASK_PSW 0x13	/* initial psw for tasks with mode = 0x13 */
+#define INIT_TASK_PSW 0x33	/* initial psw for tasks with mode = 0x13 */
 #define TRACEBIT      0x0100	/* OR this with psw in proc[] for tracing */
 #define SETPSW(rp, new)		/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)

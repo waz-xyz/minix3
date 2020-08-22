@@ -180,6 +180,7 @@ void put_irq_handler(irq_hook_t *hook, int irq, irq_handler_t handler);
 void rm_irq_handler(irq_hook_t *hook);
 
 /* klib_armv7.s */
+void halt_cpu(void);
 void intr_enable(void);
 void intr_disable(void);
 void cp_mess(int src,phys_clicks src_clicks,vir_bytes src_offset, phys_clicks dst_clicks, vir_bytes dst_offset);
@@ -189,6 +190,7 @@ void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
 void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
 uint32_t read_psr(int type);
 uint32_t read_system_register(int type);
+void set_leds(int status);
 
 /* mmu.c */
 void allocate_page_tables(struct proc *pr);

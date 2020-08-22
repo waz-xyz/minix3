@@ -233,7 +233,7 @@ save:
 	ldm	r1!, {r10-r12}		//  at proc_ptr->p_reg.r[10..12]
 	ldr	r2, [r2, #P_NR_OFFSET]	// r2 = proc_ptr->p_nr
 	cmp	r2, 0
-	blo	is_task			// If proc_ptr->p_nr < 0, it's a task
+	ble	is_task			// If proc_ptr->p_nr < 0, it's a task
 	ldm	r1, {sp}^		// r1 = sp_usr
 	add	r1, #4
 	b	0f
@@ -272,7 +272,7 @@ restart1:
 
 	ldr	r1, [r0, #P_NR_OFFSET]
 	cmp	r1, 0
-	blo	1f
+	ble	1f
 	/* switching to a user process */
 	ldm	r0, {r0-r14}^		// r0_usr-r14_usr = proc_ptr->p_reg.r[0..14]
 	add	r0, #PCREG_OFFSET	// r0 = &(proc_ptr->p_reg.pc)
@@ -280,12 +280,22 @@ restart1:
 					//	pc_usr = proc_ptr->p_reg.pc
 					//	cpsr_usr = proc_ptr->p_reg.psw
 1:	/* switching to a kernel task */
+	@ mov	r1, r0
+	@ ldr	r2, [r0, #P_NR_OFFSET]
+	@ ldr	r3, [r0, #PCREG_OFFSET]
+	@ ldr	r0, =mystr
+	@ blx	kprintf
+	@ mov	r0, 1
+	@ bl	SetLeds
+	@ b	.
 	ldr	r1, [r0, #PSWREG_OFFSET]
 	msr	spsr, r1		// spsr = proc_ptr->p_reg.psw
 	ldm	r0, {r0-r15}^		// continue process:
 					//	r0_svc..r15_svc = proc_ptr->p_reg[0..15]
 					//	cpsr_svc = spsr_svc = proc_ptr->p_reg.psw
 
+@ mystr:	.asciz "proc_ptr = 0x%08X, nr = %d, next_pc = 0x%08X\n"
+@ 	.align 4
 /*===========================================================================*
  *			exception vector table			     	     *
  *===========================================================================*/
@@ -369,6 +379,9 @@ fast_irq_handler:
 	b	generic_exception_handler
 
 generic_exception_handler:
+	/* Turn on the blue LED */
+	mov	r0, #4
+	bl	SetLeds
 	bl	save
 	/* k_reenter += 1; keep the new value at r4 */
 	ldr	r1, =k_reenter
@@ -396,3 +409,14 @@ generic_interrupt_handler:
 	add	sp, r4
 	pop	{r0-r4, r12, lr}
 	rfe	sp!
+
+	.global force_undefined
+force_undefined:
+	mrc	p8, 0, r0, c0, c0, 0
+	bx	lr
+
+	.global force_data_abort
+force_data_abort:
+	mov	r0, #0x10000000
+	ldr	r0, [r0]
+	bx	lr

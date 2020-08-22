@@ -54,7 +54,7 @@ PUBLIC void exception(unsigned exception_type)
 
 	/* Exception in system code. This is not supposed to happen. */
 	kprintf("\nException #%d: %s\n", exception_type, ep->msg);
-	kprintf("k_reenter = %d ", k_reenter);
+	kprintf("k_reenter = %d, ", k_reenter);
 	kprintf("process %d (%s), ", proc_nr(saved_proc), saved_proc->p_name);
 	kprintf("pc = 0x%X", (unsigned)saved_proc->p_reg.pc);
 

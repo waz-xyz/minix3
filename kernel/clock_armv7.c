@@ -35,20 +35,20 @@
 #include <minix/com.h>
 
 /* Function prototype for PRIVATE functions. */ 
-FORWARD _PROTOTYPE( void init_clock, (void) );
-FORWARD _PROTOTYPE( int clock_handler, (irq_hook_t *hook) );
-FORWARD _PROTOTYPE( int do_clocktick, (message *m_ptr) );
-FORWARD _PROTOTYPE( void load_update, (void));
+FORWARD void init_clock(void);
+FORWARD int clock_handler(irq_hook_t *hook);
+FORWARD int do_clocktick(message *m_ptr);
+FORWARD void load_update(void);
 
 /* Clock parameters. */
-#define COUNTER_FREQ (2*TIMER_FREQ) /* counter frequency using square wave */
-#define LATCH_COUNT     0x00	/* cc00xxxx, c = channel, x = any */
-#define SQUARE_WAVE     0x36	/* ccaammmb, a = access, m = mode, b = BCD */
-				/*   11x11, 11 = LSB then MSB, x11 = sq wave */
-#define TIMER_COUNT ((unsigned) (TIMER_FREQ/HZ)) /* initial value for counter*/
-#define TIMER_FREQ  1193182L	/* clock frequency for timer in PC and AT */
+#define	COUNTER_FREQ	(2*TIMER_FREQ)	/* counter frequency using square wave */
+#define	LATCH_COUNT	0x00		/* cc00xxxx, c = channel, x = any */
+#define	SQUARE_WAVE	0x36		/* ccaammmb, a = access, m = mode, b = BCD */
+					/*   11x11, 11 = LSB then MSB, x11 = sq wave */
+#define	TIMER_COUNT	((unsigned) (TIMER_FREQ/HZ))	/* initial value for counter*/
+#define	TIMER_FREQ	1193182L	/* clock frequency for timer in PC and AT */
 
-#define CLOCK_ACK_BIT	0x80	/* PS/2 clock interrupt acknowledge bit */
+#define	CLOCK_ACK_BIT	0x80		/* PS/2 clock interrupt acknowledge bit */
 
 /* The CLOCK's timers queue. The functions in <timers.h> operate on this. 
  * Each system process possesses a single synchronous alarm timer. If other 
@@ -67,13 +67,14 @@ PRIVATE irq_hook_t clock_hook;		/* interrupt handler hook */
 /*===========================================================================*
  *				clock_task				     *
  *===========================================================================*/
-PUBLIC void clock_task()
+PUBLIC void clock_task(void)
 {
 /* Main program of clock task. If the call is not HARD_INT it is an error.
  */
 	message m;			/* message buffer for both input and output */
 	int result;			/* result returned by the handler */
 
+	//set_leds(1);
 	init_clock();			/* initialize clock task */
 
 	/* Main loop of the clock task.  Get work, process it. Never reply. */
@@ -84,10 +85,10 @@ PUBLIC void clock_task()
 		/* Handle the request. Only clock ticks are expected. */
 		switch (m.m_type) {
 		case HARD_INT:
-				result = do_clocktick(&m);	/* handle clock tick */
-				break;
+			result = do_clocktick(&m);	/* handle clock tick */
+			break;
 		default:				/* illegal request type */
-				kprintf("CLOCK: illegal request %d from %d.\n", m.m_type,m.m_source);
+			kprintf("CLOCK: illegal request %d from %d.\n", m.m_type,m.m_source);
 		}
 	}
 }
@@ -95,8 +96,9 @@ PUBLIC void clock_task()
 /*===========================================================================*
  *				do_clocktick				     *
  *===========================================================================*/
-PRIVATE int do_clocktick(m_ptr)
-message *m_ptr;				/* pointer to request message */
+PRIVATE int do_clocktick(
+	message *m_ptr				/* pointer to request message */
+)			
 {
 /* Despite its name, this routine is not called on every clock tick. It
  * is called on those clock ticks when a lot of work needs to be done.
@@ -134,6 +136,8 @@ PRIVATE void init_clock()
 	/* Initialize the timer to 60 Hz, and register
 	 * the CLOCK task's interrupt handler to be run on every clock tick. 
 	 */
+
+	// TODO:
 	put_irq_handler(&clock_hook, CLOCK_IRQ, clock_handler);
 	enable_irq(&clock_hook);		/* ready for clock interrupts */
 
@@ -146,13 +150,22 @@ PRIVATE void init_clock()
  *===========================================================================*/
 PUBLIC void clock_stop()
 {
+
 }
+
+/*===========================================================================*
+ *				read_clock				     *
+ *===========================================================================*/
+PUBLIC unsigned long read_clock()
+{
+	return 0;
+}
+
 
 /*===========================================================================*
  *				clock_handler				     *
  *===========================================================================*/
-PRIVATE int clock_handler(hook)
-irq_hook_t *hook;
+PRIVATE int clock_handler(irq_hook_t *hook)
 {
 /* This executes on each clock tick (i.e., every time the timer chip generates 
  * an interrupt). It does a little bit of work so the clock task does not have 
@@ -191,10 +204,12 @@ irq_hook_t *hook;
 	 * Thus the unbillable process' user time is the billable user's system time.
 	 */
 	proc_ptr->p_user_time += ticks;
-	if (priv(proc_ptr)->s_flags & PREEMPTIBLE) {
+	if (priv(proc_ptr)->s_flags & PREEMPTIBLE)
+	{
 		proc_ptr->p_ticks_left -= ticks;
 	}
-	if (! (priv(proc_ptr)->s_flags & BILLABLE)) {
+	if (! (priv(proc_ptr)->s_flags & BILLABLE))
+	{
 		bill_ptr->p_sys_time += ticks;
 		bill_ptr->p_ticks_left -= ticks;
 	}
@@ -205,7 +220,8 @@ irq_hook_t *hook;
 	/* Check if do_clocktick() must be called. Done for alarms and scheduling.
 	 * Some processes, such as the kernel tasks, cannot be preempted. 
 	 */ 
-	if ((next_timeout <= realtime) || (proc_ptr->p_ticks_left <= 0)) {
+	if ((next_timeout <= realtime) || (proc_ptr->p_ticks_left <= 0))
+	{
 		prev_ptr = proc_ptr;			/* store running process */
 		lock_notify(HARDWARE, CLOCK);		/* send notification */
 	} 
@@ -224,10 +240,11 @@ PUBLIC clock_t get_uptime()
 /*===========================================================================*
  *				set_timer				     *
  *===========================================================================*/
-PUBLIC void set_timer(tp, exp_time, watchdog)
-struct timer *tp;		/* pointer to timer structure */
-clock_t exp_time;		/* expiration realtime */
-tmr_func_t watchdog;		/* watchdog to be called */
+PUBLIC void set_timer(
+	struct timer *tp,		/* pointer to timer structure */
+	clock_t exp_time,		/* expiration realtime */
+	tmr_func_t watchdog		/* watchdog to be called */
+)
 {
 /* Insert the new timer in the active timers list. Always update the 
  * next timeout time by setting it to the front of the active list.
@@ -239,8 +256,9 @@ tmr_func_t watchdog;		/* watchdog to be called */
 /*===========================================================================*
  *				reset_timer				     *
  *===========================================================================*/
-PUBLIC void reset_timer(tp)
-struct timer *tp;		/* pointer to timer structure */
+PUBLIC void reset_timer(
+	struct timer *tp		/* pointer to timer structure */
+)		
 {
 /* The timer pointed to by 'tp' is no longer needed. Remove it from both the
  * active and expired lists. Always update the next timeout time by setting
@@ -249,14 +267,6 @@ struct timer *tp;		/* pointer to timer structure */
 	tmrs_clrtimer(&clock_timers, tp, NULL);
 	next_timeout = (clock_timers == NULL) ? 
 	TMR_NEVER : clock_timers->tmr_exp_time;
-}
-
-/*===========================================================================*
- *				read_clock				     *
- *===========================================================================*/
-PUBLIC unsigned long read_clock()
-{
-				return 0;
 }
 
 /*===========================================================================*

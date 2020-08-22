@@ -4,14 +4,12 @@
  */
 /* $Header$ */
 
-#include	<string.h>
+#include <string.h>
 
-void *
-memcpy(void *s1, const void *s2, register size_t n)
+void *memcpy(void *dest, const void *src, size_t n)
 {
-	register char *p1 = s1;
-	register const char *p2 = s2;
-
+	char *p1 = dest;
+	const char *p2 = src;
 
 	if (n) {
 		n++;
@@ -19,5 +17,5 @@ memcpy(void *s1, const void *s2, register size_t n)
 			*p1++ = *p2++;
 		}
 	}
-	return s1;
+	return dest;
 }

@@ -178,6 +178,7 @@ PUBLIC void main()
 			{
 				rp->p_reg.sp = 0;
 			}
+			kprintf("Task %s: proc_ptr = 0x%08X\n", rp->p_name, rp);
 		}
 		else
 		{
@@ -205,6 +206,8 @@ PUBLIC void main()
 	 */
 	bill_ptr = proc_addr(IDLE); /* it has to point somewhere */
 	announce();                 /* print MINIX startup banner */
+	//extern void force_undefined(void); force_undefined();
+	//extern void force_data_abort(void); force_data_abort();
 	restart();
 }
 
@@ -227,7 +230,7 @@ PRIVATE void announce(void)
 /*===========================================================================*
  *				prepare_shutdown			     *
  *===========================================================================*/
-PUBLIC void prepare_shutdown(how) int how;
+PUBLIC void prepare_shutdown(int how)
 {
 	/* This function prepares to shutdown MINIX. */
 	static timer_t shutdown_timer;
@@ -251,7 +254,7 @@ PUBLIC void prepare_shutdown(how) int how;
 #endif
 
 	/* Continue after 1 second, to give processes a chance to get scheduled to 
-	 * do shutdown work.  Set a watchog timer to call shutdown(). The timer 
+	 * do shutdown work.  Set a watchdog timer to call shutdown(). The timer 
 	 * argument passes the shutdown status. 
 	 */
 	kprintf("MINIX will now be shut down ...\n");
