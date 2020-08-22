@@ -18,18 +18,20 @@ typedef struct {short m5c1, m5c2; int m5i1, m5i2; long m5l1, m5l2, m5l3;}mess_5;
 typedef struct {int m7i1, m7i2, m7i3, m7i4; char *m7p1, *m7p2;} mess_7;
 typedef struct {int m8i1, m8i2; char *m8p1, *m8p2, *m8p3, *m8p4;} mess_8;
 
-typedef struct {
-  int m_source;			/* who sent the message */
-  int m_type;			/* what kind of message is it */
-  union {
-	mess_1 m_m1;
-	mess_2 m_m2;
-	mess_3 m_m3;
-	mess_4 m_m4;
-	mess_5 m_m5;
-	mess_7 m_m7;
-	mess_8 m_m8;
-  } m_u;
+typedef struct
+{
+	int m_source;			/* who sent the message */
+	int m_type;			/* what kind of message is it */
+	union
+	{
+		mess_1 m_m1;
+		mess_2 m_m2;
+		mess_3 m_m3;
+		mess_4 m_m4;
+		mess_5 m_m5;
+		mess_7 m_m7;
+		mess_8 m_m8;
+	} m_u;
 } message;
 
 /* The following defines provide names for useful members. */
@@ -91,21 +93,20 @@ typedef struct {
 #define receive		_receive
 #define send		_send
 
-_PROTOTYPE( int echo, (message *m_ptr)					);
-_PROTOTYPE( int notify, (int dest)					);
-_PROTOTYPE( int sendrec, (int src_dest, message *m_ptr)			);
-_PROTOTYPE( int receive, (int src, message *m_ptr)			);
-_PROTOTYPE( int send, (int dest, message *m_ptr)			);
+int echo(message *m_ptr);
+int notify(int dest);
+int sendrec(int src_dest, message *m_ptr);
+int receive(int src, message *m_ptr);
+int send(int dest, message *m_ptr);
 
 #define ipc_request	_ipc_request
 #define ipc_reply	_ipc_reply
 #define ipc_notify	_ipc_notify
-#define ipc_select	_ipc_select
+#define ipc_receive	_ipc_receive
 
-_PROTOTYPE( int ipc_request, (int dst, message *m_ptr)			);
-_PROTOTYPE( int ipc_reply, (int dst, message *m_ptr)			);
-_PROTOTYPE( int ipc_notify, (int dst, long event_set)			);
-_PROTOTYPE( int ipc_receive, (int src, long events, message *m_ptr)	);
-
+int ipc_request(int dst, message *m_ptr);
+int ipc_reply(int dst, message *m_ptr);
+int ipc_notify(int dst, long event_set);
+int ipc_receive(int src, message *m_ptr, long events);
 
 #endif /* _IPC_H */

@@ -26,71 +26,43 @@ RECEIVE = 2
 SENDREC = 3 
 NOTIFY = 4
 ECHO = 8
-SYSVEC = 33			@ trap to kernel 
+SYSVEC = 33			// trap to kernel 
 
-SRC_DST = 8			@ source/ destination process 
-ECHO_MESS = 8			@ echo doesn't have SRC_DST 
-MESSAGE = 12			@ message pointer 
-
-#*========================================================================*
-#                           IPC assembly routines			  *
-#*========================================================================*
-# all message passing routines save ebp, but destroy eax and ecx.
+/*========================================================================*
+ *                           IPC assembly routines			  *
+ *========================================================================*
+ * all message passing routines save ebp, but destroy eax and ecx.
+ */
 
 _send:
-	@ push	ebp
-	@ mov	ebp, esp
-	@ push	ebx
-	@ mov	eax, SRC_DST(ebp)	# eax = dest-src
-	@ mov	ebx, MESSAGE(ebp)	# ebx = message pointer
-	@ mov	ecx, SEND		# _send(dest, ptr)
-	@ int	SYSVEC			# trap to the kernel
-	@ pop	ebx
-	@ pop	ebp
+	// r0 = destination
+	// r1 = message pointer
+	mov	r3, SEND		// _send(dest, ptr)
+	svc	SYSVEC			// trap to the kernel
 	bx	lr
 
 _receive:
-	@ push	ebp
-	@ mov	ebp, esp
-	@ push	ebx
-	@ mov	eax, SRC_DST(ebp)	# eax = dest-src
-	@ mov	ebx, MESSAGE(ebp)	# ebx = message pointer
-	@ mov	ecx, RECEIVE		# _receive(src, ptr)
-	@ int	SYSVEC			# trap to the kernel
-	@ pop	ebx
-	@ pop	ebp
+	// r0 = src
+	// r1 = message pointer
+	mov	r3, RECEIVE		// _receive(src, ptr)
+	svc	SYSVEC			// trap to the kernel
 	bx	lr
 
 _sendrec:
-	@ push	ebp
-	@ mov	ebp, esp
-	@ push	ebx
-	@ mov	eax, SRC_DST(ebp)	# eax = dest-src
-	@ mov	ebx, MESSAGE(ebp)	# ebx = message pointer
-	@ mov	ecx, SENDREC		# _sendrec(srcdest, ptr)
-	@ int	SYSVEC			# trap to the kernel
-	@ pop	ebx
-	@ pop	ebp
+	// r0 = dest-src
+	// r1 = message pointer
+	mov	r3, SENDREC		// _sendrec(srcdest, ptr)
+	svc	SYSVEC			// trap to the kernel
 	bx	lr
 
 _notify:
-	@ push	ebp
-	@ mov	ebp, esp
-	@ push	ebx
-	@ mov	eax, SRC_DST(ebp)	# ebx = destination 
-	@ mov	ecx, NOTIFY		# _notify(srcdst)
-	@ int	SYSVEC			# trap to the kernel
-	@ pop	ebx
-	@ pop	ebp
+	// r0 = destination 
+	mov	r3, NOTIFY		// _notify(srcdst)
+	svc	SYSVEC			// trap to the kernel
 	bx	lr
 
 _echo:
-	@ push	ebp
-	@ mov	ebp, esp
-	@ push	ebx
-	@ mov	ebx, ECHO_MESS(ebp)	# ebx = message pointer
-	@ mov	ecx, ECHO		# _echo(srcdest, ptr)
-	@ int	SYSVEC			# trap to the kernel
-	@ pop	ebx
-	@ pop	ebp
+	mov	r1, r0			// r1 = message pointer
+	mov	r3, ECHO		// _echo(ptr)
+	svc	SYSVEC			// trap to the kernel
 	bx	lr

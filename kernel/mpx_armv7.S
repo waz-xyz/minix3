@@ -221,7 +221,7 @@ memclr:
 /*===========================================================================*
  *				save					     *
  *===========================================================================*
- * Save registers before context switch.
+ * Save registers upon entering the kernel.
  */
 save:
 	ldr	r1, =proc_ptr
@@ -376,12 +376,12 @@ fast_irq_handler:
 	cps	#MODE_SVC
 	push	{r0-r12, lr}
 	mov	r0, FAST_IRQ_EXCEPTION
-	b	generic_exception_handler
+	/* Fall into generic exception handling */
 
 generic_exception_handler:
-	/* Turn on the blue LED */
-	mov	r0, #4
-	bl	SetLeds
+	@ /* Turn on the blue LED */
+	@ mov	r0, #4
+	@ bl	SetLeds
 	bl	save
 	/* k_reenter += 1; keep the new value at r4 */
 	ldr	r1, =k_reenter

@@ -233,10 +233,7 @@ PRIVATE void vm_init(void)
 {
 }
 
-PRIVATE void map_range(base, size, offset)
-u32_t base;
-u32_t size;
-u32_t offset;
+PRIVATE void map_range(u32_t base, u32_t size, u32_t offset)
 {
 }
 
