@@ -24,7 +24,6 @@ PUBLIC void intr_init(int mine)
 	/* Set exception vector table at physical address 0 */
 	char *ex_start = &exception_vector_start, *ex_end = &exception_vector_end;
 	kprintf("exception_vector_start = 0x%08X\nexception_vector_end = 0x%08X\n", ex_start, ex_end);
-	copy_vir2phys(ex_start, 0, ex_end-ex_start);
 }
 
 /*===========================================================================*

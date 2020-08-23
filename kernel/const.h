@@ -96,8 +96,8 @@
 /* ARM specific constants go here. */
 
 /* Program stack words and masks. */
-#define INIT_PSW      0x10	/* initial psw with mode = 0x10 */
-#define INIT_TASK_PSW 0x33	/* initial psw for tasks with mode = 0x13 */
+#define INIT_PSW      0x10	/* initial psw for user processes (mode=user) */
+#define INIT_TASK_PSW 0x3F	/* initial psw for tasks (mode=system, thumb=enabled) */
 #define TRACEBIT      0x0100	/* OR this with psw in proc[] for tracing */
 #define SETPSW(rp, new)		/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)
@@ -129,7 +129,7 @@
 #define	PAGE_TABLE_SIZE				0x400
 #define	PAGE_TABLE_ALIGN			(PAGE_TABLE_SIZE - 1)
 #define	PAGE_TABLE_NOF_ENTRIES			(PAGE_TABLE_SIZE / 4)
-#define	KERNEL_MMU_TABLES_SIZE			(KERNEL_FIRST_LEVEL_TT_SIZE + PAGE_TABLE_SIZE)
+#define	KERNEL_MMU_TABLES_SIZE			(KERNEL_FIRST_LEVEL_TT_SIZE + 2*PAGE_TABLE_SIZE)
 #define	ARM_SECTION_SIZE			0x100000
 #define	LARGE_PAGE_SIZE				0x10000
 #define	SMALL_PAGE_SIZE				0x1000
@@ -139,7 +139,7 @@
 #define	KERNEL_CODE_SIZE			LARGE_PAGE_SIZE
 #define	KERNEL_DATA_SIZE			LARGE_PAGE_SIZE
 						/* code + data + guard_page + stack */
-#define	INITIAL_KERNEL_SP			(KERNEL_CODE_SIZE + KERNEL_DATA_SIZE + SMALL_PAGE_SIZE + KERNEL_STACK_SIZE)
+#define	INITIAL_KERNEL_SP			(KERNEL_VIRTUAL_BASE + KERNEL_CODE_SIZE + KERNEL_DATA_SIZE + SMALL_PAGE_SIZE + KERNEL_STACK_SIZE)
 #define	KERNEL_RAW_ACCESS_BASE			0x81000000
 #define	USER_DEFAULT_STACK_SIZE			0x10000
 
@@ -155,6 +155,11 @@
 #define	READ_TTBR0	1
 #define	READ_TTBR1	2
 #define	READ_TTBCR	3
+
+#define	INVALIDATE_TLB		0
+#define	INVALIDATE_ICACHE	1
+#define	INVALIDATE_DCACHE	2
+#define	INVALIDATE_BPREDICTOR	3
 
 #endif /* (CHIP == ARM) */
 

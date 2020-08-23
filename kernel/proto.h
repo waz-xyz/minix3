@@ -186,6 +186,7 @@ void intr_disable(void);
 void cp_mess(int src,phys_clicks src_clicks,vir_bytes src_offset, phys_clicks dst_clicks, vir_bytes dst_offset);
 void enable_irq(irq_hook_t *hook);
 int disable_irq(irq_hook_t *hook);
+void invalidate_system_structures(int type);
 void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
 void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
 uint32_t read_psr(int type);

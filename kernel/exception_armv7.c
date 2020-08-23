@@ -54,9 +54,16 @@ PUBLIC void exception(unsigned exception_type)
 
 	/* Exception in system code. This is not supposed to happen. */
 	kprintf("\nException #%d: %s\n", exception_type, ep->msg);
-	kprintf("k_reenter = %d, ", k_reenter);
-	kprintf("process %d (%s), ", proc_nr(saved_proc), saved_proc->p_name);
-	kprintf("pc = 0x%X", (unsigned)saved_proc->p_reg.pc);
+	kprintf("k_reenter = %d\n", k_reenter);
+	if (saved_proc != NULL)
+	{
+		kprintf("process %d (%s)\n", proc_nr(saved_proc), saved_proc->p_name);
+		kprintf("pc = 0x%X\n", (unsigned)saved_proc->p_reg.pc);
+	}
+	else
+	{
+		kprintf("Abnormal condition: proc_ptr == NULL\n");
+	}
 
 	panic("exception in a kernel task", NO_NUM);
 }

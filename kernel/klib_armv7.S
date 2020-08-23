@@ -39,6 +39,9 @@
 
 	.global read_system_register
 	.type	read_system_register, %function
+	
+	.global invalidate_system_structures
+	.type	invalidate_system_structures, %function
 
 intr_disable:
 	cpsid	i
@@ -168,8 +171,7 @@ read_system_register:
 	cmp	r0, READ_TTBCR
 	mrceq	p15, 0, r0, c2, c0, 2
 	movne	r0, 0
-0:
-	bx	lr
+0:	bx	lr
 
 	.global set_leds
 	.type	set_leds, %function
@@ -177,3 +179,19 @@ set_leds:
 	ldr	r1, =#0x80022000
 	str	r0, [r1]
 	bx	lr
+
+/*===========================================================================*
+ *			      invalidate_system_structures		     *
+ *===========================================================================*
+ * PUBLIC void invalidate_system_structures(int type);
+ */
+invalidate_system_structures:
+	cmp	r0, INVALIDATE_TLB
+	mcreq	p15, 0, r0, c8, c7, 0		// Execute TLBIALL
+	beq	0f
+	cmp	r0, INVALIDATE_ICACHE
+	mcreq	p15, 0, r0, c7, c5, 0		// Execute ICIALLU
+	beq	0f
+	cmp	r0, INVALIDATE_BPREDICTOR
+	mcreq	p15, 0, r0, c7, c5, 6		// Execute BPIALL
+0:	bx	lr

@@ -208,6 +208,7 @@ PUBLIC void main()
 	announce();                 /* print MINIX startup banner */
 	//extern void force_undefined(void); force_undefined();
 	//extern void force_data_abort(void); force_data_abort();
+	kprintf("About to restart a process...");
 	restart();
 }
 

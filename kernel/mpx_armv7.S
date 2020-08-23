@@ -95,6 +95,14 @@ skip_header:
 	add	r0, r7, #1		/* Make it point to a page table */
 	str	r0, [r1]
 
+	/* Set page table descriptor for L1 table index = 0xFFF
+	   with base address at the end of the first page table. */
+	mov	r1, #(4 * 0xFFF)
+	add	r1, r8
+	add	r0, r7, #PAGE_TABLE_SIZE
+	add	r0, r0, #1		/* Make it point to a page table */
+	str	r0, [r1]
+
 	/* Set section descriptors for L1 table index = 0x810 and beyond
 	   with base addresses starting at 0.
 	   Enable access to the first 16 MBs of physical memory. */
@@ -153,6 +161,11 @@ one_more_page:
 	/* Set domains through DACR */
 	mov	r0, #0xFFFFFFFF
 	mcr	p15, 0, r0, c3, c0, 0
+
+	/* Set V = 1 in SCTLR (high exception vectors) */
+	mrc	p15, 0, r0, c1, c0, 0
+	orr	r0, #(1 << 13)
+	mcr	p15, 0, r0, c1, c0, 0
 
 	/* Set kernel stack */
 	ldr	sp, =#INITIAL_KERNEL_SP
@@ -224,26 +237,17 @@ memclr:
  * Save registers upon entering the kernel.
  */
 save:
-	ldr	r1, =proc_ptr
-	ldr	r1, [r1]		// r1 = proc_ptr
-	mov	r2, r1
-	pop	{r3-r12}		// Store r0..r9
-	ldm	r1!, {r3-r12}		//  at proc_ptr->p_reg.r[0..9]
-	pop	{r10-r12}		// Store r10..r12
-	ldm	r1!, {r10-r12}		//  at proc_ptr->p_reg.r[10..12]
-	ldr	r2, [r2, #P_NR_OFFSET]	// r2 = proc_ptr->p_nr
-	cmp	r2, 0
-	ble	is_task			// If proc_ptr->p_nr < 0, it's a task
-	ldm	r1, {sp}^		// r1 = sp_usr
-	add	r1, #4
-	b	0f
-is_task:
-	add	r2, sp, #12		// sp+12 = old sp position
-	ldm	r1!, {r2}	
+	push	{lr}
+	ldr	lr, =proc_ptr
+	ldr	lr, [lr]		// lr = proc_ptr
+	beq	0f			// if proc_ptr == NULL, we have a problem
+	stm	lr, {r0-r14}^		// proc_ptr->p_reg.r[0..14] = r[0..14]_usr
+	add	lr, #(15 * 4)
+	add	sp, #4			// skip pushed lr
+	pop	{r1-r2}			// Store saved pc(return),spsr
+	ldm	lr!, {r1-r2}		//  at proc_ptr->p_reg.[pc,psw]
+	ldr	lr, [sp, #-12]		// load pushed lr
 0:
-	pop	{r2-r4}			// Store saved lr,pc(return),spsr
-	ldm	r1!, {r2-r4}		//  at proc_ptr->p_reg.[lr,pc,psw]
-
 	bx	lr
 
 /*===========================================================================*
@@ -261,25 +265,44 @@ restart:
 	mov	r2, 0
 	str	r2, [r1]		// next_ptr = 0
 0:	ldr	r0, [r0]		// r0 = proc_ptr
-	ldr	r1, [r0, #P_TTBASE_OFFSET]
-	mcr	p15, 0, r1, c2, c0, 0	// set TTBR0 base address to proc_ptr->p_ttbase */
-	/* at this point r0 = &(proc_ptr->p_reg.r0) */
+	// at this point r0 = &(proc_ptr->p_reg.r0)
 restart1:
+	// k_reenter -= 1
 	ldr	r1, =k_reenter
 	ldr	r2, [r1]
 	sub	r2, 1
-	strb	r2, [r1]		// k_reenter -= 1
+	strb	r2, [r1]
 
+	// If proc_ptr->p_nr < 0, we are switching to a kernel task,
+	// so we can skip the MMU context switch. Keep p_nr at r1.
 	ldr	r1, [r0, #P_NR_OFFSET]
 	cmp	r1, 0
-	ble	1f
-	/* switching to a user process */
-	ldm	r0, {r0-r14}^		// r0_usr-r14_usr = proc_ptr->p_reg.r[0..14]
+	blt	1f
+
+	// get current ASID from CONTEXTDIR and keep at r4
+	mrc	p15, 0, r4, c13, c0, 1
+	and	r4, #0xFF
+
+	// set ASID in CONTEXTDIR
+	and	r1, #0xFF		// use the lower 8 bits of proc_ptr->p_nr
+	cmp	r1, r4			// compare current ASID with ASID of next process
+	beq	1f			// if they are the same, skip the MMU context switch
+	mcr	p15, 0, r1, c13, c0, 1
+
+	// set TTBR0 base address to proc_ptr->p_ttbase
+	ldr	r2, [r0, #P_TTBASE_OFFSET]
+	mcr	p15, 0, r2, c2, c0, 0
+
+	// invalidate TLB by ASID
+	mcr	p15, 0, r4, c8, c7, 2	// execute TLBIASID
+	isb				// make effective every instruction up to this point
+
+1:	// (re)load registers for the process
+	ldm	r0, {r0-r14}^		// r[0..14]_usr = proc_ptr->p_reg.r[0..14]
 	add	r0, #PCREG_OFFSET	// r0 = &(proc_ptr->p_reg.pc)
 	rfe	r0			// continue process:
 					//	pc_usr = proc_ptr->p_reg.pc
 					//	cpsr_usr = proc_ptr->p_reg.psw
-1:	/* switching to a kernel task */
 	@ mov	r1, r0
 	@ ldr	r2, [r0, #P_NR_OFFSET]
 	@ ldr	r3, [r0, #PCREG_OFFSET]
@@ -288,77 +311,60 @@ restart1:
 	@ mov	r0, 1
 	@ bl	SetLeds
 	@ b	.
-	ldr	r1, [r0, #PSWREG_OFFSET]
-	msr	spsr, r1		// spsr = proc_ptr->p_reg.psw
-	ldm	r0, {r0-r15}^		// continue process:
-					//	r0_svc..r15_svc = proc_ptr->p_reg[0..15]
-					//	cpsr_svc = spsr_svc = proc_ptr->p_reg.psw
-
 @ mystr:	.asciz "proc_ptr = 0x%08X, nr = %d, next_pc = 0x%08X\n"
 @ 	.align 4
-/*===========================================================================*
- *			exception vector table			     	     *
- *===========================================================================*/
-
-	.global	exception_vector_start
-	.global	exception_vector_end
-
-exception_vector_start:
-
-	ldr	pc, reset_handler_addr
-	ldr	pc, undefined_instruction_handler_addr
-	ldr	pc, supervisor_call_handler_addr
-	ldr	pc, prefetch_abort_handler_addr
-	ldr	pc, data_abort_handler_addr
-	nop
-	ldr	pc, irq_handler_addr
-	ldr	pc, fast_irq_handler_addr
-
-reset_handler_addr:			.word reset_handler
-undefined_instruction_handler_addr:	.word undefined_instruction_handler
-supervisor_call_handler_addr:		.word supervisor_call_handler
-prefetch_abort_handler_addr:		.word prefetch_abort_handler
-data_abort_handler_addr:		.word data_abort_handler
-irq_handler_addr:			.word irq_handler
-fast_irq_handler_addr:			.word fast_irq_handler
-
-exception_vector_end:
 
 /*===========================================================================*
  *				exception handlers		     	     *
  *===========================================================================*/
 
+	.global	reset_handler
+	.global	undefined_instruction_handler
+	.global	supervisor_call_handler
+	.global	prefetch_abort_handler
+	.global	data_abort_handler
+	.global	irq_handler
+	.global	fast_irq_handler
+
+	.type	reset_handler, %function
+	.type	undefined_instruction_handler, %function
+	.type	supervisor_call_handler, %function
+	.type	prefetch_abort_handler, %function
+	.type	data_abort_handler, %function
+	.type	irq_handler, %function
+	.type	fast_irq_handler, %function
+
 reset_handler:
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, RESET_EXCEPTION
 	b	generic_exception_handler
 
 undefined_instruction_handler:
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, UNDEFINED_INSTRUCTION_EXCEPTION
 	b	generic_exception_handler
 
 supervisor_call_handler:
 	srsdb	sp!, #MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, SUPERVISOR_CALL_EXCEPTION
 	b	generic_exception_handler
 
 prefetch_abort_handler:
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, PREFETCH_ABORT_EXCEPTION
 	b	generic_exception_handler
 
 data_abort_handler:
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, DATA_ABORT_EXCEPTION
 	b	generic_exception_handler
 
@@ -366,7 +372,7 @@ irq_handler:
 	sub	lr, #4
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, IRQ_EXCEPTION
 	b	generic_exception_handler
 
@@ -374,27 +380,28 @@ fast_irq_handler:
 	sub	lr, #4
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
-	push	{r0-r12, lr}
+	bl	save
 	mov	r0, FAST_IRQ_EXCEPTION
-	/* Fall into generic exception handling */
+	// Fall into generic exception handling
 
 generic_exception_handler:
-	@ /* Turn on the blue LED */
-	@ mov	r0, #4
-	@ bl	SetLeds
-	bl	save
-	/* k_reenter += 1; keep the new value at r4 */
+	// Turn on the blue LED
+	mov	r5, #4
+	ldr	r6, =#0x80022000
+	str	r5, [r6]
+	// k_reenter += 1; keep the new value at r4 (callee-saved)
 	ldr	r1, =k_reenter
 	ldr	r4, [r1]
 	add	r4, 1
 	str	r4, [r1]
-	/* The stack must be aligned at 8 bytes by ARM ABI requirements. */
+	// The stack must be aligned at 8 bytes by ARM ABI requirements.
+	// Keep the offset at r5 (callee-saved).
 	and	r5, sp, #4
 	sub	sp, r5
 	ldr	r1, =exception
 	blx	r1
 	add	sp, r5
-	/* If ++k_reenter != 0 we are reentering the kernel */
+	// If ++k_reenter != 0 we are reentering the kernel
 	cmp	r4, 0
 	beq	restart
 	bne	restart1
@@ -411,12 +418,14 @@ generic_interrupt_handler:
 	rfe	sp!
 
 	.global force_undefined
+	.type	force_undefined, %function
 force_undefined:
 	mrc	p8, 0, r0, c0, c0, 0
 	bx	lr
 
 	.global force_data_abort
+	.type	force_data_abort, %function
 force_data_abort:
-	mov	r0, #0x10000000
+	mov	r0, #0
 	ldr	r0, [r0]
 	bx	lr

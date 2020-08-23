@@ -18,6 +18,9 @@ static uint32_t user_tt_start, user_tt_end;
 
 static void print_1st_level_table(uint32_t *table, int is_user);
 static void print_page_table(uint32_t *table);
+static void set_exception_vector_table(void);
+static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int domain);
+static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b);
 
 void init_mmu_module(void)
 {
@@ -51,6 +54,8 @@ void init_mmu_module(void)
 		next_free_pt_location = ALIGN_TO_PAGE_TABLE(user_tt_end);
 	}
 
+	set_exception_vector_table();
+
 	kprintf("next_free_pt_location: 0x%08X\n", next_free_pt_location);
 	kprintf("user_tt_start: 0x%08X\n", user_tt_start);
 	kprintf("user_tt_end: 0x%08X\n", user_tt_end);
@@ -60,6 +65,20 @@ void init_mmu_module(void)
 	print_1st_level_table(kernel_1st_level_tt, 0);
 	// kprintf("Kernel's page table:\n");
 	// print_page_table(kernel_page_table);
+}
+
+void set_exception_vector_table(void)
+{
+	uint32_t *pt = kernel_page_table + PAGE_TABLE_SIZE/4;
+	uint32_t base = vir2phys(&exception_vector_start);
+	kprintf("exception_vector_start physical address = 0x%08X\n", base);
+	SetSmallPageDescriptor(pt, 0xF0, base, 5, 5, 0, 1);
+
+	uint32_t *v = (uint32_t*)0xFFFF0000;
+	for (int i = 0; i < 15; i++)
+	{
+		kprintf("%08X: 0x%08X\n", &v[i], v[i]);
+	}
 }
 
 static void print_1st_level_table(uint32_t *table, int is_user)
@@ -310,8 +329,10 @@ void allocate_pages(struct proc *pr)
 
 	if (pr->p_nr == 4)
 	{
-		kprintf("Kernel page table:\n");
-		print_page_table(kernel_page_table);	
+		kprintf("Kernel page table #1:\n");
+		print_page_table(kernel_page_table);
+		kprintf("Kernel page table #2:\n");
+		print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
 	}
 }
 
@@ -349,7 +370,11 @@ uint32_t vir2phys(void *address)
 {
 	uint32_t addr = (uint32_t) address;
 
-	if (KERNEL_RAW_ACCESS_BASE <= addr && addr < (KERNEL_RAW_ACCESS_BASE + OFFSET_16MB))
+	if (KERNEL_VIRTUAL_BASE <= addr && addr < (KERNEL_VIRTUAL_BASE + KERNEL_CODE_SIZE + KERNEL_DATA_SIZE))
+	{
+		return addr - KERNEL_VIRTUAL_BASE + KERNEL_PHYSICAL_BASE;
+	}
+	else if (KERNEL_RAW_ACCESS_BASE <= addr && addr < (KERNEL_RAW_ACCESS_BASE + OFFSET_16MB))
 	{
 		return addr - KERNEL_RAW_ACCESS_BASE;
 	}
