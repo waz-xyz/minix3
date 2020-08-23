@@ -58,7 +58,19 @@ PUBLIC void exception(unsigned exception_type)
 	if (saved_proc != NULL)
 	{
 		kprintf("process %d (%s)\n", proc_nr(saved_proc), saved_proc->p_name);
-		kprintf("pc = 0x%X\n", (unsigned)saved_proc->p_reg.pc);
+		kprintf("pc = 0x%08X\n", saved_proc->p_reg.pc);
+		kprintf("psw = 0x%08X\n", saved_proc->p_reg.psw);
+		kprintf("sp = 0x%08X\n", saved_proc->p_reg.sp);
+		if (exception_type == PREFETCH_ABORT_EXCEPTION)
+		{
+			kprintf("ifsr = 0x%08X\n", read_system_register(READ_IFSR));
+			kprintf("ifar = 0x%08X\n", read_system_register(READ_IFAR));
+		}
+		else if (exception_type == DATA_ABORT_EXCEPTION)
+		{
+			kprintf("dfsr = 0x%08X\n", read_system_register(READ_DFSR));
+			kprintf("dfar = 0x%08X\n", read_system_register(READ_DFAR));
+		}
 	}
 	else
 	{

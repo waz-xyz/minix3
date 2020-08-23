@@ -130,7 +130,11 @@ PUBLIC void main()
 		}
 		else
 		{
-			rp->p_reg.pc = (reg_t)ip->initial_pc;
+			/* All C code is Thumb and so the lsb of a function pointer is 1,
+			 * however the PC to restore must be a true address.
+			 */
+			rp->p_reg.pc = (reg_t)ip->initial_pc & ~1U;
+			kprintf("Task %s has initial pc = 0x%08X\n", rp->p_name, rp->p_reg.pc);
 		}
 
 		/* Set initial register values.  The processor status word for tasks 
@@ -186,6 +190,9 @@ PUBLIC void main()
 			allocate_pages(rp);
 		}
 	}
+
+	/* After modifying page tables, we need to invalidate the TLB entries */
+	invalidate_system_structures(INVALIDATE_TLB);
 
 #if ENABLE_BOOTDEV
 	/* Expect an image of the boot device to be loaded into memory as well. 

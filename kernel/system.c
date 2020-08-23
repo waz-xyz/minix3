@@ -69,7 +69,6 @@ PUBLIC void sys_task(void)
 	int s;
 
 	set_leds(4);
-	halt_cpu();
 	/* Initialize the system task. */
 	initialize();
 

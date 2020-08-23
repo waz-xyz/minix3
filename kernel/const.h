@@ -155,6 +155,10 @@
 #define	READ_TTBR0	1
 #define	READ_TTBR1	2
 #define	READ_TTBCR	3
+#define	READ_IFSR	4
+#define	READ_IFAR	5
+#define	READ_DFSR	6
+#define	READ_DFAR	7
 
 #define	INVALIDATE_TLB		0
 #define	INVALIDATE_ICACHE	1

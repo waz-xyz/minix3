@@ -240,6 +240,8 @@ save:
 	push	{lr}
 	ldr	lr, =proc_ptr
 	ldr	lr, [lr]		// lr = proc_ptr
+	cmp	lr, 0
+	popeq	{lr}
 	beq	0f			// if proc_ptr == NULL, we have a problem
 	stm	lr, {r0-r14}^		// proc_ptr->p_reg.r[0..14] = r[0..14]_usr
 	add	lr, #(15 * 4)
@@ -271,7 +273,7 @@ restart1:
 	ldr	r1, =k_reenter
 	ldr	r2, [r1]
 	sub	r2, 1
-	strb	r2, [r1]
+	str	r2, [r1]
 
 	// If proc_ptr->p_nr < 0, we are switching to a kernel task,
 	// so we can skip the MMU context switch. Keep p_nr at r1.
@@ -297,10 +299,14 @@ restart1:
 	mcr	p15, 0, r4, c8, c7, 2	// execute TLBIASID
 	isb				// make effective every instruction up to this point
 
+	// return sp of kernel to its empty location
+	ldr	sp, =INITIAL_KERNEL_SP
+
 1:	// (re)load registers for the process
-	ldm	r0, {r0-r14}^		// r[0..14]_usr = proc_ptr->p_reg.r[0..14]
-	add	r0, #PCREG_OFFSET	// r0 = &(proc_ptr->p_reg.pc)
-	rfe	r0			// continue process:
+	mov	lr, r0			// use lr_svc because is different from lr_usr
+	ldm	lr, {r0-r14}^		// r[0..14]_usr = proc_ptr->p_reg.r[0..14]
+	add	lr, #PCREG_OFFSET	// r0 = &(proc_ptr->p_reg.pc)
+	rfe	lr			// continue process:
 					//	pc_usr = proc_ptr->p_reg.pc
 					//	cpsr_usr = proc_ptr->p_reg.psw
 	@ mov	r1, r0
@@ -385,10 +391,10 @@ fast_irq_handler:
 	// Fall into generic exception handling
 
 generic_exception_handler:
-	// Turn on the blue LED
-	mov	r5, #4
-	ldr	r6, =#0x80022000
-	str	r5, [r6]
+	@ // Turn on the blue LED
+	@ mov	r5, #4
+	@ ldr	r6, =#0x80022000
+	@ str	r5, [r6]
 	// k_reenter += 1; keep the new value at r4 (callee-saved)
 	ldr	r1, =k_reenter
 	ldr	r4, [r1]

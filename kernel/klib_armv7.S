@@ -44,11 +44,11 @@
 	.type	invalidate_system_structures, %function
 
 intr_disable:
-	cpsid	i
+	cpsid	if
 	bx      lr
 
 intr_enable:
-	cpsie	i
+	cpsie	if
 	bx      lr
 
 /*===========================================================================*
@@ -66,11 +66,16 @@ halt_cpu:
  *===========================================================================*
  * This task is called when the system has nothing else to do.  The HLT
  * instruction puts the processor in a state where it draws minimum power.
+ * It must be Thumb code, because all kernel tasks use this instruction set.
  */
+	.thumb_func
 idle_task:
 	cpsie	if
 	wfe
 	bx	lr
+
+	.arm
+	.align	2
 
 /*==========================================================================*
  *				enable_irq				    *
@@ -170,15 +175,20 @@ read_system_register:
 	beq	0f
 	cmp	r0, READ_TTBCR
 	mrceq	p15, 0, r0, c2, c0, 2
+	beq	0f
+	cmp	r0, READ_IFSR
+	mrceq	p15, 0, r0, c5, c0, 1
+	beq	0f
+	cmp	r0, READ_IFAR
+	mrceq	p15, 0, r0, c6, c0, 2
+	beq	0f
+	cmp	r0, READ_DFSR
+	mrceq	p15, 0, r0, c5, c0, 0
+	beq	0f
+	cmp	r0, READ_DFAR
+	mrceq	p15, 0, r0, c6, c0, 0
 	movne	r0, 0
 0:	bx	lr
-
-	.global set_leds
-	.type	set_leds, %function
-set_leds:
-	ldr	r1, =#0x80022000
-	str	r0, [r1]
-	bx	lr
 
 /*===========================================================================*
  *			      invalidate_system_structures		     *
@@ -194,4 +204,13 @@ invalidate_system_structures:
 	beq	0f
 	cmp	r0, INVALIDATE_BPREDICTOR
 	mcreq	p15, 0, r0, c7, c5, 6		// Execute BPIALL
-0:	bx	lr
+0:	isb					// Make sure the call has an effect
+	bx	lr
+
+
+	.global set_leds
+	.type	set_leds, %function
+set_leds:
+	ldr	r1, =#0x80022000
+	str	r0, [r1]
+	bx	lr
