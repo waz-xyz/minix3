@@ -27,8 +27,13 @@ static struct ex_s ex_data[] = {
  *===========================================================================*/
 PUBLIC void exception(unsigned exception_type)
 {
-	register struct ex_s *ep;
+	struct ex_s *ep;
 	struct proc *saved_proc;
+	/* For SVC exceptions: */
+	int call_nr;
+	int src_dst;
+	message *m_ptr;
+	long bit_map;
 
 	/* An exception or interrupt has occurred. */
 
@@ -46,11 +51,27 @@ PUBLIC void exception(unsigned exception_type)
 	* will be zero. Exceptions in interrupt handlers or system traps will make 
 	* k_reenter larger than zero.
 	*/
-	// if (k_reenter == 0 && !iskernelp(saved_proc))
-	// {
-	// 	cause_sig(proc_nr(saved_proc), ep->signum);
-	// 	return;
-	// }
+	// if (k_reenter == 0 && 
+	if (k_reenter == 0)
+	{
+		switch (exception_type)
+		{
+			case SUPERVISOR_CALL_EXCEPTION:
+				call_nr = saved_proc->p_reg.r3;
+				src_dst = saved_proc->p_reg.r0;
+				m_ptr = (message*)saved_proc->p_reg.r1;
+				bit_map = saved_proc->p_reg.r2;
+				sys_call(call_nr, src_dst, m_ptr, bit_map);
+				return;
+			default:
+				// if (!iskernelp(saved_proc))
+				// {
+				// 	cause_sig(proc_nr(saved_proc), ep->signum);
+				// 	return;
+				// }
+				break;
+		}
+	}
 
 	/* Exception in system code. This is not supposed to happen. */
 	kprintf("\nException #%d: %s\n", exception_type, ep->msg);

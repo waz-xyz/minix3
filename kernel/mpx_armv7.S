@@ -246,8 +246,8 @@ save:
 	stm	lr, {r0-r14}^		// proc_ptr->p_reg.r[0..14] = r[0..14]_usr
 	add	lr, #(15 * 4)
 	add	sp, #4			// skip pushed lr
-	pop	{r1-r2}			// Store saved pc(return),spsr
-	ldm	lr!, {r1-r2}		//  at proc_ptr->p_reg.[pc,psw]
+	pop	{r0-r1}			// Store saved pc(return),spsr
+	stm	lr, {r0-r1}		//  at proc_ptr->p_reg.[pc,psw]
 	ldr	lr, [sp, #-12]		// load pushed lr
 0:
 	bx	lr

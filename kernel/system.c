@@ -60,15 +60,14 @@ FORWARD void initialize(void);
  *				sys_task				     *
  *===========================================================================*/
 PUBLIC void sys_task(void)
-{
 /* Main entry point of sys_task.  Get the message and dispatch on type. */
+{
 	static message m;
 	register int result;
 	register struct proc *caller_ptr;
 	unsigned int call_nr;
 	int s;
 
-	set_leds(4);
 	/* Initialize the system task. */
 	initialize();
 
@@ -110,7 +109,7 @@ PUBLIC void sys_task(void)
 			m.m_type = result;			/* report status of call */
 			if (OK != (s=lock_send(m.m_source, &m)))
 			{
-				kprintf("SYSTEM, reply to %d failed: %d\n", m.m_source, s);
+				kprintf("SYSTEM: reply to %d failed: %d\n", m.m_source, s);
 			}
 		}
 	}
@@ -125,12 +124,14 @@ PRIVATE void initialize(void)
 	int i;
 
 	/* Initialize IRQ handler hooks. Mark all hooks available. */
-	for (i=0; i<NR_IRQ_HOOKS; i++) {
-			irq_hooks[i].proc_nr_e = NONE;
+	for (i=0; i<NR_IRQ_HOOKS; i++)
+	{
+		irq_hooks[i].proc_nr_e = NONE;
 	}
 
 	/* Initialize all alarm timers for all processes. */
-	for (sp=BEG_PRIV_ADDR; sp < END_PRIV_ADDR; sp++) {
+	for (sp=BEG_PRIV_ADDR; sp < END_PRIV_ADDR; sp++)
+	{
 		tmr_inittimer(&(sp->s_alarm_timer));
 	}
 
@@ -139,15 +140,16 @@ PRIVATE void initialize(void)
 	 * handler functions. This is done with a macro that gives a compile error
 	 * if an illegal call number is used. The ordering is not important here.
 	 */
-	for (i=0; i<NR_SYS_CALLS; i++) {
-			call_vec[i] = do_unused;
+	for (i=0; i<NR_SYS_CALLS; i++)
+	{
+		call_vec[i] = do_unused;
 	}
 
 	/* Process management. */
-	map(SYS_FORK, do_fork); 		/* a process forked a new process */
-	map(SYS_EXEC, do_exec);		/* update process after execute */
-	map(SYS_EXIT, do_exit);		/* clean up after process exit */
-	map(SYS_NICE, do_nice);		/* set scheduling priority */
+	map(SYS_FORK, do_fork);			/* a process forked a new process */
+	map(SYS_EXEC, do_exec);			/* update process after execute */
+	map(SYS_EXIT, do_exit);			/* clean up after process exit */
+	map(SYS_NICE, do_nice);			/* set scheduling priority */
 	map(SYS_PRIVCTL, do_privctl);		/* system privileges control */
 	map(SYS_TRACE, do_trace);		/* request a trace operation */
 
@@ -177,19 +179,19 @@ PRIVATE void initialize(void)
 	map(SYS_VM_MAP, do_vm_map); 		/* Map/unmap physical (device) memory */
 
 	/* Copying. */
-	map(SYS_UMAP, do_umap);		/* map virtual to physical address */
-	map(SYS_VIRCOPY, do_vircopy); 	/* use pure virtual addressing */
-	map(SYS_PHYSCOPY, do_physcopy); 	/* use physical addressing */
-	map(SYS_VIRVCOPY, do_virvcopy);	/* vector with copy requests */
+	map(SYS_UMAP, do_umap);			/* map virtual to physical address */
+	map(SYS_VIRCOPY, do_vircopy);		/* use pure virtual addressing */
+	map(SYS_PHYSCOPY, do_physcopy);		/* use physical addressing */
+	map(SYS_VIRVCOPY, do_virvcopy);		/* vector with copy requests */
 	map(SYS_PHYSVCOPY, do_physvcopy);	/* vector with copy requests */
 
 	/* Clock functionality. */
 	map(SYS_TIMES, do_times);		/* get uptime and process times */
-	map(SYS_SETALARM, do_setalarm);	/* schedule a synchronous alarm */
+	map(SYS_SETALARM, do_setalarm);		/* schedule a synchronous alarm */
 
 	/* System control. */
 	map(SYS_ABORT, do_abort);		/* abort MINIX */
-	map(SYS_GETINFO, do_getinfo); 	/* request system information */
+	map(SYS_GETINFO, do_getinfo);		/* request system information */
 #if (CHIP == INTEL)
 	map(SYS_IOPENABLE, do_iopenable); 	/* Enable I/O */
 #endif
@@ -201,11 +203,11 @@ PRIVATE void initialize(void)
 PUBLIC int get_priv(
 	struct proc *rc,		/* new (child) process pointer */
 	int proc_type			/* system or user process flag */
-)		
-{
+)
 /* Get a privilege structure. All user processes share the same privilege 
  * structure. System processes get their own privilege structure. 
- */
+ */		
+{
 	register struct priv *sp;			/* privilege structure */
 
 	if (proc_type == SYS_PROC)			/* find a new slot */
@@ -230,7 +232,6 @@ PUBLIC int get_priv(
  *				get_randomness				     *
  *===========================================================================*/
 PUBLIC void get_randomness(int source)
-{
 /* On machines with the RDTSC (cycle counter read instruction - pentium
  * and up), use that for high-resolution raw entropy gathering. Otherwise,
  * use the realtime clock (tick resolution).
@@ -240,6 +241,7 @@ PUBLIC void get_randomness(int source)
  *
  * On machines without RDTSC, we use read_clock().
  */
+{
 	int r_next;
 	unsigned long tsc_high, tsc_low;
 
@@ -279,7 +281,7 @@ PUBLIC void send_sig(int proc_nr, int sig_nr)
 	static int n;
 
 	if(!isokprocn(proc_nr) || isemptyn(proc_nr))
-	return;
+		return;
 
 	rp = proc_addr(proc_nr);
 	sigaddset(&priv(rp)->s_sig_pending, sig_nr);
@@ -289,10 +291,10 @@ PUBLIC void send_sig(int proc_nr, int sig_nr)
 /*===========================================================================*
  *				cause_sig				     *
  *===========================================================================*/
-PUBLIC void cause_sig(proc_nr, sig_nr)
-int proc_nr;			/* process to be signalled */
-int sig_nr;			/* signal to be sent, 1 to _NSIG */
-{
+PUBLIC void cause_sig(
+	int proc_nr,		/* process to be signalled */
+	int sig_nr		/* signal to be sent, 1 to _NSIG */
+)
 /* A system process wants to send a signal to a process.  Examples are:
  *  - HARDWARE wanting to cause a SIGSEGV after a CPU exception
  *  - TTY wanting to cause SIGINT upon getting a DEL
@@ -306,17 +308,20 @@ int sig_nr;			/* signal to be sent, 1 to _NSIG */
  * only called when a user process causes a CPU exception and from the kernel 
  * process level, which runs to completion.
  */
-	register struct proc *rp;
+{
+	struct proc *rp;
 
 	/* Check if the signal is already pending. Process it otherwise. */
 	rp = proc_addr(proc_nr);
-	if (! sigismember(&rp->p_pending, sig_nr)) {
-			sigaddset(&rp->p_pending, sig_nr);
-			if (! (rp->p_rts_flags & SIGNALED)) {		/* other pending */
-					if (rp->p_rts_flags == 0) lock_dequeue(rp);	/* make not ready */
-					rp->p_rts_flags |= SIGNALED | SIG_PENDING;	/* update flags */
-					send_sig(PM_PROC_NR, SIGKSIG);
-			}
+	if (! sigismember(&rp->p_pending, sig_nr))
+	{
+		sigaddset(&rp->p_pending, sig_nr);
+		if (! (rp->p_rts_flags & SIGNALED))	/* other pending */
+		{		
+			if (rp->p_rts_flags == 0) lock_dequeue(rp);	/* make not ready */
+			rp->p_rts_flags |= SIGNALED | SIG_PENDING;	/* update flags */
+			send_sig(PM_PROC_NR, SIGKSIG);
+		}
 	}
 }
 
@@ -324,29 +329,27 @@ int sig_nr;			/* signal to be sent, 1 to _NSIG */
 /*===========================================================================*
  *				umap_bios				     *
  *===========================================================================*/
-PUBLIC phys_bytes umap_bios(rp, vir_addr, bytes)
-register struct proc *rp;	/* pointer to proc table entry for process */
-vir_bytes vir_addr;		/* virtual address in BIOS segment */
-vir_bytes bytes;		/* # of bytes to be copied */
-{
+PUBLIC phys_bytes umap_bios(
+	struct proc *rp,		/* pointer to proc table entry for process */
+	vir_bytes vir_addr,		/* virtual address in BIOS segment */
+	vir_bytes bytes			/* # of bytes to be copied */
+)
 /* Calculate the physical memory address at the BIOS. Note: currently, BIOS
  * address zero (the first BIOS interrupt vector) is not considered, as an 
  * error here, but since the physical address will be zero as well, the 
  * calling function will think an error occurred. This is not a problem,
  * since no one uses the first BIOS interrupt vector.  
  */
-
+{
 	/* Check all acceptable ranges. */
 	if (vir_addr >= BIOS_MEM_BEGIN && vir_addr + bytes <= BIOS_MEM_END)
 		return (phys_bytes) vir_addr;
 	else if (vir_addr >= BASE_MEM_TOP && vir_addr + bytes <= UPPER_MEM_END)
 		return (phys_bytes) vir_addr;
-
 #if DEAD_CODE	/* brutal fix, if the above is too restrictive */
 	if (vir_addr >= BIOS_MEM_BEGIN && vir_addr + bytes <= UPPER_MEM_END)
 		return (phys_bytes) vir_addr;
 #endif
-
 	kprintf("Warning, error in umap_bios, virtual address 0x%x\n", vir_addr);
 	return 0;
 }
@@ -355,13 +358,14 @@ vir_bytes bytes;		/* # of bytes to be copied */
 /*===========================================================================*
  *				umap_local				     *
  *===========================================================================*/
-PUBLIC phys_bytes umap_local(rp, seg, vir_addr, bytes)
-register struct proc *rp;	/* pointer to proc table entry for process */
-int seg;			/* T, D, or S segment */
-vir_bytes vir_addr;		/* virtual address in bytes within the seg */
-vir_bytes bytes;		/* # of bytes to be copied */
-{
+PUBLIC phys_bytes umap_local(
+	struct proc *rp,	/* pointer to proc table entry for process */
+	int seg,		/* T, D, or S segment */
+	vir_bytes vir_addr,	/* virtual address in bytes within the seg */
+	vir_bytes bytes		/* # of bytes to be copied */
+)
 /* Calculate the physical memory address for a given virtual address. */
+{
 	vir_clicks vc;		/* the virtual address in clicks */
 	phys_bytes pa;		/* intermediate variables as phys_bytes */
 #if (CHIP == INTEL)
@@ -376,7 +380,7 @@ vir_bytes bytes;		/* # of bytes to be copied */
 	 * The Atari ST behaves like the 8088 in this respect.
 	 */
 
-	if (bytes <= 0) return( (phys_bytes) 0);
+	if (bytes <= 0) return (phys_bytes) 0;
 	if (vir_addr + bytes <= vir_addr) return 0;	/* overflow */
 	vc = (vir_addr + bytes - 1) >> CLICK_SHIFT;	/* last click of data */
 
@@ -388,11 +392,11 @@ vir_bytes bytes;		/* # of bytes to be copied */
 	seg = (vc < rp->p_memmap[S].mem_vir ? D : S);
 #endif
 
-	if ((vir_addr>>CLICK_SHIFT) >= rp->p_memmap[seg].mem_vir + 
-		rp->p_memmap[seg].mem_len) return( (phys_bytes) 0 );
+	if ((vir_addr >> CLICK_SHIFT) >= rp->p_memmap[seg].mem_vir + rp->p_memmap[seg].mem_len)
+		return( (phys_bytes) 0 );
 
-	if (vc >= rp->p_memmap[seg].mem_vir + 
-		rp->p_memmap[seg].mem_len) return( (phys_bytes) 0 );
+	if (vc >= rp->p_memmap[seg].mem_vir + rp->p_memmap[seg].mem_len)
+		return( (phys_bytes) 0 );
 
 #if (CHIP == INTEL)
 	seg_base = (phys_bytes) rp->p_memmap[seg].mem_phys;
@@ -401,51 +405,53 @@ vir_bytes bytes;		/* # of bytes to be copied */
 	pa = (phys_bytes) vir_addr;
 #if (CHIP == INTEL)
 	pa -= rp->p_memmap[seg].mem_vir << CLICK_SHIFT;
-	return (seg_base + pa);
+	return seg_base + pa;
 #elif (CHIP == ARM)
 	pa -= (phys_bytes)rp->p_memmap[seg].mem_vir << CLICK_SHIFT;
 	pa += (phys_bytes)rp->p_memmap[seg].mem_phys << CLICK_SHIFT;
-	return (pa);
+	return pa;
 #elif (CHIP == M68000)
 	pa -= (phys_bytes)rp->p_memmap[seg].mem_vir << CLICK_SHIFT;
 	pa += (phys_bytes)rp->p_memmap[seg].mem_phys << CLICK_SHIFT;
-	return (pa);
+	return pa;
 #endif
 }
 
 /*===========================================================================*
  *				umap_remote				     *
  *===========================================================================*/
-PUBLIC phys_bytes umap_remote(rp, seg, vir_addr, bytes)
-register struct proc *rp;	/* pointer to proc table entry for process */
-int seg;			/* index of remote segment */
-vir_bytes vir_addr;		/* virtual address in bytes within the seg */
-vir_bytes bytes;		/* # of bytes to be copied */
-{
+PUBLIC phys_bytes umap_remote(
+	struct proc *rp,	/* pointer to proc table entry for process */
+	int seg,		/* index of remote segment */
+	vir_bytes vir_addr,	/* virtual address in bytes within the seg */
+	vir_bytes bytes		/* # of bytes to be copied */
+)
 /* Calculate the physical memory address for a given virtual address. */
+{
 	struct far_mem *fm;
 
-	if (bytes <= 0) return( (phys_bytes) 0);
-	if (seg < 0 || seg >= NR_REMOTE_SEGS) return( (phys_bytes) 0);
+	if (bytes <= 0) return (phys_bytes) 0;
+	if (seg < 0 || seg >= NR_REMOTE_SEGS) return (phys_bytes) 0;
 
 	fm = &rp->p_priv->s_farmem[seg];
-	if (! fm->in_use) return( (phys_bytes) 0);
-	if (vir_addr + bytes > fm->mem_len) return( (phys_bytes) 0);
+	if (! fm->in_use) return (phys_bytes) 0;
+	if (vir_addr + bytes > fm->mem_len) return (phys_bytes) 0;
 
-	return(fm->mem_phys + (phys_bytes) vir_addr); 
+	return fm->mem_phys + (phys_bytes) vir_addr; 
 }
 
 /*===========================================================================*
  *				virtual_copy				     *
  *===========================================================================*/
-PUBLIC int virtual_copy(src_addr, dst_addr, bytes)
-struct vir_addr *src_addr;	/* source virtual address */
-struct vir_addr *dst_addr;	/* destination virtual address */
-vir_bytes bytes;		/* # of bytes to copy  */
-{
+PUBLIC int virtual_copy(
+	struct vir_addr *src_addr,	/* source virtual address */
+	struct vir_addr *dst_addr,	/* destination virtual address */
+	vir_bytes bytes			/* # of bytes to copy  */
+)	
 /* Copy bytes from virtual address src_addr to virtual address dst_addr. 
  * Virtual addresses can be in ABS, LOCAL_SEG, REMOTE_SEG, or BIOS_SEG.
  */
+{
 	struct vir_addr *vir_addr[2];	/* virtual source and destination address */
 	phys_bytes phys_addr[2];	/* absolute source and destination */ 
 	int seg_index;
@@ -457,64 +463,67 @@ vir_bytes bytes;		/* # of bytes to copy  */
 	/* Do some more checks and map virtual addresses to physical addresses. */
 	vir_addr[_SRC_] = src_addr;
 	vir_addr[_DST_] = dst_addr;
-	for (i=_SRC_; i<=_DST_; i++) {
-	int proc_nr, type;
-	struct proc *p;
+	for (i=_SRC_; i<=_DST_; i++)
+	{
+		int proc_nr, type;
+		struct proc *p;
 
- 	type = vir_addr[i]->segment & SEGMENT_TYPE;
-	if(type != PHYS_SEG && isokendpt(vir_addr[i]->proc_nr_e, &proc_nr))
-		 p = proc_addr(proc_nr);
-	else
-		 p = NULL;
+		type = vir_addr[i]->segment & SEGMENT_TYPE;
+		if(type != PHYS_SEG && isokendpt(vir_addr[i]->proc_nr_e, &proc_nr))
+			p = proc_addr(proc_nr);
+		else
+			p = NULL;
 
-			/* Get physical address. */
-			switch(type) {
-			case LOCAL_SEG:
-		if(!p) return EDEADSRCDST;
-					seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
-					phys_addr[i] = umap_local(p, seg_index, vir_addr[i]->offset, bytes);
-					break;
-			case REMOTE_SEG:
-		if(!p) return EDEADSRCDST;
-					seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
-					phys_addr[i] = umap_remote(p, seg_index, vir_addr[i]->offset, bytes);
-					break;
+		/* Get physical address. */
+		switch(type) {
+		case LOCAL_SEG:
+			if (!p) return EDEADSRCDST;
+			seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
+			phys_addr[i] = umap_local(p, seg_index, vir_addr[i]->offset, bytes);
+			break;
+		case REMOTE_SEG:
+			if (!p) return EDEADSRCDST;
+			seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
+			phys_addr[i] = umap_remote(p, seg_index, vir_addr[i]->offset, bytes);
+			break;
 #if (MACHINE == IBM_PC)
-			case BIOS_SEG:
-		if(!p) return EDEADSRCDST;
-					phys_addr[i] = umap_bios(p, vir_addr[i]->offset, bytes );
-					break;
+		case BIOS_SEG:
+			if (!p) return EDEADSRCDST;
+			phys_addr[i] = umap_bios(p, vir_addr[i]->offset, bytes );
+			break;
 #endif
-			case PHYS_SEG:
-					phys_addr[i] = vir_addr[i]->offset;
-					break;
-			default:
-					return(EINVAL);
-			}
+		case PHYS_SEG:
+			phys_addr[i] = vir_addr[i]->offset;
+			break;
+		default:
+			return EINVAL;
+		}
 
-			/* Check if mapping succeeded. */
-			if (phys_addr[i] <= 0 && vir_addr[i]->segment != PHYS_SEG) 
-					return(EFAULT);
+		/* Check if mapping succeeded. */
+		if (phys_addr[i] <= 0 && vir_addr[i]->segment != PHYS_SEG) 
+			return EFAULT;
 	}
 
 	/* Now copy bytes between physical addresseses. */
 	phys_copy(phys_addr[_SRC_], phys_addr[_DST_], (phys_bytes) bytes);
-	return(OK);
+	return OK;
 }
 
 
 /*===========================================================================*
  *			         clear_endpoint				     *
  *===========================================================================*/
-PUBLIC void clear_endpoint(rc)
-register struct proc *rc;		/* slot of process to clean up */
+PUBLIC void clear_endpoint(
+	struct proc *rc				/* slot of process to clean up */
+)
 {
 	register struct proc *rp;		/* iterate over process table */
 	register struct proc **xpp;		/* iterate over caller queue */
 	int i;
 	int sys_id;
 
-	if(isemptyp(rc)) panic("clear_proc: empty process", proc_nr(rc));
+	if (isemptyp(rc))
+		panic("clear_proc: empty process", proc_nr(rc));
 
 	/* Make sure that the exiting process is no longer scheduled. */
 	if (rc->p_rts_flags == 0) lock_dequeue(rc);
@@ -523,23 +532,26 @@ register struct proc *rc;		/* slot of process to clean up */
 	/* If the process happens to be queued trying to send a
 	 * message, then it must be removed from the message queues.
 	 */
-	if (rc->p_rts_flags & SENDING) {
-			int target_proc;
+	if (rc->p_rts_flags & SENDING)
+	{
+		int target_proc;
 
-			okendpt(rc->p_sendto_e, &target_proc);
-			xpp = &proc_addr(target_proc)->p_caller_q; /* destination's queue */
-			while (*xpp != NIL_PROC) {		/* check entire queue */
-					if (*xpp == rc) {			/* process is on the queue */
-							*xpp = (*xpp)->p_q_link;		/* replace by next process */
+		okendpt(rc->p_sendto_e, &target_proc);
+		xpp = &proc_addr(target_proc)->p_caller_q;	/* destination's queue */
+		while (*xpp != NIL_PROC)			/* check entire queue */
+		{
+			if (*xpp == rc)				/* process is on the queue */
+			{
+				*xpp = (*xpp)->p_q_link;	/* replace by next process */
 #if DEBUG_ENABLE_IPC_WARNINGS
 				kprintf("Proc %d removed from queue at %d\n",
-						proc_nr(rc), rc->p_sendto_e);
+				proc_nr(rc), rc->p_sendto_e);
 #endif
-							break;				/* can only be queued once */
-					}
-					xpp = &(*xpp)->p_q_link;		/* proceed to next queued */
+				break;				/* can only be queued once */
 			}
-			rc->p_rts_flags &= ~SENDING;
+			xpp = &(*xpp)->p_q_link;		/* proceed to next queued */
+		}
+		rc->p_rts_flags &= ~SENDING;
 	}
 	rc->p_rts_flags &= ~RECEIVING;
 
@@ -547,31 +559,34 @@ register struct proc *rc;		/* slot of process to clean up */
 	 * the exiting process, it must be alerted that process no longer is alive.
 	 * Check all processes. 
 	 */
-	for (rp = BEG_PROC_ADDR; rp < END_PROC_ADDR; rp++) {
-			if(isemptyp(rp))
-	continue;
+	for (rp = BEG_PROC_ADDR; rp < END_PROC_ADDR; rp++)
+	{
+		if (isemptyp(rp))
+			continue;
 
-			/* Unset pending notification bits. */
-			unset_sys_bit(priv(rp)->s_notify_pending, priv(rc)->s_id);
+		/* Unset pending notification bits. */
+		unset_sys_bit(priv(rp)->s_notify_pending, priv(rc)->s_id);
 
-			/* Check if process is receiving from exiting process. */
-			if ((rp->p_rts_flags & RECEIVING) && rp->p_getfrom_e == rc->p_endpoint) {
-					rp->p_reg.RET_REG = ESRCDIED;		/* report source died */
-		rp->p_rts_flags &= ~RECEIVING;	/* no longer receiving */
+		/* Check if process is receiving from exiting process. */
+		if ((rp->p_rts_flags & RECEIVING) && rp->p_getfrom_e == rc->p_endpoint)
+		{
+			rp->p_reg.RET_REG = ESRCDIED;	/* report source died */
+			rp->p_rts_flags &= ~RECEIVING;	/* no longer receiving */
 #if DEBUG_ENABLE_IPC_WARNINGS
-		kprintf("Proc %d receive dead src %d\n", proc_nr(rp), proc_nr(rc));
+			kprintf("Proc %d receive dead src %d\n", proc_nr(rp), proc_nr(rc));
 #endif
-			if (rp->p_rts_flags == 0) lock_enqueue(rp);/* let process run again */
-			} 
-			if ((rp->p_rts_flags & SENDING) && rp->p_sendto_e == rc->p_endpoint) {
-					rp->p_reg.RET_REG = EDSTDIED;		/* report destination died */
-		rp->p_rts_flags &= ~SENDING;		/* no longer sending */
+			if (rp->p_rts_flags == 0)
+				lock_enqueue(rp);	/* let process run again */
+		} 
+		if ((rp->p_rts_flags & SENDING) && rp->p_sendto_e == rc->p_endpoint)
+		{
+			rp->p_reg.RET_REG = EDSTDIED;	/* report destination died */
+			rp->p_rts_flags &= ~SENDING;	/* no longer sending */
 #if DEBUG_ENABLE_IPC_WARNINGS
-		kprintf("Proc %d send dead dst %d\n", proc_nr(rp), proc_nr(rc));
+			kprintf("Proc %d send dead dst %d\n", proc_nr(rp), proc_nr(rc));
 #endif
-			if (rp->p_rts_flags == 0) lock_enqueue(rp);/* let process run again */
-			} 
+			if (rp->p_rts_flags == 0)
+				lock_enqueue(rp);	/* let process run again */
+		} 
 	}
 }
-
-
