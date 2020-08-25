@@ -91,11 +91,11 @@ static inline void BuildMess(message *m_ptr, int src, struct proc *dst_ptr)
 #if (CHIP == ARM)
 static inline void CopyMess(proc_nr_t s, struct proc *sp, message *sm, struct proc *dp, message *dm)
 {
-	cp_mess(proc_addr(s)->p_endpoint,
-		(sp)->p_memmap[D].mem_phys,
-		(vir_bytes)sm,
-		(dp)->p_memmap[D].mem_phys,
-		(vir_bytes)dm);
+	cp_mess(proc_addr(s)->p_endpoint, &sp->p_reg, &dp->p_reg);
+}
+static inline void SetMess(proc_nr_t s, message *sm, struct proc *dp, message *dm)
+{
+	set_mess(proc_addr(s)->p_endpoint, sm, &dp->p_reg);
 }
 #endif /* (CHIP == ARM) */
 
@@ -436,7 +436,7 @@ PRIVATE int mini_receive(
 
 				/* Found a suitable source, deliver the notification message. */
 				BuildMess(&m, src_proc_nr, caller_ptr);	/* assemble message */
-				CopyMess(src_proc_nr, proc_addr(HARDWARE), &m, caller_ptr, m_ptr);
+				SetMess(src_proc_nr, &m, caller_ptr, m_ptr);
 				return OK;		/* report success */
 			}
 		}
@@ -509,7 +509,7 @@ PRIVATE int mini_notify(
 		 * message is in the kernel's address space.
 		 */ 
 		BuildMess(&m, proc_nr(caller_ptr), dst_ptr);
-		CopyMess(proc_nr(caller_ptr), proc_addr(HARDWARE), &m, dst_ptr, dst_ptr->p_messbuf);
+		SetMess(proc_nr(caller_ptr), &m, dst_ptr, dst_ptr->p_messbuf);
 		dst_ptr->p_rts_flags &= ~RECEIVING;	/* deblock destination */
 		if (dst_ptr->p_rts_flags == 0)
 			enqueue(dst_ptr);
@@ -641,13 +641,13 @@ PRIVATE void dequeue(
 		if (*xpp == rp)			/* found process to remove */
 		{
 			//set_leds(4);
-			kprintf("\nThey found me: 0x%08X\n.", rp);
+			kprintf("\nThey found me: %s\n", rp->p_name);
 			*xpp = (*xpp)->p_nextready;		/* replace with next chain */
 			if (rp == rdy_tail[q])			/* queue tail removed */
 				rdy_tail[q] = prev_xp;		/* set new tail */
 			if (rp == proc_ptr || rp == next_ptr)	/* active process removed */
 				pick_proc();			/* pick new process to run */
-			kprintf("next_ptr = 0x%08X.\n", next_ptr);
+			kprintf("next_ptr = %s\n", next_ptr->p_name);
 			break;
 		}
 		prev_xp = *xpp;			/* save previous in chain */

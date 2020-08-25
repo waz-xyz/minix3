@@ -45,6 +45,8 @@
 
 // Offsets in struct proc. They MUST match proc.h.
 
+#define R4_OFFSET       (4 * 4)
+#define R5_OFFSET       (5 * 4)
 #define	PCREG_OFFSET	(15 * 4)
 #define	PSWREG_OFFSET	(16 * 4)
 #define	P_TTBASE_OFFSET	(17 * 4)
