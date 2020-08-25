@@ -21,7 +21,7 @@ ifeq (${ARCH}, x86)
 OBJS += start_x86.o main_x86.o exception_x86.o protect.o interrupts_x86.o clock_x86.o
 endif
 ifeq (${ARCH}, arm)
-OBJS += start_armv7.o main_armv7.o exception_armv7.o mmu.o interrupts_armv7.o clock_armv7.o exception_vectors_armv7.o
+OBJS += start_armv7.o main_armv7.o exception_armv7.o vm_armv7.o interrupts_armv7.o clock_armv7.o exception_vectors_armv7.o exception_handlers_armv7.o
 endif
 SYSTEM = system.a
 LIBS = -lgcc -lc -ltimers

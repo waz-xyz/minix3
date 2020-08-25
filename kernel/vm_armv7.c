@@ -20,7 +20,7 @@ static void print_1st_level_table(uint32_t *table, int is_user);
 static void print_page_table(uint32_t *table);
 static void set_exception_vector_table(void);
 static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int domain);
-static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b);
+static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG);
 
 void init_mmu_module(void)
 {
@@ -60,9 +60,10 @@ void init_mmu_module(void)
 	kprintf("user_tt_start: 0x%08X\n", user_tt_start);
 	kprintf("user_tt_end: 0x%08X\n", user_tt_end);
 	kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
+	kprintf("kernel_mmu_tables_end: 0x%08X\n", kernel_mmu_tables_end);
 	kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
-	kprintf("Kernel's first-level table:\n");
-	print_1st_level_table(kernel_1st_level_tt, 0);
+	// kprintf("Kernel's first-level table:\n");
+	// print_1st_level_table(kernel_1st_level_tt, 0);
 	// kprintf("Kernel's page table:\n");
 	// print_page_table(kernel_page_table);
 }
@@ -72,7 +73,7 @@ void set_exception_vector_table(void)
 	uint32_t *pt = kernel_page_table + PAGE_TABLE_SIZE/4;
 	uint32_t base = vir2phys(&exception_vector_start);
 	kprintf("exception_vector_start physical address = 0x%08X\n", base);
-	SetSmallPageDescriptor(pt, 0xF0, base, 5, 5, 0, 1);
+	SetSmallPageDescriptor(pt, 0xF0, base, 5, 5, 0, 1, 0);
 
 	uint32_t *v = (uint32_t*)0xFFFF0000;
 	for (int i = 0; i < 15; i++)
@@ -218,12 +219,12 @@ static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int d
 	tt[index] = (base & (~0x3FF)) | (domain << 5) | 1;
 }
 
-static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b)
+static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG)
 {
 	int ap2, ap10;
 	ap2 = (ap >> 2) & 1;
 	ap10 = ap & 3;
-	pt[index] = (base & (~0xFFF)) | (ap2 << 9) | (tex << 6) | (ap10 << 4) | (c << 3) | (b << 2) | 2;
+	pt[index] = (base & (~0xFFF)) | (nG << 11) | (ap2 << 9) | (tex << 6) | (ap10 << 4) | (c << 3) | (b << 2) | 2;
 }
 
 static void *GetNextFreeUserTTLocation(void)
@@ -248,6 +249,7 @@ static uint32_t GetNextFreePageTableLocation(void)
 	}
 	next_free_pt_location = pt_start + PAGE_TABLE_SIZE;
 	memset((void*)pt_start, 0, PAGE_TABLE_SIZE);
+	kprintf("New page table location: 0x%08X\n", vir2phys((void*) pt_start));
 	return vir2phys((void*) pt_start);
 }
 
@@ -320,12 +322,17 @@ void allocate_pages(struct proc *pr)
 			{
 				base = GetNextFreeSmallPageLocation();
 			}
-			SetSmallPageDescriptor(pt, inx, base, ap, 5, 0, 1);
+			SetSmallPageDescriptor(pt, inx, base, ap, 5, 0, 1, 1);
 		}
 	}
 
-	// kprintf("MMU tables for %s:\n", pr->p_name);
-	// print_mmu_tables(tt, 1);
+	
+	if (pr->p_nr == 3)
+	{
+		kprintf("MMU tables for %s:\n", pr->p_name);
+		kprintf("p_ttbase = 0x%08X\n", pr->p_ttbase);
+		print_mmu_tables(tt, 1);
+	}
 
 	if (pr->p_nr == 4)
 	{
@@ -352,7 +359,7 @@ uint32_t allocate_task_stack(void)
 		}
 	}
 	i++;	/* Skip guard page */
-	SetSmallPageDescriptor((uint32_t*)kernel_page_table, i, GetNextFreeSmallPageLocation(), 1, 5, 0, 1);
+	SetSmallPageDescriptor((uint32_t*)kernel_page_table, i, GetNextFreeSmallPageLocation(), 1, 5, 0, 1, 0);
 	vaddr = KERNEL_VIRTUAL_BASE + (i << 12);
 	kprintf("New task stack pointer: 0x%08X\n", vaddr + SMALL_PAGE_SIZE);
 	return vaddr + SMALL_PAGE_SIZE;
@@ -408,4 +415,16 @@ void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len)
 	// {
 	// 	kprintf("%2d: 0x%08X\n", i, *p);
 	// }
+}
+
+uint32_t get_asid(void)
+{
+	static uint32_t asid_cnt = 1;
+
+	return asid_cnt++;
+}
+
+void release_asid(uint32_t asid)
+{
+	;
 }

@@ -198,9 +198,11 @@ void allocate_page_tables(struct proc *pr);
 void allocate_pages(struct proc *pr);
 uint32_t allocate_task_stack(void);
 void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len);
+uint32_t get_asid(void);
 void *get_header_from_image(int progindex);
 void init_mmu_module(void);
 void *phys2vir(uint32_t address);
+void release_asid(uint32_t);
 uint32_t vir2phys(void *address);
 
 /* mpx*.s */

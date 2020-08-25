@@ -48,7 +48,8 @@
 #define	PCREG_OFFSET	(15 * 4)
 #define	PSWREG_OFFSET	(16 * 4)
 #define	P_TTBASE_OFFSET	(17 * 4)
-#define	P_NR_OFFSET	(18 * 4)
+#define P_ASID_OFFSET   (18 * 4)
+#define	P_NR_OFFSET	(19 * 4)
 
 #define	MODE_SVC	0x13
 

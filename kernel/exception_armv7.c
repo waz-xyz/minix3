@@ -82,7 +82,13 @@ PUBLIC void exception(unsigned exception_type)
 		kprintf("pc = 0x%08X\n", saved_proc->p_reg.pc);
 		kprintf("psw = 0x%08X\n", saved_proc->p_reg.psw);
 		kprintf("sp = 0x%08X\n", saved_proc->p_reg.sp);
-		if (exception_type == PREFETCH_ABORT_EXCEPTION)
+		if (exception_type == UNDEFINED_INSTRUCTION_EXCEPTION)
+		{
+			uint32_t *p = (uint32_t*)saved_proc->p_reg.pc;
+			kprintf("instruction at pc = 0x%08X\n", *p);
+			kprintf("instruction at pc-4 = 0x%08X\n", *(p-1));
+		}
+		else if (exception_type == PREFETCH_ABORT_EXCEPTION)
 		{
 			kprintf("ifsr = 0x%08X\n", read_system_register(READ_IFSR));
 			kprintf("ifar = 0x%08X\n", read_system_register(READ_IFAR));

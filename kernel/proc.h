@@ -19,6 +19,7 @@
 struct proc {
 	struct stackframe_s p_reg;	/* process' registers saved in stack frame */
 	uint32_t p_ttbase;		/* physical address of MMU's translation table */
+	uint32_t p_asid;		/* (virtual) address space identifier */
 
 #if (CHIP == INTEL)
 	reg_t p_ldt_sel;		/* selector in gdt with ldt base and limit */
@@ -121,6 +122,7 @@ EXTERN struct proc *rdy_tail[NR_SCHED_QUEUES]; /* ptrs to ready list tails */
 
 /* Verify offsets in sconst.h */
 extern int __dummy_p_ttbase[(P_TTBASE_OFFSET-offsetof(struct proc, p_ttbase)) == 0 ? 1 : -1];
+extern int __dummy_p_asid[(P_ASID_OFFSET-offsetof(struct proc, p_asid)) == 0 ? 1 : -1];
 extern int __dummy_p_nr[(P_NR_OFFSET-offsetof(struct proc, p_nr)) == 0 ? 1 : -1];
 
 #endif /* PROC_H */

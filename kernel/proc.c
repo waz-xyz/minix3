@@ -57,20 +57,23 @@ FORWARD void dequeue(struct proc *rp);
 FORWARD void sched(struct proc *rp, int *queue, int *front);
 FORWARD void pick_proc(void);
 
-#define BuildMess(m_ptr, src, dst_ptr)					\
-	(m_ptr)->m_source = proc_addr(src)->p_endpoint;			\
-	(m_ptr)->m_type = NOTIFY_FROM(src);				\
-	(m_ptr)->NOTIFY_TIMESTAMP = get_uptime();			\
-	switch (src) {							\
-	case HARDWARE:							\
-		(m_ptr)->NOTIFY_ARG = priv(dst_ptr)->s_int_pending;	\
-		priv(dst_ptr)->s_int_pending = 0;			\
-		break;							\
-	case SYSTEM:							\
-		(m_ptr)->NOTIFY_ARG = priv(dst_ptr)->s_sig_pending;	\
-		priv(dst_ptr)->s_sig_pending = 0;			\
-		break;							\
+static inline void BuildMess(message *m_ptr, int src, struct proc *dst_ptr)
+{
+	m_ptr->m_source = proc_addr(src)->p_endpoint;
+	m_ptr->m_type = NOTIFY_FROM(src);
+	m_ptr->NOTIFY_TIMESTAMP = get_uptime();
+	switch (src)
+	{
+	case HARDWARE:
+		m_ptr->NOTIFY_ARG = priv(dst_ptr)->s_int_pending;
+		priv(dst_ptr)->s_int_pending = 0;
+		break;
+	case SYSTEM:
+		m_ptr->NOTIFY_ARG = priv(dst_ptr)->s_sig_pending;
+		priv(dst_ptr)->s_sig_pending = 0;
+		break;
 	}
+}
 
 #if (CHIP == INTEL)
 #define CopyMess(s,sp,sm,dp,dm) \
@@ -86,10 +89,14 @@ FORWARD void pick_proc(void);
 #endif /* (CHIP == M68000) */
 
 #if (CHIP == ARM)
-#define CopyMess(s,sp,sm,dp,dm) \
-	cp_mess(proc_addr(s)->p_endpoint, \
-		(sp)->p_memmap[D].mem_phys,	\
-		(vir_bytes)sm, (dp)->p_memmap[D].mem_phys, (vir_bytes)dm)
+static inline void CopyMess(proc_nr_t s, struct proc *sp, message *sm, struct proc *dp, message *dm)
+{
+	cp_mess(proc_addr(s)->p_endpoint,
+		(sp)->p_memmap[D].mem_phys,
+		(vir_bytes)sm,
+		(dp)->p_memmap[D].mem_phys,
+		(vir_bytes)dm);
+}
 #endif /* (CHIP == ARM) */
 
 /*===========================================================================*
@@ -122,7 +129,7 @@ PUBLIC int sys_call(
 		return EINVAL;
 	}
 #endif
-	set_leds(4); kprintf("In sys_call"); while(1);
+	//set_leds(4); kprintf("In sys_call"); while(1);
 	/* Require a valid source and/ or destination process, unless echoing. */
 	if (src_dst_e != ANY && function != ECHO)
 	{
@@ -136,22 +143,25 @@ PUBLIC int sys_call(
 		}
 	}
 	else
+	{
 		src_dst = src_dst_e;
+	}
 
 	/* Check if the process has privileges for the requested call. Calls to the 
 	 * kernel may only be SENDREC, because tasks always reply and may not block 
 	 * if the caller doesn't do receive(). 
 	 */
-	if (! (priv(caller_ptr)->s_trap_mask & (1 << function)) || 
+	if ((priv(caller_ptr)->s_trap_mask & (1 << function)) == 0 || 
 	    (iskerneln(src_dst) && function != SENDREC && function != RECEIVE))
 	{
 #if DEBUG_ENABLE_IPC_WARNINGS
 		kprintf("sys_call: trap %d not allowed, caller %d, src_dst %d\n", 
 			function, proc_nr(caller_ptr), src_dst);
 #endif
-		return(ETRAPDENIED);		/* trap denied by mask or kernel */
+		return ETRAPDENIED;		/* trap denied by mask or kernel */
 	}
 
+#if (CHIP == INTEL)
 	/* If the call involves a message buffer, i.e., for SEND, RECEIVE, SENDREC, 
 	 * or ECHO, check the message pointer. This check allows a message to be 
 	 * anywhere in data or stack or gap. It will have to be made more elaborate 
@@ -168,22 +178,23 @@ PUBLIC int sys_call(
 			kprintf("sys_call: invalid message pointer, trap %d, caller %d\n",
 				function, proc_nr(caller_ptr));
 #endif
-			return(EFAULT); 		/* invalid message pointer */
+			return EFAULT; 		/* invalid message pointer */
 		}
 	}
+#endif
 
 	/* If the call is to send to a process, i.e., for SEND, SENDREC or NOTIFY,
 	 * verify that the caller is allowed to send to the given destination. 
 	 */
 	if (function & CHECK_DST)
 	{
-		if (! get_sys_bit(priv(caller_ptr)->s_ipc_to, nr_to_id(src_dst)))
+		if (!get_sys_bit(priv(caller_ptr)->s_ipc_to, nr_to_id(src_dst)))
 		{
 #if DEBUG_ENABLE_IPC_WARNINGS
 			kprintf("sys_call: ipc mask denied trap %d from %d to %d\n",
 				function, proc_nr(caller_ptr), src_dst);
 #endif
-			return(ECALLDENIED);		/* call denied by ipc mask */
+			return ECALLDENIED;	/* call denied by ipc mask */
 		}
 	}
 
@@ -196,7 +207,7 @@ PUBLIC int sys_call(
 			kprintf("sys_call: trap %d from %d to %d deadlocked, group size %d\n",
 				function, proc_nr(caller_ptr), src_dst, group_size);
 #endif
-			return(ELOCKED);
+			return ELOCKED;
 		}
 	}
 
@@ -398,17 +409,18 @@ PRIVATE int mini_receive(
 	 * The caller's SENDING flag may be set if SENDREC couldn't send. If it is
 	 * set, the process should be blocked.
 	 */
-	if (!(caller_ptr->p_rts_flags & SENDING))
+	if ((caller_ptr->p_rts_flags & SENDING) == 0)
 	{
 		/* Check if there are pending notifications, except for SENDREC. */
 		if (! (caller_ptr->p_misc_flags & REPLY_PENDING))
 		{
 			map = &priv(caller_ptr)->s_notify_pending;
-			for (chunk=&map->chunk[0]; chunk<&map->chunk[NR_SYS_CHUNKS]; chunk++)
+			for (chunk = &map->chunk[0]; chunk<&map->chunk[NR_SYS_CHUNKS]; chunk++)
 			{
 				/* Find a pending notification from the requested source. */ 
-				if (! *chunk) continue;			/* no bits in chunk */
-				for (i=0; !(*chunk & (1<<i)); ++i) {} 	/* look up the bit */
+				if (*chunk == 0) continue;		/* no bits in chunk */
+				for (i = 0; (*chunk & (1<<i)) == 0; ++i)
+					;	/* look up the bit */
 				src_id = (chunk - &map->chunk[0]) * BITCHUNK_BITS + i;
 				if (src_id >= NR_SYS_PROCS) break;	/* out of range */
 				src_proc_nr = id_to_nr(src_id);		/* get source proc */
@@ -456,8 +468,9 @@ PRIVATE int mini_receive(
 	/* No suitable message is available or the caller couldn't send in SENDREC. 
 	 * Block the process trying to receive, unless the flags tell otherwise.
 	 */
-	if (!(flags & NON_BLOCKING))
+	if ((flags & NON_BLOCKING) == 0)
 	{
+		//set_leds(4); kprintf("\nBlock me."); while(1);
 		caller_ptr->p_getfrom_e = src_e;		
 		caller_ptr->p_messbuf = m_ptr;
 		if (caller_ptr->p_rts_flags == 0)
@@ -614,7 +627,7 @@ PRIVATE void dequeue(
 
 #if DEBUG_SCHED_CHECK
 	check_runqueues("dequeue");
-	if (! rp->p_ready)
+	if (!rp->p_ready)
 		kprintf("dequeue() already unready process\n");
 #endif
 
@@ -627,11 +640,14 @@ PRIVATE void dequeue(
 	{
 		if (*xpp == rp)			/* found process to remove */
 		{
+			//set_leds(4);
+			kprintf("\nThey found me: 0x%08X\n.", rp);
 			*xpp = (*xpp)->p_nextready;		/* replace with next chain */
 			if (rp == rdy_tail[q])			/* queue tail removed */
 				rdy_tail[q] = prev_xp;		/* set new tail */
 			if (rp == proc_ptr || rp == next_ptr)	/* active process removed */
 				pick_proc();			/* pick new process to run */
+			kprintf("next_ptr = 0x%08X.\n", next_ptr);
 			break;
 		}
 		prev_xp = *xpp;			/* save previous in chain */

@@ -27,7 +27,10 @@
 	.section .text
 	.align	2
 _start:
-	ldr	pc, =main
+	ldr	r0, =main
+	blx	r0
+	ldr	r0, =exit
+	blx	r0
 @ 	xor     ebp, ebp		! clear for backtrace of core files
 @ 	mov     eax, (esp)		! argc
 @ 	lea     edx, 4(esp)		! argv

@@ -125,6 +125,7 @@ PUBLIC void main()
 			rp->p_memmap[S].mem_len = USER_DEFAULT_STACK_SIZE;
 			rp->p_memmap[S].mem_phys = rp->p_memmap[S].mem_plen = 0;
 			rp->p_reg.pc = ehdr->e_entry;
+			rp->p_asid = get_asid();
 
 			allocate_page_tables(rp);
 		}
@@ -135,6 +136,8 @@ PUBLIC void main()
 			 */
 			rp->p_reg.pc = (reg_t)ip->initial_pc & ~1U;
 			kprintf("Task %s has initial pc = 0x%08X\n", rp->p_name, rp->p_reg.pc);
+
+			rp->p_asid = 0;	/* reserved ASID */
 		}
 
 		/* Set initial register values.  The processor status word for tasks 
@@ -191,6 +194,12 @@ PUBLIC void main()
 		}
 	}
 
+	volatile uint32_t *p = (uint32_t *)0x81139da8;
+	for (int i = 0; i < 8; i++)
+	{
+		kprintf("%p: 0x%08X\n", p, *p);
+		p++;
+	}
 	/* After modifying page tables, we need to invalidate the TLB entries */
 	invalidate_system_structures(INVALIDATE_TLB);
 
