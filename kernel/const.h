@@ -8,6 +8,7 @@
 #include <ibm/bios.h>		/* BIOS addresses, sizes and magic numbers */
 #include <ibm/cpu.h>		/* BIOS addresses, sizes and magic numbers */
 #elif (MACHINE == ZYNQ)
+#include <arm/cpu.h>
 #include <arm/interrupt.h>
 #endif
 #include <minix/config.h>
@@ -96,8 +97,8 @@
 /* ARM specific constants go here. */
 
 /* Program stack words and masks. */
-#define INIT_PSW      0x10	/* initial psw for user processes (mode=user) */
-#define INIT_TASK_PSW 0x3F	/* initial psw for tasks (mode=system, thumb=enabled) */
+#define INIT_PSW      0xD0	/* initial psw for user processes (mode=user, IF=11) */
+#define INIT_TASK_PSW 0xFF	/* initial psw for tasks (mode=system, thumb=enabled, IF=11) */
 #define TRACEBIT      0x0100	/* OR this with psw in proc[] for tracing */
 #define SETPSW(rp, new)		/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)

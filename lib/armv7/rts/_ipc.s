@@ -32,8 +32,8 @@ SYSVEC = 33			// trap to kernel
  *                           IPC assembly routines			  *
  *========================================================================*
  * all message passing routines follow the regular calling conventions;
- * SVC calls return as output registers r4 to r12 but don't touch any other
- * register.
+ * SVC calls pass messages through registers r4 to r12 but don't touch
+ * any other.
  */
 
 _send:

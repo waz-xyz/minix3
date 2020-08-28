@@ -48,6 +48,7 @@ supervisor_call_handler:
 	b	generic_exception_handler
 
 prefetch_abort_handler:
+	sub	lr, #4
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
 	bl	save
@@ -55,6 +56,7 @@ prefetch_abort_handler:
 	b	generic_exception_handler
 
 data_abort_handler:
+	sub	lr, #8
 	srsdb	sp!, #MODE_SVC
 	cps	#MODE_SVC
 	bl	save

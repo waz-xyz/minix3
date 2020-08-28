@@ -349,7 +349,7 @@ PRIVATE int mini_send(
 		if ((dst_ptr->p_rts_flags &= ~RECEIVING) == 0)
 			enqueue(dst_ptr);
 	}
-	else if (!(flags & NON_BLOCKING))
+	else if ((flags & NON_BLOCKING) == 0)
 	{
 		/* Destination is not waiting.  Block and dequeue caller. */
 		caller_ptr->p_messbuf = m_ptr;

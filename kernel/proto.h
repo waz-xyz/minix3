@@ -8,54 +8,49 @@ struct proc;
 struct timer;
 
 /* clock.c */
-_PROTOTYPE( void clock_task, (void)					);
-_PROTOTYPE( void clock_stop, (void)					);
-_PROTOTYPE( clock_t get_uptime, (void)					);
-_PROTOTYPE( unsigned long read_clock, (void)				);
-_PROTOTYPE( void set_timer, (struct timer *tp, clock_t t, tmr_func_t f)	);
-_PROTOTYPE( void reset_timer, (struct timer *tp)			);
+void clock_task(void);
+void clock_stop(void);
+clock_t get_uptime(void);
+unsigned long read_clock(void);
+void set_timer(struct timer *tp, clock_t t, tmr_func_t f);
+void reset_timer(struct timer *tp);
 
 /* main.c */
-_PROTOTYPE( void main, (void)						);
-_PROTOTYPE( void prepare_shutdown, (int how)				);
+void main(void);
+void prepare_shutdown(int how);
 
 /* utility.c */
-_PROTOTYPE( int kprintf, (const char *fmt, ...)				);
-_PROTOTYPE( void panic, (_CONST char *s, int n)				);
+int kprintf(const char *fmt, ...);
+void panic(_CONST char *s, int n);
 
 /* proc.c */
-_PROTOTYPE( int sys_call, (int call_nr, int src_dst, 
-					message *m_ptr, long bit_map)	);
-_PROTOTYPE( int lock_notify, (int src, int dst)				);
-_PROTOTYPE( int lock_send, (int dst, message *m_ptr)			);
-_PROTOTYPE( void lock_enqueue, (struct proc *rp)			);
-_PROTOTYPE( void lock_dequeue, (struct proc *rp)			);
-_PROTOTYPE( void balance_queues, (struct timer *tp)			);
+int sys_call(int call_nr, int src_dst, message *m_ptr, long bit_map);
+int lock_notify(int src, int dst);
+int lock_send(int dst, message *m_ptr);
+void lock_enqueue(struct proc *rp);
+void lock_dequeue(struct proc *rp);
+void balance_queues(struct timer *tp);
 #if DEBUG_ENABLE_IPC_WARNINGS
-_PROTOTYPE( int isokendpt_f, (char *file, int line, int e, int *p, int f));
+int isokendpt_f(char *file, int line, int e, int *p, int f);
 #define isokendpt_d(e, p, f) isokendpt_f(__FILE__, __LINE__, (e), (p), (f))
 #else
-_PROTOTYPE( int isokendpt_f, (int e, int *p, int f)			);
+int isokendpt_f(int e, int *p, int f);
 #define isokendpt_d(e, p, f) isokendpt_f((e), (p), (f))
 #endif
 
 /* system.c */
-_PROTOTYPE( int get_priv, (register struct proc *rc, int proc_type)	);
-_PROTOTYPE( void send_sig, (int proc_nr, int sig_nr)			);
-_PROTOTYPE( void cause_sig, (int proc_nr, int sig_nr)			);
-_PROTOTYPE( void sys_task, (void)					);
-_PROTOTYPE( void get_randomness, (int source)				);
-_PROTOTYPE( int virtual_copy, (struct vir_addr *src, struct vir_addr *dst, 
-				vir_bytes bytes) 			);
+int get_priv(register struct proc *rc, int proc_type);
+void send_sig(int proc_nr, int sig_nr);
+void cause_sig(int proc_nr, int sig_nr);
+void sys_task(void);
+void get_randomness(int source);
+int virtual_copy(struct vir_addr *src, struct vir_addr *dst, vir_bytes bytes);
 #define numap_local(proc_nr, vir_addr, bytes) \
 	umap_local(proc_addr(proc_nr), D, (vir_addr), (bytes))
-_PROTOTYPE( phys_bytes umap_local, (struct proc *rp, int seg, 
-		vir_bytes vir_addr, vir_bytes bytes)			);
-_PROTOTYPE( phys_bytes umap_remote, (struct proc *rp, int seg, 
-		vir_bytes vir_addr, vir_bytes bytes)			);
-_PROTOTYPE( phys_bytes umap_bios, (struct proc *rp, vir_bytes vir_addr,
-		vir_bytes bytes)					);
-_PROTOTYPE( void clear_endpoint, (struct proc *rc)			);
+phys_bytes umap_local(struct proc *rp, int seg, vir_bytes vir_addr, vir_bytes bytes);
+phys_bytes umap_remote(struct proc *rp, int seg, vir_bytes vir_addr, vir_bytes bytes);
+phys_bytes umap_bios(struct proc *rp, vir_bytes vir_addr, vir_bytes bytes);
+void clear_endpoint(struct proc *rc);
 
 #if (CHIP == INTEL)
 
@@ -178,6 +173,7 @@ void cstart(uint32_t kstack_phys_address,
 void intr_init(int mine);
 void put_irq_handler(irq_hook_t *hook, int irq, irq_handler_t handler);
 void rm_irq_handler(irq_hook_t *hook);
+void generic_interrupt_handler(void);
 
 /* klib_armv7.s */
 void halt_cpu(void);
@@ -194,7 +190,7 @@ uint32_t read_psr(int type);
 uint32_t read_system_register(int type);
 void set_leds(int status);
 
-/* mmu.c */
+/* vm_armv7.c */
 void allocate_page_tables(struct proc *pr);
 void allocate_pages(struct proc *pr);
 uint32_t allocate_task_stack(void);

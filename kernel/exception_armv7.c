@@ -34,6 +34,7 @@ PUBLIC void exception(unsigned exception_type)
 	int src_dst;
 	message *m_ptr;
 	long bit_map;
+	uint32_t spsr;
 
 	/* An exception or interrupt has occurred. */
 
@@ -51,17 +52,35 @@ PUBLIC void exception(unsigned exception_type)
 	* will be zero. Exceptions in interrupt handlers or system traps will make 
 	* k_reenter larger than zero.
 	*/
-	// if (k_reenter == 0 && 
 	if (k_reenter == 0)
 	{
 		switch (exception_type)
 		{
+			case UNDEFINED_INSTRUCTION_EXCEPTION:
+				spsr = saved_proc->p_reg.psw;
+				if ((spsr & SPSR_MASK_ARM_STATE) == 0)
+				{
+					saved_proc->p_reg.pc -= 4;
+				}
+				else if ((spsr & SPSR_MASK_THUMB_STATE) != 0)
+				{
+					saved_proc->p_reg.pc -= 2;
+				}
+				else if ((spsr & SPSR_MASK_JAZELLE_STATE) != 0)
+				{
+					// return is not possible
+				}
+				break;
 			case SUPERVISOR_CALL_EXCEPTION:
 				call_nr = saved_proc->p_reg.r3;
 				src_dst = saved_proc->p_reg.r0;
 				m_ptr = (message*)saved_proc->p_reg.r1;
 				bit_map = saved_proc->p_reg.r2;
 				sys_call(call_nr, src_dst, m_ptr, bit_map);
+				return;
+			case IRQ_EXCEPTION:
+			case FAST_IRQ_EXCEPTION:
+				generic_interrupt_handler();
 				return;
 			default:
 				// if (!iskernelp(saved_proc))

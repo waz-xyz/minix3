@@ -124,13 +124,13 @@ PRIVATE void initialize(void)
 	int i;
 
 	/* Initialize IRQ handler hooks. Mark all hooks available. */
-	for (i=0; i<NR_IRQ_HOOKS; i++)
+	for (i = 0; i < NR_IRQ_HOOKS; i++)
 	{
 		irq_hooks[i].proc_nr_e = NONE;
 	}
 
 	/* Initialize all alarm timers for all processes. */
-	for (sp=BEG_PRIV_ADDR; sp < END_PRIV_ADDR; sp++)
+	for (sp = BEG_PRIV_ADDR; sp < END_PRIV_ADDR; sp++)
 	{
 		tmr_inittimer(&(sp->s_alarm_timer));
 	}
@@ -140,7 +140,7 @@ PRIVATE void initialize(void)
 	 * handler functions. This is done with a macro that gives a compile error
 	 * if an illegal call number is used. The ordering is not important here.
 	 */
-	for (i=0; i<NR_SYS_CALLS; i++)
+	for (i  =0; i < NR_SYS_CALLS; i++)
 	{
 		call_vec[i] = do_unused;
 	}
@@ -212,9 +212,13 @@ PUBLIC int get_priv(
 
 	if (proc_type == SYS_PROC)			/* find a new slot */
 	{
-		for (sp = BEG_PRIV_ADDR; sp < END_PRIV_ADDR; ++sp) 
-			if (sp->s_proc_nr == NONE && sp->s_id != USER_PRIV_ID) break;
-		if (sp->s_proc_nr != NONE) return(ENOSPC);
+		for (sp = BEG_PRIV_ADDR; sp < END_PRIV_ADDR; ++sp)
+		{
+			if (sp->s_proc_nr == NONE && sp->s_id != USER_PRIV_ID)
+				break;
+		}
+		if (sp->s_proc_nr != NONE)
+			return(ENOSPC);
 		rc->p_priv = sp;			/* assign new slot */
 		rc->p_priv->s_proc_nr = proc_nr(rc);	/* set association */
 		rc->p_priv->s_flags = SYS_PROC;		/* mark as privileged */

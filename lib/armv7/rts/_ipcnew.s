@@ -35,29 +35,41 @@ RECV_MSG = 16			// message pointer for receiving
 /*========================================================================*
  *                           IPC assembly routines			  *
  *========================================================================*
- * all message passing routines save ebp, but destroy eax, ecx, and edx.
+ * all message passing routines follow the regular calling conventions;
+ * SVC calls pass messages through registers r4 to r12 but don't touch
+ * any other.
  */
 
 _ipc_request:
+	push	{r4-r12}
 	// r0 = destination
 	// r1 = message pointer
 	mov	r3, IPC_REQUEST		// _ipc_request(dst, ptr)
+	ldm	r1, {r4-r12}
 	svc	SYSVEC			// trap to the kernel
+	stm	r1, {r4-r12}
+	pop	{r4-r12}
 	bx	lr
 
 _ipc_reply:
+	push	{r4-r12}
 	// r0 = destination
 	// r1 = message pointer
 	mov	r3, IPC_REPLY		// _ipc_reply(dst, ptr)
+	ldm	r1, {r4-r12}
 	svc	SYSVEC			// trap to the kernel
+	pop	{r4-r12}
 	bx	lr
 
 _ipc_receive:
+	push	{r4-r12}
 	// r0 = src
 	// r1 = message pointer
 	// r2 = event set
 	mov	r3, IPC_RECEIVE		// _ipc_receive(src, ptr, events)
 	svc	SYSVEC			// trap to the kernel
+	stm	r1, {r4-r12}
+	pop	{r4-r12}
 	bx	lr
 
 _ipc_notify:

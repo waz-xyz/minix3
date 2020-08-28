@@ -30,8 +30,8 @@ PUBLIC void intr_init(int mine)
  *				put_irq_handler				     *
  *===========================================================================*/
 PUBLIC void put_irq_handler(irq_hook_t *hook, int irq, irq_handler_t handler)
+/* Register an interrupt handler. */
 {
-	/* Register an interrupt handler. */
 	int id;
 	irq_hook_t **line;
 
@@ -62,8 +62,8 @@ PUBLIC void put_irq_handler(irq_hook_t *hook, int irq, irq_handler_t handler)
  *				rm_irq_handler				     *
  *===========================================================================*/
 PUBLIC void rm_irq_handler(irq_hook_t *hook)
+/* Unregister an interrupt handler. */
 {
-	/* Unregister an interrupt handler. */
 	int irq = hook->irq; 
 	int id = hook->id;
 	irq_hook_t **line;
@@ -89,13 +89,12 @@ PUBLIC void rm_irq_handler(irq_hook_t *hook)
 /*===========================================================================*
  *				intr_handle				     *
  *===========================================================================*/
+/* Call the interrupt handlers for an interrupt with the given hook list.
+ * The assembly part of the handler has already masked the IRQ, reenabled the
+ * controller(s) and enabled interrupts.
+ */
 PUBLIC void intr_handle(irq_hook_t *hook)
 {
-	/* Call the interrupt handlers for an interrupt with the given hook list.
-	 * The assembly part of the handler has already masked the IRQ, reenabled the
-	 * controller(s) and enabled interrupts.
-	 */
-
 	/* Call list of handlers for an IRQ. */
 	while (hook != NULL)
 	{
@@ -111,4 +110,31 @@ PUBLIC void intr_handle(irq_hook_t *hook)
 	/* The assembly code will now disable interrupts, unmask the IRQ if and only
 	* if all active ID bits are cleared, and restart a process.
 	*/
+}
+
+/*===========================================================================*
+ *			generic_interrupt_handler		     	     *
+ *===========================================================================*/
+PUBLIC void generic_interrupt_handler(void)
+{
+	//struct intc_csreg *csrptr = (struct intc_csreg *)0x48200000;
+	irq_hook_t *hook;
+	int irqnum;
+
+	irqnum = 0;
+	hook = irq_handlers[irqnum];
+	intr_handle(hook);
+	if (irq_actids[irqnum] != 0)
+	{
+		;
+	}
+}
+
+
+/*===========================================================================*
+ *				get_irq_num				     *
+ *===========================================================================*/
+PRIVATE int get_irq_num(void)
+{
+	
 }

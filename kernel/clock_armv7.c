@@ -78,7 +78,8 @@ PUBLIC void clock_task(void)
 	init_clock();			/* initialize clock task */
 
 	/* Main loop of the clock task.  Get work, process it. Never reply. */
-	while (TRUE) {
+	while (TRUE)
+	{
 		/* Go get a message. */
 		receive(ANY, &m);	
 
@@ -98,31 +99,32 @@ PUBLIC void clock_task(void)
  *===========================================================================*/
 PRIVATE int do_clocktick(
 	message *m_ptr				/* pointer to request message */
-)			
-{
+)
 /* Despite its name, this routine is not called on every clock tick. It
  * is called on those clock ticks when a lot of work needs to be done.
- */
+ */			
+{
 	/* A process used up a full quantum. The interrupt handler stored this
 	 * process in 'prev_ptr'.  First make sure that the process is not on the 
 	 * scheduling queues.  Then announce the process ready again. Since it has 
 	 * no more time left, it gets a new quantum and is inserted at the right 
 	 * place in the queues.  As a side-effect a new process will be scheduled.
 	 */ 
-	if (prev_ptr->p_ticks_left <= 0 && priv(prev_ptr)->s_flags & PREEMPTIBLE) {
+	if (prev_ptr->p_ticks_left <= 0 && priv(prev_ptr)->s_flags & PREEMPTIBLE)
+	{
 		lock_dequeue(prev_ptr);		/* take it off the queues */
 		lock_enqueue(prev_ptr);		/* and reinsert it again */ 
 	}
 
 	/* Check if a clock timer expired and run its watchdog function. */
-	if (next_timeout <= realtime) { 
+	if (next_timeout <= realtime)
+	{ 
 		tmrs_exptimers(&clock_timers, realtime, NULL);
-		next_timeout = clock_timers == NULL ? 
-		TMR_NEVER : clock_timers->tmr_exp_time;
+		next_timeout = clock_timers == NULL ? TMR_NEVER : clock_timers->tmr_exp_time;
 	}
 
 	/* Inhibit sending a reply. */
-	return(EDONTREPLY);
+	return EDONTREPLY;
 }
 
 /*===========================================================================*
@@ -166,7 +168,6 @@ PUBLIC unsigned long read_clock()
  *				clock_handler				     *
  *===========================================================================*/
 PRIVATE int clock_handler(irq_hook_t *hook)
-{
 /* This executes on each clock tick (i.e., every time the timer chip generates 
  * an interrupt). It does a little bit of work so the clock task does not have 
  * to be called on every tick.  The clock task is called when:
@@ -191,6 +192,7 @@ PRIVATE int clock_handler(irq_hook_t *hook)
  *		is changing them, provided they are always valid pointers,
  *		since at worst the previous process would be billed.
  */
+{
 	register unsigned ticks;
 
 	/* Get number of ticks and update realtime. */
@@ -208,7 +210,7 @@ PRIVATE int clock_handler(irq_hook_t *hook)
 	{
 		proc_ptr->p_ticks_left -= ticks;
 	}
-	if (! (priv(proc_ptr)->s_flags & BILLABLE))
+	if ((priv(proc_ptr)->s_flags & BILLABLE) == 0)
 	{
 		bill_ptr->p_sys_time += ticks;
 		bill_ptr->p_ticks_left -= ticks;
@@ -225,16 +227,16 @@ PRIVATE int clock_handler(irq_hook_t *hook)
 		prev_ptr = proc_ptr;			/* store running process */
 		lock_notify(HARDWARE, CLOCK);		/* send notification */
 	} 
-	return(1);					/* reenable interrupts */
+	return 1;					/* reenable interrupts */
 }
 
 /*===========================================================================*
  *				get_uptime				     *
  *===========================================================================*/
 PUBLIC clock_t get_uptime()
-{
 /* Get and return the current clock uptime in ticks. */
-	return(realtime);
+{
+	return realtime;
 }
 
 /*===========================================================================*
@@ -245,10 +247,10 @@ PUBLIC void set_timer(
 	clock_t exp_time,		/* expiration realtime */
 	tmr_func_t watchdog		/* watchdog to be called */
 )
-{
 /* Insert the new timer in the active timers list. Always update the 
  * next timeout time by setting it to the front of the active list.
  */
+{
 	tmrs_settimer(&clock_timers, tp, exp_time, watchdog, NULL);
 	next_timeout = clock_timers->tmr_exp_time;
 }
@@ -258,15 +260,14 @@ PUBLIC void set_timer(
  *===========================================================================*/
 PUBLIC void reset_timer(
 	struct timer *tp		/* pointer to timer structure */
-)		
-{
+)
 /* The timer pointed to by 'tp' is no longer needed. Remove it from both the
  * active and expired lists. Always update the next timeout time by setting
  * it to the front of the active list.
- */
+ */		
+{
 	tmrs_clrtimer(&clock_timers, tp, NULL);
-	next_timeout = (clock_timers == NULL) ? 
-	TMR_NEVER : clock_timers->tmr_exp_time;
+	next_timeout = (clock_timers == NULL) ? TMR_NEVER : clock_timers->tmr_exp_time;
 }
 
 /*===========================================================================*
