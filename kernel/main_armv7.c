@@ -194,12 +194,6 @@ PUBLIC void main()
 		}
 	}
 
-	volatile uint32_t *p = (uint32_t *)0x81139da8;
-	for (int i = 0; i < 8; i++)
-	{
-		kprintf("%p: 0x%08X\n", p, *p);
-		p++;
-	}
 	/* After modifying page tables, we need to invalidate the TLB entries */
 	invalidate_system_structures(INVALIDATE_TLB);
 
@@ -224,7 +218,7 @@ PUBLIC void main()
 	announce();                 /* print MINIX startup banner */
 	//extern void force_undefined(void); force_undefined();
 	//extern void force_data_abort(void); force_data_abort();
-	kprintf("About to restart a process...");
+	kprintf("About to restart a process...\n");
 	restart();
 }
 

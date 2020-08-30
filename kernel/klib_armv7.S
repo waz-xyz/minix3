@@ -91,31 +91,6 @@ idle_task:
 	.arm
 	.align	2
 
-/*==========================================================================*
- *				enable_irq				    *
- *==========================================================================*
- * PUBLIC void enable_irq(irq_hook_t *hook)
- * Enable an interrupt request line by clearing an 8259 bit.
- * Equivalent C code for hook->irq < 8:
- *   if ((irq_actids[hook->irq] &= ~hook->id) == 0)
- *	outb(INT_CTLMASK, inb(INT_CTLMASK) & ~(1 << irq));
- */
-enable_irq:
-	bx      lr
-
-/*==========================================================================*
- *				disable_irq				    *
- *==========================================================================*
- * PUBLIC int disable_irq(irq_hook_t *hook)
- * Disable an interrupt request line by setting an 8259 bit.
- * Equivalent C code for irq < 8:
- *   irq_actids[hook->irq] |= hook->id;
- *   outb(INT_CTLMASK, inb(INT_CTLMASK) | (1 << irq));
- * Returns true iff the interrupt was not already disabled.
- */
-disable_irq:
-	bx	lr
-
 /*===========================================================================*
  *				cp_mess					     *
  *===========================================================================*
@@ -248,7 +223,8 @@ invalidate_system_structures:
 	beq	0f
 	cmp	r0, INVALIDATE_BPREDICTOR
 	mcreq	p15, 0, r0, c7, c5, 6		// Execute BPIALL
-0:	isb					// Make sure the call has an effect
+0:	dsb
+	isb					// Make sure the call has an effect
 	bx	lr
 
 

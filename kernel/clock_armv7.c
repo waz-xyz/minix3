@@ -34,21 +34,10 @@
 #include <signal.h>
 #include <minix/com.h>
 
-/* Function prototype for PRIVATE functions. */ 
-FORWARD void init_clock(void);
-FORWARD int clock_handler(irq_hook_t *hook);
-FORWARD int do_clocktick(message *m_ptr);
-FORWARD void load_update(void);
-
-/* Clock parameters. */
-#define	COUNTER_FREQ	(2*TIMER_FREQ)	/* counter frequency using square wave */
-#define	LATCH_COUNT	0x00		/* cc00xxxx, c = channel, x = any */
-#define	SQUARE_WAVE	0x36		/* ccaammmb, a = access, m = mode, b = BCD */
-					/*   11x11, 11 = LSB then MSB, x11 = sq wave */
-#define	TIMER_COUNT	((unsigned) (TIMER_FREQ/HZ))	/* initial value for counter*/
-#define	TIMER_FREQ	1193182L	/* clock frequency for timer in PC and AT */
-
-#define	CLOCK_ACK_BIT	0x80		/* PS/2 clock interrupt acknowledge bit */
+/* System addresses */
+#define	PRIVATE_TIMER_LOAD_REGISTER	0xF8F00600
+#define	PRIVATE_TIMER_COUNTER_REGISTER	0xF8F00604
+#define	PRIVATE_TIMER_CONTROL_REGISTER	0xF8F00608
 
 /* The CLOCK's timers queue. The functions in <timers.h> operate on this. 
  * Each system process possesses a single synchronous alarm timer. If other 
@@ -64,6 +53,16 @@ PRIVATE clock_t next_timeout;		/* realtime that next timer expires */
 PRIVATE clock_t realtime;		/* real time clock */
 PRIVATE irq_hook_t clock_hook;		/* interrupt handler hook */
 
+/* Function prototype for PRIVATE functions. */ 
+FORWARD void init_clock(void);
+FORWARD int clock_handler(irq_hook_t *hook);
+FORWARD int do_clocktick(message *m_ptr);
+FORWARD void load_update(void);
+FORWARD void EnableTimer(int autoReload, int enableIrq, int prescaler);
+FORWARD void DisableTimer(void);
+FORWARD void SetLoadValueForTimer(uint32_t loadValue);
+FORWARD uint32_t ReadCounterValueFromTimer(void);
+
 /*===========================================================================*
  *				clock_task				     *
  *===========================================================================*/
@@ -74,7 +73,6 @@ PUBLIC void clock_task(void)
 	message m;			/* message buffer for both input and output */
 	int result;			/* result returned by the handler */
 
-	//set_leds(1);
 	init_clock();			/* initialize clock task */
 
 	/* Main loop of the clock task.  Get work, process it. Never reply. */
@@ -132,15 +130,18 @@ PRIVATE int do_clocktick(
  *===========================================================================*/
 PRIVATE void init_clock()
 {
+	uint32_t halfFreq = CPU_CLK_FREQ_HZ / 2;
+
 	/* Initialize the CLOCK's interrupt hook. */
 	clock_hook.proc_nr_e = CLOCK;
 
 	/* Initialize the timer to 60 Hz, and register
 	 * the CLOCK task's interrupt handler to be run on every clock tick. 
 	 */
-
-	// TODO:
-	put_irq_handler(&clock_hook, CLOCK_IRQ, clock_handler);
+	DisableTimer();
+	SetLoadValueForTimer(halfFreq);
+	EnableTimer(1, 1, 0);
+	put_irq_handler(&clock_hook, IRQ_PRIVATE_TIMER, clock_handler);
 	enable_irq(&clock_hook);		/* ready for clock interrupts */
 
 	/* Set a watchdog timer to periodically balance the scheduling queues. */
@@ -152,7 +153,7 @@ PRIVATE void init_clock()
  *===========================================================================*/
 PUBLIC void clock_stop()
 {
-
+	DisableTimer();
 }
 
 /*===========================================================================*
@@ -160,9 +161,8 @@ PUBLIC void clock_stop()
  *===========================================================================*/
 PUBLIC unsigned long read_clock()
 {
-	return 0;
+	return ReadCounterValueFromTimer();
 }
-
 
 /*===========================================================================*
  *				clock_handler				     *
@@ -300,4 +300,30 @@ PRIVATE void load_update(void)
 
 	/* Up-to-dateness. */
 	kloadinfo.last_clock = realtime;
+}
+
+
+/*===========================================================================*
+ *			System-dependant functions			     *
+ *===========================================================================*/
+
+static void EnableTimer(int autoReload, int enableIrq, int prescaler)
+{
+	volatile uint32_t *ctrl = (volatile uint32_t*) PRIVATE_TIMER_CONTROL_REGISTER;
+	*ctrl = (prescaler << 8) | (enableIrq << 2) | (autoReload << 1) | 1U;
+}
+
+static void DisableTimer(void)
+{
+	*(volatile uint32_t*) PRIVATE_TIMER_CONTROL_REGISTER &= ~1U;
+}
+
+static void SetLoadValueForTimer(uint32_t loadValue)
+{
+	*(volatile uint32_t*) PRIVATE_TIMER_LOAD_REGISTER = loadValue;
+}
+
+static uint32_t ReadCounterValueFromTimer(void)
+{
+	return *(volatile uint32_t*) PRIVATE_TIMER_COUNTER_REGISTER;
 }

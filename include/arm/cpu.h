@@ -13,4 +13,15 @@
 #define SPSR_MASK_THUMB_STATE		0x00000020U
 #define SPSR_MASK_JAZELLE_STATE		0x01000000U
 
+#define AP_PL1_RW			1
+#define AP_PL1_RO			5
+#define AP_PL0_RW			3
+#define AP_PL0_RO			2
+
+#define	DOMAIN0				0
+
+#if (MACHINE == ZYNQ)
+#define	CPU_CLK_FREQ_HZ			650000000
+#endif
+
 #endif  /* _ARM_CPU_H */

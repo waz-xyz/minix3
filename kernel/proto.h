@@ -173,6 +173,8 @@ void cstart(uint32_t kstack_phys_address,
 void intr_init(int mine);
 void put_irq_handler(irq_hook_t *hook, int irq, irq_handler_t handler);
 void rm_irq_handler(irq_hook_t *hook);
+void enable_irq(irq_hook_t *hook);
+int disable_irq(irq_hook_t *hook);
 void generic_interrupt_handler(void);
 
 /* klib_armv7.s */
@@ -181,8 +183,6 @@ void intr_enable(void);
 void intr_disable(void);
 void cp_mess(int src, struct stackframe_s *src_regs, struct stackframe_s *dst_regs);
 void set_mess(int src, const message *msg, struct stackframe_s *dst_regs);
-void enable_irq(irq_hook_t *hook);
-int disable_irq(irq_hook_t *hook);
 void invalidate_system_structures(int type);
 void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
 void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
