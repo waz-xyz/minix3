@@ -222,7 +222,7 @@ PRIVATE int clock_handler(irq_hook_t *hook)
 	/* Check if do_clocktick() must be called. Done for alarms and scheduling.
 	 * Some processes, such as the kernel tasks, cannot be preempted. 
 	 */ 
-	if ((next_timeout <= realtime) || (proc_ptr->p_ticks_left <= 0))
+	if (next_timeout <= realtime || proc_ptr->p_ticks_left <= 0)
 	{
 		prev_ptr = proc_ptr;			/* store running process */
 		lock_notify(HARDWARE, CLOCK);		/* send notification */

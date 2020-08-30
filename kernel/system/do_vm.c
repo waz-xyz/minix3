@@ -12,23 +12,23 @@
 
 #include <sys/vm.h>
 
-PRIVATE int vm_needs_init= 1;
+PRIVATE int vm_needs_init = 1;
 PRIVATE u32_t vm_cr3;
 
-FORWARD _PROTOTYPE( void vm_init, (void)				);
-FORWARD _PROTOTYPE( void phys_put32, (phys_bytes addr, u32_t value)	);
-FORWARD _PROTOTYPE( u32_t phys_get32, (phys_bytes addr)			);
-FORWARD _PROTOTYPE( void vm_set_cr3, (u32_t value)			);
-FORWARD _PROTOTYPE( void set_cr3, (void)				);
-FORWARD _PROTOTYPE( void vm_enable_paging, (void)			);
-FORWARD _PROTOTYPE( void map_range, (u32_t base, u32_t size,
-							u32_t offset)	);
+FORWARD void vm_init(void);
+FORWARD void phys_put32(phys_bytes addr, u32_t value);
+FORWARD u32_t phys_get32(phys_bytes addr);
+FORWARD void vm_set_cr3(u32_t value);
+FORWARD void set_cr3(void);
+FORWARD void vm_enable_paging(void);
+FORWARD void map_range(u32_t base, u32_t size, u32_t offset);
 
 /*===========================================================================*
  *				do_vm_map				     *
  *===========================================================================*/
-PUBLIC int do_vm_map(m_ptr)
-message *m_ptr;			/* pointer to request message */
+PUBLIC int do_vm_map(
+	message *m_ptr			/* pointer to request message */
+)
 {
 	int proc_nr, do_map;
 	phys_bytes base, size, offset, p_phys;
@@ -36,31 +36,32 @@ message *m_ptr;			/* pointer to request message */
 
 	if (vm_needs_init)
 	{
-		vm_needs_init= 0;
+		vm_needs_init = 0;
 		vm_init();
 	}
 
-	if (m_ptr->VM_MAP_ENDPT == SELF) {
+	if (m_ptr->VM_MAP_ENDPT == SELF)
+	{
 		proc_nr = who_p;
-	} else {
-		if(!isokendpt(m_ptr->VM_MAP_ENDPT, &proc_nr))
-			return EINVAL;
+	}
+	else if (!isokendpt(m_ptr->VM_MAP_ENDPT, &proc_nr))
+	{
+		return EINVAL;
 	}
 
-	do_map= m_ptr->VM_MAP_MAPUNMAP;
-	base= m_ptr->VM_MAP_BASE;
-	size= m_ptr->VM_MAP_SIZE;
-	offset= m_ptr->VM_MAP_ADDR;
+	do_map = m_ptr->VM_MAP_MAPUNMAP;
+	base = m_ptr->VM_MAP_BASE;
+	size = m_ptr->VM_MAP_SIZE;
+	offset = m_ptr->VM_MAP_ADDR;
 
-	pp= proc_addr(proc_nr);
-	p_phys= umap_local(pp, D, base, size);
+	pp = proc_addr(proc_nr);
+	p_phys = umap_local(pp, D, base, size);
 	if (p_phys == 0)
 		return EFAULT;
 
 	if (do_map)
 	{
 		pp->p_misc_flags |= MF_VM;
-
 		map_range(p_phys, size, offset);
 	}
 	else
@@ -77,38 +78,32 @@ message *m_ptr;			/* pointer to request message */
 /*===========================================================================*
  *				vm_map_default				     *
  *===========================================================================*/
-PUBLIC void vm_map_default(pp)
-struct proc *pp;
+PUBLIC void vm_map_default(struct proc *pp)
 {
 	phys_bytes base_clicks, size_clicks;
 
 	if (vm_needs_init)
 		panic("vm_map_default: VM not initialized?", NO_NUM);
 	pp->p_misc_flags &= ~MF_VM;
-	base_clicks= pp->p_memmap[D].mem_phys;
-	size_clicks= pp->p_memmap[S].mem_phys+pp->p_memmap[S].mem_len -
-		base_clicks;
-	map_range(base_clicks << CLICK_SHIFT, size_clicks << CLICK_SHIFT,
-		base_clicks << CLICK_SHIFT);
+	base_clicks = pp->p_memmap[D].mem_phys;
+	size_clicks = pp->p_memmap[S].mem_phys + pp->p_memmap[S].mem_len - base_clicks;
+	map_range(base_clicks << CLICK_SHIFT,
+		  size_clicks << CLICK_SHIFT,
+		  base_clicks << CLICK_SHIFT);
 #if (CHIP == INTEL)
 	vm_set_cr3(vm_cr3);
 #endif
 }
 
-PRIVATE void phys_put32(addr, value)
-phys_bytes addr;
-u32_t value;
+PRIVATE void phys_put32(phys_bytes addr, u32_t value)
 {
 	phys_copy(vir2phys(&value), addr, sizeof(value));
 }
 
-PRIVATE u32_t phys_get32(addr)
-phys_bytes addr;
+PRIVATE u32_t phys_get32(phys_bytes addr)
 {
 	u32_t value;
-
 	phys_copy(addr, vir2phys(&value), sizeof(value));
-
 	return value;
 }
 
@@ -121,58 +116,55 @@ PRIVATE void vm_init(void)
 	u32_t entry;
 	unsigned pages;
 
-	if (!vm_size)
+	if (vm_size == 0)
 		panic("vm_init: no space for page tables", NO_NUM);
 
 	/* Align page directory */
-	o= (vm_base % PAGE_SIZE);
+	o = (vm_base % PAGE_SIZE);
 	if (o != 0)
-		o= PAGE_SIZE-o;
-	vm_dir_base= vm_base+o;
+		o = PAGE_SIZE - o;
+	vm_dir_base = vm_base + o;
 
 	/* Page tables start after the page directory */
-	vm_pt_base= vm_dir_base+PAGE_SIZE;
+	vm_pt_base = vm_dir_base + PAGE_SIZE;
 
-	pt_size= (vm_base+vm_size)-vm_pt_base;
+	pt_size = (vm_base + vm_size) - vm_pt_base;
 	pt_size -= (pt_size % PAGE_SIZE);
 
 	/* Compute the number of pages based on vm_mem_high */
-	pages= (vm_mem_high-1)/PAGE_SIZE + 1;
+	pages = (vm_mem_high - 1) / PAGE_SIZE + 1;
 
 	if (pages * I386_VM_PT_ENT_SIZE > pt_size)
 		panic("vm_init: page table too small", NO_NUM);
 
-	for (p= 0; p*I386_VM_PT_ENT_SIZE < pt_size; p++)
+	for (p = 0; p * I386_VM_PT_ENT_SIZE < pt_size; p++)
 	{
-		phys_mem= p*PAGE_SIZE;
-		entry= phys_mem | I386_VM_USER | I386_VM_WRITE |
-			I386_VM_PRESENT;
+		phys_mem = p * PAGE_SIZE;
+		entry = phys_mem | I386_VM_USER | I386_VM_WRITE | I386_VM_PRESENT;
 		if (phys_mem >= vm_mem_high)
-			entry= 0;
-		phys_put32(vm_pt_base + p*I386_VM_PT_ENT_SIZE, entry);
+			entry = 0;
+		phys_put32(vm_pt_base + p * I386_VM_PT_ENT_SIZE, entry);
 	}
 
-	for (p= 0; p < I386_VM_DIR_ENTRIES; p++)
+	for (p = 0; p < I386_VM_DIR_ENTRIES; p++)
 	{
-		phys_mem= vm_pt_base + p*PAGE_SIZE;
-		entry= phys_mem | I386_VM_USER | I386_VM_WRITE |
-			I386_VM_PRESENT;
+		phys_mem = vm_pt_base + p * PAGE_SIZE;
+		entry = phys_mem | I386_VM_USER | I386_VM_WRITE | I386_VM_PRESENT;
 		if (phys_mem >= vm_pt_base + pt_size)
-			entry= 0;
-		phys_put32(vm_dir_base + p*I386_VM_PT_ENT_SIZE, entry);
+			entry = 0;
+		phys_put32(vm_dir_base + p * I386_VM_PT_ENT_SIZE, entry);
 	}
 	vm_set_cr3(vm_dir_base);
 	level0(vm_enable_paging);
 }
 
-PRIVATE void vm_set_cr3(value)
-u32_t value;
+PRIVATE void vm_set_cr3(u32_t value)
 {
-	vm_cr3= value;
+	vm_cr3 = value;
 	level0(set_cr3);
 }
 
-PRIVATE void set_cr3()
+PRIVATE void set_cr3(void)
 {
 	write_cr3(vm_cr3);
 }
@@ -181,14 +173,11 @@ PRIVATE void vm_enable_paging(void)
 {
 	u32_t cr0;
 
-	cr0= read_cr0();
+	cr0 = read_cr0();
 	write_cr0(cr0 | I386_CR0_PG);
 }
 
-PRIVATE void map_range(base, size, offset)
-u32_t base;
-u32_t size;
-u32_t offset;
+PRIVATE void map_range(u32_t base, u32_t size, u32_t offset)
 {
 	u32_t curr_pt, curr_pt_addr, entry;
 	int dir_ent, pt_ent;
@@ -200,23 +189,21 @@ u32_t offset;
 	if (offset % PAGE_SIZE != 0)
 		panic("map_range: bad offset", offset);
 
-	curr_pt= -1;
-	curr_pt_addr= 0;
+	curr_pt = -1;
+	curr_pt_addr = 0;
 	while (size != 0)
 	{
-		dir_ent= (base >> I386_VM_DIR_ENT_SHIFT);
-		pt_ent= (base >> I386_VM_PT_ENT_SHIFT) & I386_VM_PT_ENT_MASK;
+		dir_ent = (base >> I386_VM_DIR_ENT_SHIFT);
+		pt_ent = (base >> I386_VM_PT_ENT_SHIFT) & I386_VM_PT_ENT_MASK;
 		if (dir_ent != curr_pt)
 		{
 			/* Get address of page table */
-			curr_pt= dir_ent;
-			curr_pt_addr= phys_get32(vm_cr3 +
-				dir_ent * I386_VM_PT_ENT_SIZE);
+			curr_pt = dir_ent;
+			curr_pt_addr = phys_get32(vm_cr3 + dir_ent * I386_VM_PT_ENT_SIZE);
 			curr_pt_addr &= I386_VM_ADDR_MASK;
 		}
-		entry= offset | I386_VM_USER | I386_VM_WRITE |
-			I386_VM_PRESENT;
-#if 0	/* Do we need this for memory mapped I/O? */
+		entry = offset | I386_VM_USER | I386_VM_WRITE | I386_VM_PRESENT;
+#if 0 /* Do we need this for memory mapped I/O? */
 		entry |= I386_VM_PCD | I386_VM_PWT;
 #endif
 		phys_put32(curr_pt_addr + pt_ent * I386_VM_PT_ENT_SIZE, entry);
@@ -226,7 +213,6 @@ u32_t offset;
 	}
 }
 #endif
-
 
 #if (CHIP == ARM)
 PRIVATE void vm_init(void)

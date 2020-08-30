@@ -59,14 +59,14 @@ void init_mmu_module(void)
 	SetExceptionVectorTable();
 	MapSystemRegisters();
 
-	kprintf("next_free_pt_location: 0x%08X\n", next_free_pt_location);
-	kprintf("user_tt_start: 0x%08X\n", user_tt_start);
-	kprintf("user_tt_end: 0x%08X\n", user_tt_end);
-	kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
-	kprintf("kernel_mmu_tables_end: 0x%08X\n", kernel_mmu_tables_end);
-	kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
-	kprintf("Kernel's first-level table:\n");
-	print_1st_level_table(kernel_1st_level_tt, 0);
+	// kprintf("next_free_pt_location: 0x%08X\n", next_free_pt_location);
+	// kprintf("user_tt_start: 0x%08X\n", user_tt_start);
+	// kprintf("user_tt_end: 0x%08X\n", user_tt_end);
+	// kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
+	// kprintf("kernel_mmu_tables_end: 0x%08X\n", kernel_mmu_tables_end);
+	// kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
+	// kprintf("Kernel's first-level table:\n");
+	// print_1st_level_table(kernel_1st_level_tt, 0);
 	// kprintf("Kernel's page table:\n");
 	// print_page_table(kernel_page_table);
 }
@@ -75,7 +75,7 @@ static void SetExceptionVectorTable(void)
 {
 	uint32_t *pt = kernel_page_table + PAGE_TABLE_SIZE/4;
 	uint32_t base = vir2phys(&exception_vector_start);
-	kprintf("exception_vector_start physical address = 0x%08X\n", base);
+	// kprintf("exception_vector_start physical address = 0x%08X\n", base);
 	SetSmallPageDescriptor(pt, 0xF0, base, AP_PL1_RO, 5, 0, 1, 0);
 	// uint32_t *v = (uint32_t*)0xFFFF0000;
 	// for (int i = 0; i < 15; i++)
@@ -267,7 +267,7 @@ static uint32_t GetNextFreePageTableLocation(void)
 	}
 	next_free_pt_location = pt_start + PAGE_TABLE_SIZE;
 	memset((void*)pt_start, 0, PAGE_TABLE_SIZE);
-	kprintf("New page table location: 0x%08X\n", vir2phys((void*) pt_start));
+	//kprintf("New page table location: 0x%08X\n", vir2phys((void*) pt_start));
 	return vir2phys((void*) pt_start);
 }
 
@@ -299,7 +299,7 @@ void allocate_page_tables(struct proc *pr)
 	
 	tt = GetNextFreeUserTTLocation();
 	pr->p_ttbase = vir2phys(tt);
-	kprintf("1st-level table for %s: 0x%08X\n", pr->p_name, pr->p_ttbase);
+	//kprintf("1st-level table for %s: 0x%08X\n", pr->p_name, pr->p_ttbase);
 	for (int seg = T; seg <= S; seg++)
 	{
 		mm = &(pr->p_memmap[seg]);
@@ -353,7 +353,6 @@ void allocate_pages(struct proc *pr)
 		}
 	}
 
-	
 	// if (pr->p_nr == 0)
 	// {
 	// 	kprintf("MMU tables for %s:\n", pr->p_name);
@@ -388,7 +387,6 @@ uint32_t allocate_task_stack(void)
 	i++;	/* Skip guard page */
 	SetSmallPageDescriptor((uint32_t*)kernel_page_table, i, GetNextFreeSmallPageLocation(), AP_PL1_RW, 5, 0, 1, 0);
 	vaddr = KERNEL_VIRTUAL_BASE + (i << 12);
-	kprintf("New task stack pointer: 0x%08X\n", vaddr + SMALL_PAGE_SIZE);
 	return vaddr + SMALL_PAGE_SIZE;
 }
 

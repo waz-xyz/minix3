@@ -17,47 +17,53 @@
 /*===========================================================================*
  *				do_exec					     *
  *===========================================================================*/
-PUBLIC int do_exec(m_ptr)
-register message *m_ptr;	/* pointer to request message */
-{
+PUBLIC int do_exec(
+	message *m_ptr			/* pointer to request message */
+)
 /* Handle sys_exec().  A process has done a successful EXEC. Patch it up. */
-  register struct proc *rp;
-  reg_t sp;			/* new sp */
-  phys_bytes phys_name;
-  char *np;
-  int proc;
+{
+	register struct proc *rp;
+	reg_t sp;			/* new sp */
+	phys_bytes phys_name;
+	char *np;
+	int proc;
 
-  if(!isokendpt(m_ptr->PR_ENDPT, &proc))
-	return EINVAL;
+	if (!isokendpt(m_ptr->PR_ENDPT, &proc))
+		return EINVAL;
 
-  rp = proc_addr(proc);
-  sp = (reg_t) m_ptr->PR_STACK_PTR;
-  rp->p_reg.sp = sp;		/* set the stack pointer */
+	rp = proc_addr(proc);
+	sp = (reg_t) m_ptr->PR_STACK_PTR;
+	rp->p_reg.sp = sp;		/* set the stack pointer */
 #if (CHIP == M68000)
-  rp->p_splow = sp;		/* set the stack pointer low water */
+	rp->p_splow = sp;		/* set the stack pointer low water */
 #ifdef FPP
-  /* Initialize fpp for this process */
-  fpp_new_state(rp);
+	/* Initialize fpp for this process */
+	fpp_new_state(rp);
 #endif
 #endif
 #if (CHIP == INTEL)		/* wipe extra LDT entries */
-  phys_memset(vir2phys(&rp->p_ldt[EXTRA_LDT_INDEX]), 0,
-	(LDT_SIZE - EXTRA_LDT_INDEX) * sizeof(rp->p_ldt[0]));
+	phys_memset(vir2phys(&rp->p_ldt[EXTRA_LDT_INDEX]),
+		    0,
+		    (LDT_SIZE - EXTRA_LDT_INDEX) * sizeof(rp->p_ldt[0]));
 #endif
-  rp->p_reg.pc = (reg_t) m_ptr->PR_IP_PTR;	/* set pc */
-  rp->p_rts_flags &= ~RECEIVING;	/* PM does not reply to EXEC call */
-  if (rp->p_rts_flags == 0) lock_enqueue(rp);
-  /* Save command name for debugging, ps(1) output, etc. */
-  phys_name = numap_local(who_p, (vir_bytes) m_ptr->PR_NAME_PTR,
-					(vir_bytes) P_NAME_LEN - 1);
-  if (phys_name != 0) {
-	phys_copy(phys_name, vir2phys(rp->p_name), (phys_bytes) P_NAME_LEN - 1);
-	for (np = rp->p_name; (*np & BYTE) >= ' '; np++) {}
-	*np = 0;					/* mark end */
-  } else {
-  	strncpy(rp->p_name, "<unset>", P_NAME_LEN);
-  }
-  return(OK);
+	rp->p_reg.pc = (reg_t) m_ptr->PR_IP_PTR;	/* set pc */
+	rp->p_rts_flags &= ~RECEIVING;			/* PM does not reply to EXEC call */
+	if (rp->p_rts_flags == 0)
+		lock_enqueue(rp);
+	/* Save command name for debugging, ps(1) output, etc. */
+	phys_name = numap_local(who_p, (vir_bytes) m_ptr->PR_NAME_PTR, (vir_bytes)P_NAME_LEN - 1);
+	if (phys_name != 0)
+	{
+		phys_copy(phys_name, vir2phys(rp->p_name), (phys_bytes)P_NAME_LEN - 1);
+		for (np = rp->p_name; (*np & BYTE) >= ' '; np++)
+			;
+		*np = 0;					/* mark end */
+	}
+	else
+	{
+		strncpy(rp->p_name, "<unset>", P_NAME_LEN);
+	}
+	
+	return OK;
 }
 #endif /* USE_EXEC */
-

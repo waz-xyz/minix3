@@ -17,26 +17,28 @@
 /*===========================================================================*
  *				do_times				     *
  *===========================================================================*/
-PUBLIC int do_times(m_ptr)
-register message *m_ptr;	/* pointer to request message */
-{
+PUBLIC int do_times(
+	message *m_ptr			/* pointer to request message */
+)
 /* Handle sys_times().  Retrieve the accounting information. */
-  register struct proc *rp;
-  int proc_nr, e_proc_nr;
+{
+	register struct proc *rp;
+	int proc_nr, e_proc_nr;
 
-  /* Insert the times needed by the SYS_TIMES kernel call in the message. 
-   * The clock's interrupt handler may run to update the user or system time
-   * while in this code, but that cannot do any harm.
-   */
-  e_proc_nr = (m_ptr->T_ENDPT == SELF) ? m_ptr->m_source : m_ptr->T_ENDPT;
-  if(e_proc_nr != NONE && isokendpt(e_proc_nr, &proc_nr)) {
-      rp = proc_addr(proc_nr);
-      m_ptr->T_USER_TIME   = rp->p_user_time;
-      m_ptr->T_SYSTEM_TIME = rp->p_sys_time;
-  }
-  m_ptr->T_BOOT_TICKS = get_uptime();  
-  return(OK);
+	/* Insert the times needed by the SYS_TIMES kernel call in the message. 
+	 * The clock's interrupt handler may run to update the user or system time
+	 * while in this code, but that cannot do any harm.
+	 */
+	e_proc_nr = (m_ptr->T_ENDPT == SELF) ? m_ptr->m_source : m_ptr->T_ENDPT;
+	if (e_proc_nr != NONE && isokendpt(e_proc_nr, &proc_nr))
+	{
+		rp = proc_addr(proc_nr);
+		m_ptr->T_USER_TIME = rp->p_user_time;
+		m_ptr->T_SYSTEM_TIME = rp->p_sys_time;
+	}
+	m_ptr->T_BOOT_TICKS = get_uptime();
+	
+	return OK;
 }
 
 #endif /* USE_TIMES */
-

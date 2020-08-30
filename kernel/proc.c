@@ -640,14 +640,11 @@ PRIVATE void dequeue(
 	{
 		if (*xpp == rp)			/* found process to remove */
 		{
-			//set_leds(4);
-			kprintf("\nThey found me: %s\n", rp->p_name);
 			*xpp = (*xpp)->p_nextready;		/* replace with next chain */
 			if (rp == rdy_tail[q])			/* queue tail removed */
 				rdy_tail[q] = prev_xp;		/* set new tail */
 			if (rp == proc_ptr || rp == next_ptr)	/* active process removed */
 				pick_proc();			/* pick new process to run */
-			kprintf("next_ptr = %s\n", next_ptr->p_name);
 			break;
 		}
 		prev_xp = *xpp;			/* save previous in chain */

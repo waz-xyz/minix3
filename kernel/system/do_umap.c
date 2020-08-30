@@ -16,43 +16,44 @@
 /*==========================================================================*
  *				do_umap					    *
  *==========================================================================*/
-PUBLIC int do_umap(m_ptr)
-register message *m_ptr;	/* pointer to request message */
-{
+PUBLIC int do_umap(
+	message *m_ptr			/* pointer to request message */
+)
 /* Map virtual address to physical, for non-kernel processes. */
-  int seg_type = m_ptr->CP_SRC_SPACE & SEGMENT_TYPE;
-  int seg_index = m_ptr->CP_SRC_SPACE & SEGMENT_INDEX;
-  vir_bytes offset = m_ptr->CP_SRC_ADDR;
-  int count = m_ptr->CP_NR_BYTES;
-  int endpt = (int) m_ptr->CP_SRC_ENDPT;
-  int proc_nr;
-  phys_bytes phys_addr;
+{
+	int seg_type = m_ptr->CP_SRC_SPACE & SEGMENT_TYPE;
+	int seg_index = m_ptr->CP_SRC_SPACE & SEGMENT_INDEX;
+	vir_bytes offset = m_ptr->CP_SRC_ADDR;
+	int count = m_ptr->CP_NR_BYTES;
+	int endpt = (int)m_ptr->CP_SRC_ENDPT;
+	int proc_nr;
+	phys_bytes phys_addr;
 
-  /* Verify process number. */
-  if (endpt == SELF)
-	proc_nr = who_p;
-  else
-	if (! isokendpt(endpt, &proc_nr))
-		return(EINVAL);
+	/* Verify process number. */
+	if (endpt == SELF)
+		proc_nr = who_p;
+	else if (!isokendpt(endpt, &proc_nr))
+		return EINVAL;
 
-  /* See which mapping should be made. */
-  switch(seg_type) {
-  case LOCAL_SEG:
-      phys_addr = umap_local(proc_addr(proc_nr), seg_index, offset, count); 
-      break;
-  case REMOTE_SEG:
-      phys_addr = umap_remote(proc_addr(proc_nr), seg_index, offset, count); 
-      break;
+	/* See which mapping should be made. */
+	switch (seg_type)
+	{
+	case LOCAL_SEG:
+		phys_addr = umap_local(proc_addr(proc_nr), seg_index, offset, count);
+		break;
+	case REMOTE_SEG:
+		phys_addr = umap_remote(proc_addr(proc_nr), seg_index, offset, count);
+		break;
 #if (MACHINE == IBM_PC)
-  case BIOS_SEG:
-      phys_addr = umap_bios(proc_addr(proc_nr), offset, count); 
-      break;
+	case BIOS_SEG:
+		phys_addr = umap_bios(proc_addr(proc_nr), offset, count);
+		break;
 #endif
-  default:
-      return(EINVAL);
-  }
-  m_ptr->CP_DST_ADDR = phys_addr;
-  return (phys_addr == 0) ? EFAULT: OK;
+	default:
+		return EINVAL;
+	}
+	m_ptr->CP_DST_ADDR = phys_addr;
+	return (phys_addr == 0) ? EFAULT : OK;
 }
 
 #endif /* USE_UMAP */

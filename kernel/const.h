@@ -97,9 +97,9 @@
 /* ARM specific constants go here. */
 
 /* Program stack words and masks. */
-#define INIT_PSW      0xD0	/* initial psw for user processes (mode=user, IF=11) */
-#define INIT_TASK_PSW 0xFF	/* initial psw for tasks (mode=system, thumb=enabled, IF=11) */
-#define TRACEBIT      0x0100	/* OR this with psw in proc[] for tracing */
+#define INIT_PSW	0xD0	/* initial psw for user processes (mode=user, IF=11) */
+#define INIT_TASK_PSW	0xFF	/* initial psw for tasks (mode=system, thumb=enabled, IF=11) */
+#define TRACEBIT	0x0100	/* OR this with psw in proc[] for tracing */
 #define SETPSW(rp, new)		/* permits only certain bits to be set */ \
 	((rp)->p_reg.psw = (rp)->p_reg.psw & ~0xCD5 | (new) & 0xCD5)
 
@@ -148,18 +148,18 @@
 #define	ALIGN_TO_PAGE_TABLE(n)		(((n) + PAGE_TABLE_ALIGN) & ~PAGE_TABLE_ALIGN)
 #define	ALIGN_TO_POWER_OF_2(n, p)	(((n) + ((p)-1)) & ~((p)-1))
 
-#define	READ_APSR	0
-#define	READ_CPSR	1
-#define	READ_SPSR	2
+#define	READ_APSR		0
+#define	READ_CPSR		1
+#define	READ_SPSR		2
 
-#define	READ_SCTLR	0
-#define	READ_TTBR0	1
-#define	READ_TTBR1	2
-#define	READ_TTBCR	3
-#define	READ_IFSR	4
-#define	READ_IFAR	5
-#define	READ_DFSR	6
-#define	READ_DFAR	7
+#define	READ_SCTLR		0
+#define	READ_TTBR0		1
+#define	READ_TTBR1		2
+#define	READ_TTBCR		3
+#define	READ_IFSR		4
+#define	READ_IFAR		5
+#define	READ_DFSR		6
+#define	READ_DFAR		7
 
 #define	INVALIDATE_TLB		0
 #define	INVALIDATE_ICACHE	1

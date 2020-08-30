@@ -14,16 +14,16 @@
 /*===========================================================================*
  *				do_memset				     *
  *===========================================================================*/
-PUBLIC int do_memset(m_ptr)
-register message *m_ptr;
-{
+PUBLIC int do_memset(
+	message *m_ptr			/* pointer to request message */
+)
 /* Handle sys_memset(). This writes a pattern into the specified memory. */
-  unsigned long p;
-  unsigned char c = m_ptr->MEM_PATTERN;
-  p = c | (c << 8) | (c << 16) | (c << 24);
-  phys_memset((phys_bytes) m_ptr->MEM_PTR, p, (phys_bytes) m_ptr->MEM_COUNT);
-  return(OK);
+{
+	unsigned long p;
+	unsigned char c = m_ptr->MEM_PATTERN;
+	p = c | (c << 8) | (c << 16) | (c << 24);
+	phys_memset((phys_bytes) m_ptr->MEM_PTR, p, (phys_bytes) m_ptr->MEM_COUNT);
+	return OK;
 }
 
 #endif /* USE_MEMSET */
-

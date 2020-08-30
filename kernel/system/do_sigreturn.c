@@ -12,63 +12,68 @@
 #include <signal.h>
 #include <sys/sigcontext.h>
 
-#if USE_SIGRETURN 
+#if USE_SIGRETURN
 
 /*===========================================================================*
  *			      do_sigreturn				     *
  *===========================================================================*/
-PUBLIC int do_sigreturn(m_ptr)
-message *m_ptr;			/* pointer to request message */
-{
+PUBLIC int do_sigreturn(
+	message *m_ptr			/* pointer to request message */
+)
 /* POSIX style signals require sys_sigreturn to put things in order before 
  * the signalled process can resume execution
  */
-  struct sigcontext sc;
-  register struct proc *rp;
-  phys_bytes src_phys;
-  int proc;
+{
+	struct sigcontext sc;
+	register struct proc *rp;
+	phys_bytes src_phys;
+	int proc;
 
-  if (! isokendpt(m_ptr->SIG_ENDPT, &proc)) return(EINVAL);
-  if (iskerneln(proc)) return(EPERM);
-  rp = proc_addr(proc);
+	if (!isokendpt(m_ptr->SIG_ENDPT, &proc))
+		return EINVAL;
+	if (iskerneln(proc))
+		return EPERM;
+	rp = proc_addr(proc);
 
-  /* Copy in the sigcontext structure. */
-  src_phys = umap_local(rp, D, (vir_bytes) m_ptr->SIG_CTXT_PTR,
-      (vir_bytes) sizeof(struct sigcontext));
-  if (src_phys == 0) return(EFAULT);
-  phys_copy(src_phys, vir2phys(&sc), (phys_bytes) sizeof(struct sigcontext));
+	/* Copy in the sigcontext structure. */
+	src_phys = umap_local(rp, D, (vir_bytes)m_ptr->SIG_CTXT_PTR,
+			      (vir_bytes)sizeof(struct sigcontext));
+	if (src_phys == 0)
+		return EFAULT;
+	phys_copy(src_phys, vir2phys(&sc), (phys_bytes)sizeof(struct sigcontext));
 
-  /* Make sure that this is not just a jump buffer. */
-  if ((sc.sc_flags & SC_SIGCONTEXT) == 0) return(EINVAL);
+	/* Make sure that this is not just a jump buffer. */
+	if ((sc.sc_flags & SC_SIGCONTEXT) == 0)
+		return EINVAL;
 
-  /* Fix up only certain key registers if the compiler doesn't use
-   * register variables within functions containing setjmp.
-   */
-  if (sc.sc_flags & SC_NOREGLOCALS) {
-      rp->p_reg.RET_REG = sc.sc_retreg;
+	/* Fix up only certain key registers if the compiler doesn't use
+	 * register variables within functions containing setjmp.
+	 */
+	if (sc.sc_flags & SC_NOREGLOCALS)
+	{
+		rp->p_reg.RET_REG = sc.sc_retreg;
 #if (CHIP == INTEL)
-      rp->p_reg.fp = sc.sc_fp;
+		rp->p_reg.fp = sc.sc_fp;
 #endif
-      rp->p_reg.pc = sc.sc_pc;
-      rp->p_reg.sp = sc.sc_sp;
-      return(OK);
-  }
-  sc.sc_psw  = rp->p_reg.psw;
+		rp->p_reg.pc = sc.sc_pc;
+		rp->p_reg.sp = sc.sc_sp;
+		return OK;
+	}
+	sc.sc_psw = rp->p_reg.psw;
 
 #if (CHIP == INTEL)
-  /* Don't panic kernel if user gave bad selectors. */
-  sc.sc_cs = rp->p_reg.cs;
-  sc.sc_ds = rp->p_reg.ds;
-  sc.sc_es = rp->p_reg.es;
+	/* Don't panic kernel if user gave bad selectors. */
+	sc.sc_cs = rp->p_reg.cs;
+	sc.sc_ds = rp->p_reg.ds;
+	sc.sc_es = rp->p_reg.es;
 #if _WORD_SIZE == 4
-  sc.sc_fs = rp->p_reg.fs;
-  sc.sc_gs = rp->p_reg.gs;
+	sc.sc_fs = rp->p_reg.fs;
+	sc.sc_gs = rp->p_reg.gs;
 #endif
 #endif
 
-  /* Restore the registers. */
-  memcpy(&rp->p_reg, &sc.sc_regs, sizeof(struct sigregs));
-  return(OK);
+	/* Restore the registers. */
+	memcpy(&rp->p_reg, &sc.sc_regs, sizeof(struct sigregs));
+	return OK;
 }
 #endif /* USE_SIGRETURN */
-

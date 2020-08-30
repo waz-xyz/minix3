@@ -44,8 +44,6 @@ PUBLIC void main()
 	Elf32_Ehdr *ehdr;		/* ELF header of one of the programs in the image */
 	Elf32_Phdr *phdr;		/* ELF segment header */
 
-	serial_puts("[Entering main]");
-
 	/* Initialize the interrupt controller. */
 	intr_init(1);
 
@@ -135,8 +133,6 @@ PUBLIC void main()
 			 * however the PC to restore must be a true address.
 			 */
 			rp->p_reg.pc = (reg_t)ip->initial_pc & ~1U;
-			kprintf("Task %s has initial pc = 0x%08X\n", rp->p_name, rp->p_reg.pc);
-
 			rp->p_asid = 0;	/* reserved ASID */
 		}
 
@@ -185,7 +181,6 @@ PUBLIC void main()
 			{
 				rp->p_reg.sp = 0;
 			}
-			kprintf("Task %s: proc_ptr = 0x%08X\n", rp->p_name, rp);
 		}
 		else
 		{
@@ -218,7 +213,6 @@ PUBLIC void main()
 	announce();                 /* print MINIX startup banner */
 	//extern void force_undefined(void); force_undefined();
 	//extern void force_data_abort(void); force_data_abort();
-	kprintf("About to restart a process...\n");
 	restart();
 }
 
