@@ -34,10 +34,11 @@ PUBLIC void pm_set_timer(timer_t *tp, int ticks, tmr_func_t watchdog, int arg)
 
 	/* Set timer argument and add timer to the list. */
 	tmr_arg(tp)->ta_int = arg;
-	prev_time = tmrs_settimer(&pm_timers,tp,now+ticks,watchdog,&next_time);
+	prev_time = tmrs_settimer(&pm_timers, tp, now + ticks, watchdog, &next_time);
 
 	/* Reschedule our synchronous alarm if necessary. */
-	if (! prev_time || prev_time > next_time) {
+	if (prev_time == 0 || prev_time > next_time)
+	{
 		if (sys_setalarm(next_time, 1) != OK)
 			panic(__FILE__, "PM set timer couldn't set alarm.", NO_NUM);
 	}
@@ -54,7 +55,8 @@ PUBLIC void pm_expire_timers(clock_t now)
 
 	/* Check for expired timers and possibly reschedule an alarm. */
 	tmrs_exptimers(&pm_timers, now, &next_time);
-	if (next_time > 0) {
+	if (next_time > 0)
+	{
 		if (sys_setalarm(next_time, 1) != OK)
 			panic(__FILE__, "PM expire timer couldn't set alarm.", NO_NUM);
 	}
@@ -69,10 +71,11 @@ PUBLIC void pm_cancel_timer(timer_t *tp)
 	prev_time = tmrs_clrtimer(&pm_timers, tp, &next_time);
 
 	/* If the earliest timer has been removed, we have to set the alarm to  
-     * the next timer, or cancel the alarm altogether if the last timer has 
-     * been cancelled (next_time will be 0 then).
+	 * the next timer, or cancel the alarm altogether if the last timer has 
+	 * been cancelled (next_time will be 0 then).
 	 */
-	if (prev_time < next_time || ! next_time) {
+	if (prev_time < next_time || next_time == 0)
+	{
 		if (sys_setalarm(next_time, 1) != OK)
 			panic(__FILE__, "PM expire timer couldn't set alarm.", NO_NUM);
 	}

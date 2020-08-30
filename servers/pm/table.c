@@ -13,7 +13,10 @@
 /* Miscellaneous */
 char core_name[] = "core";	/* file name where core images are produced */
 
-_PROTOTYPE (int (*call_vec[NCALLS]), (void) ) = {
+typedef int (*syscall_proc_t)(void);
+
+syscall_proc_t call_vec[NCALLS] =
+{
 	no_sys,		/*  0 = unused	*/
 	do_pm_exit,	/*  1 = exit	*/
 	do_fork,	/*  2 = fork	*/
@@ -111,5 +114,6 @@ _PROTOTYPE (int (*call_vec[NCALLS]), (void) ) = {
 	no_sys,		/* 93 = truncate */
 	no_sys,		/* 94 = ftruncate */
 };
-/* This should not fail with "array size is negative": */
+
+/* This should not fail with "array size is negative" */
 extern int dummy[sizeof(call_vec) == NCALLS * sizeof(call_vec[0]) ? 1 : -1];

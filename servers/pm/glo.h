@@ -1,7 +1,7 @@
 /* EXTERN should be extern except in table.c */
-#ifdef _TABLE
-#undef EXTERN
-#define EXTERN
+#ifdef	_TABLE
+#undef	EXTERN
+#define	EXTERN
 #endif
 
 /* Global variables. */
@@ -19,4 +19,3 @@ extern _PROTOTYPE (int (*call_vec[]), (void) );	/* system call handlers */
 extern char core_name[];	/* file name where core images are produced */
 EXTERN sigset_t core_sset;	/* which signals cause core images */
 EXTERN sigset_t ign_sset;	/* which signals are by default ignored */
-
