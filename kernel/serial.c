@@ -27,7 +27,7 @@ void serial_putc(char c)
 enum
 {
 	// The base address for Zynq's UART0.
-	UART0_BASE	= 0x80023000,
+	UART0_BASE	= KERNEL_VIRTUAL_BASE + ARM_SECTION_SIZE - KERNEL_STACK_SIZE - 3*SMALL_PAGE_SIZE,
 
 	UART0_CR	= (UART0_BASE + 0x00),
 	UART0_MR	= (UART0_BASE + 0x04),

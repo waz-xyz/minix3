@@ -35,10 +35,9 @@ SECTIONS
 	__rodata_end = .;
 	erodata = .;
 
-	__data_start = .;
-
 	.data ALIGN(largepagealign) :
 	{
+		__data_start = .;
 		KEEP(*(.data .data.*))
 	} : seg_data
 

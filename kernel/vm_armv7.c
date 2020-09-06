@@ -5,16 +5,26 @@
 #include <string.h>
 #include <elf.h>
 
-#define OFFSET_16MB     0x1000000
+#define OFFSET_16MB		0x1000000
+#define	NOF_SECTIONS		(DDR_MEM_SIZE_IN_MB)
+#define	NOF_PAGES_PER_SECTION	(ARM_SECTION_SIZE / SMALL_PAGE_SIZE)
+#define	BITMAP_WSIZE		32
+#define	BITMAP_BYTESIZE		(BITMAP_WSIZE / 8)
+#define	BITMAP_LEN_PER_SECTION	(NOF_PAGES_PER_SECTION / BITMAP_WSIZE)
+#define	BITMAP_SIZE_PER_SECTION	(NOF_PAGES_PER_SECTION / 8)
+
+typedef struct
+{
+	int pages_in_use;
+	short prev, next;
+} section_entry;
 
 static uint32_t *kernel_1st_level_tt = NULL;
 static uint32_t *kernel_page_table = NULL;
-static uint32_t kernel_stack_start, kernel_stack_end;
-static uint32_t kernel_mmu_tables_start, kernel_mmu_tables_end;
-static uint32_t next_free_pt_location = 0;
 static uint32_t next_free_user_tt_location = 0;
-static uint32_t next_free_smallpage_location = 0;
-static uint32_t user_tt_start, user_tt_end;
+
+static section_entry sections_table[NOF_SECTIONS];
+static uint32_t *pages_bitmap;
 
 static void print_1st_level_table(uint32_t *table, int is_user);
 static void print_page_table(uint32_t *table);
@@ -22,49 +32,21 @@ static void SetExceptionVectorTable(void);
 static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int domain, int ns);
 static void SetSectionDescriptor(uint32_t *tt, int index, uint32_t base, int domain, int ap, int tex, int c, int b, int nG, int s);
 static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG);
+static void SetLongPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG, int s);
 static void MapSystemRegisters(void);
+static void MarkPhysicalRangeAsUsedInSection(int section_inx, int first_page, int last_page);
+static void MarkPhysicalRangeAsUsed(uint32_t start, uint32_t end);
+static void InitPhysicalMemoryTracking(void);
+static void *GetNextFreeUserTTLocation(uint32_t *phys_addr);
+static uint32_t GetNextFreePageTableLocation(void);
+static uint32_t GetNextFreeSmallPageLocation(void);
+static uint32_t GetNextFreeLongPageLocation(void);
 
 void init_mmu_module(void)
 {
-	uint32_t pos;
-	
-	/* Initialize to the final location of the boot image in virtual memory,
-	 * aligned to next free small page */
-	kernel_stack_start = pos = KERNEL_RAW_ACCESS_BASE + KERNEL_PHYSICAL_BASE + ALIGN_TO_SMALL_PAGE(end_of_image);
-	/* Add space for kernel stack */
-	kernel_stack_end = pos = pos + KERNEL_STACK_SIZE;
-	/* Align next position to a 1st-level table */
-	kernel_mmu_tables_start = pos = ALIGN_TO_POWER_OF_2(kernel_stack_end, KERNEL_FIRST_LEVEL_TT_SIZE);
-	kernel_1st_level_tt = (uint32_t*) kernel_mmu_tables_start;
-	kernel_page_table = (uint32_t*) ALIGN_TO_SMALL_PAGE(pos + KERNEL_FIRST_LEVEL_TT_SIZE);
-	/* Add space for kernel's MMU tables */
-	kernel_mmu_tables_end = pos = pos + KERNEL_MMU_TABLES_SIZE;
-	/* Align to next possible user 1st-level table */
-	user_tt_start = next_free_user_tt_location = ALIGN_TO_POWER_OF_2(pos, USER_FIRST_LEVEL_TT_SIZE);
-	user_tt_end = user_tt_start + (number_of_programs - 1) * USER_FIRST_LEVEL_TT_SIZE;
-	/* Find some holes to use as a free location for page tables */
-	if (kernel_mmu_tables_start - ALIGN_TO_PAGE_TABLE(kernel_stack_end) >= PAGE_TABLE_SIZE)
-	{
-		next_free_pt_location = ALIGN_TO_PAGE_TABLE(kernel_stack_end);
-	}
-	else if (user_tt_start - ALIGN_TO_PAGE_TABLE(kernel_mmu_tables_end) >= PAGE_TABLE_SIZE)
-	{
-		next_free_pt_location = ALIGN_TO_PAGE_TABLE(kernel_mmu_tables_end);
-	}
-	else
-	{
-		next_free_pt_location = ALIGN_TO_PAGE_TABLE(user_tt_end);
-	}
-
+	InitPhysicalMemoryTracking();
 	SetExceptionVectorTable();
 	MapSystemRegisters();
-
-	// kprintf("next_free_pt_location: 0x%08X\n", next_free_pt_location);
-	// kprintf("user_tt_start: 0x%08X\n", user_tt_start);
-	// kprintf("user_tt_end: 0x%08X\n", user_tt_end);
-	// kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
-	// kprintf("kernel_mmu_tables_end: 0x%08X\n", kernel_mmu_tables_end);
-	// kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
 	// kprintf("Kernel's first-level table:\n");
 	// print_1st_level_table(kernel_1st_level_tt, 0);
 	// kprintf("Kernel's page table:\n");
@@ -75,13 +57,7 @@ static void SetExceptionVectorTable(void)
 {
 	uint32_t *pt = kernel_page_table + PAGE_TABLE_SIZE/4;
 	uint32_t base = vir2phys(&exception_vector_start);
-	// kprintf("exception_vector_start physical address = 0x%08X\n", base);
 	SetSmallPageDescriptor(pt, 0xF0, base, AP_PL1_RO, 5, 0, 1, 0);
-	// uint32_t *v = (uint32_t*)0xFFFF0000;
-	// for (int i = 0; i < 15; i++)
-	// {
-	// 	kprintf("%08X: 0x%08X\n", &v[i], v[i]);
-	// }
 }
 
 static void MapSystemRegisters(void)
@@ -245,50 +221,125 @@ static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int a
 	pt[index] = (base & (~0xFFF)) | (nG << 11) | (ap2 << 9) | (tex << 6) | (ap10 << 4) | (c << 3) | (b << 2) | 2;
 }
 
-static void *GetNextFreeUserTTLocation(void)
+static void SetLongPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG, int s)
 {
-	uint32_t cur = next_free_user_tt_location;
+	int ap2, ap10, i;
+	uint32_t entry;
+
+	ap2 = (ap >> 2) & 1;
+	ap10 = ap & 3;
+	index &= ~(0xF);
+	entry = (base & (~0xFFFFU)) | (tex << 12) | (nG << 11) | (s << 10) | (ap2 << 9) | (ap10 << 4) | (c << 3) | (b << 2) | 1;
+	for (i = 0; i < 16; i++)
+	{
+		pt[index++] = entry;
+	}
+}
+
+static void *GetNextFreeUserTTLocation(uint32_t *phys_addr)
+{
+	void *p;
+	if (phys_addr != NULL)
+	{
+		*phys_addr = next_free_user_tt_location;
+	}
+	p = phys2vir(next_free_user_tt_location);
 	next_free_user_tt_location += USER_FIRST_LEVEL_TT_SIZE;
-	memset((void*)cur, 0, USER_FIRST_LEVEL_TT_SIZE);
-	return (void*) cur;
+	memset(p, 0, USER_FIRST_LEVEL_TT_SIZE);
+	return p;
 }
 
 static uint32_t GetNextFreePageTableLocation(void)
 {
+	enum { PAGE_TABLES_IN_A_SMALL_PAGE = SMALL_PAGE_SIZE / PAGE_TABLE_SIZE };
+	static uint32_t next_free_pt_location = 0;
+	static int pt_cnt = 0;
 	uint32_t pt_start;
+	void *p;
+
+	if (next_free_pt_location == 0 || pt_cnt >= PAGE_TABLES_IN_A_SMALL_PAGE)
+	{
+		next_free_pt_location = GetNextFreeSmallPageLocation();
+		pt_cnt = 0;
+	}
 	pt_start = next_free_pt_location;
-	if (kernel_mmu_tables_start <= pt_start && pt_start < kernel_mmu_tables_end)
-	{
-		pt_start = ALIGN_TO_PAGE_TABLE(kernel_mmu_tables_end);
-	}
-	if (user_tt_start <= pt_start && pt_start < user_tt_end)
-	{
-		pt_start = ALIGN_TO_PAGE_TABLE(user_tt_end);
-	}
-	next_free_pt_location = pt_start + PAGE_TABLE_SIZE;
-	memset((void*)pt_start, 0, PAGE_TABLE_SIZE);
-	//kprintf("New page table location: 0x%08X\n", vir2phys((void*) pt_start));
-	return vir2phys((void*) pt_start);
+	pt_cnt++;
+	next_free_pt_location += PAGE_TABLE_SIZE;
+	memset(phys2vir(pt_start), 0, PAGE_TABLE_SIZE);
+	//kprintf("New page table location: 0x%08X\n", pt_start);
+	return pt_start;
 }
 
 static uint32_t GetNextFreeSmallPageLocation(void)
 {
-	uint32_t sp_start;
-	if (next_free_smallpage_location == 0)
+	section_entry *se;
+	uint32_t base_addr;
+	uint32_t bitmap;
+	size_t base_inx;
+	uint32_t bitmask;
+
+	for (size_t i = 0; i < NOF_SECTIONS; i++)
 	{
-		next_free_smallpage_location = ALIGN_TO_SMALL_PAGE(next_free_pt_location);
+		se = &sections_table[i];
+		if (se->pages_in_use < NOF_PAGES_PER_SECTION)
+		{
+			base_addr = i * ARM_SECTION_SIZE;
+			base_inx = i * BITMAP_LEN_PER_SECTION;
+			for (size_t j = 0; j < BITMAP_LEN_PER_SECTION; j++)
+			{
+				bitmap = pages_bitmap[base_inx + j];
+				if (bitmap != ~0U)
+				{
+					for (int z = 0; z < BITMAP_WSIZE; z++)
+					{
+						bitmask = 1U << (BITMAP_WSIZE-1-z);
+						if ((bitmap & bitmask) == 0)
+						{
+							pages_bitmap[base_inx + j] |= bitmask;
+							return base_addr + (j * BITMAP_WSIZE + z) * SMALL_PAGE_SIZE;
+						}
+					}
+				}
+			}
+		}
 	}
-	sp_start = next_free_smallpage_location;
-	if (kernel_mmu_tables_start <= sp_start && sp_start < kernel_mmu_tables_end)
+	panic("Out of memory: not enough free pages", NO_NUM);
+	return 0;
+}
+
+static uint32_t GetNextFreeLongPageLocation(void)
+{
+	section_entry *se;
+	uint32_t base_addr;
+	uint32_t bitmap;
+	size_t base_inx;
+	uint32_t bitmask;
+
+	for (size_t i = 0; i < NOF_SECTIONS; i++)
 	{
-		sp_start = ALIGN_TO_SMALL_PAGE(kernel_mmu_tables_end);
+		se = &sections_table[i];
+		if (se->pages_in_use < NOF_PAGES_PER_SECTION - SMALL_PAGES_IN_A_LONG_PAGE)
+		{
+			base_addr = i * ARM_SECTION_SIZE;
+			base_inx = i * BITMAP_LEN_PER_SECTION;
+			for (size_t j = 0; j < BITMAP_LEN_PER_SECTION; j++)
+			{
+				bitmap = pages_bitmap[base_inx + j];
+				if ((bitmap & (0xFFFFU << 16)) == 0)
+				{
+					pages_bitmap[base_inx + j] |= (0xFFFFU << 16);
+					return base_addr + (j * BITMAP_WSIZE) * SMALL_PAGE_SIZE;
+				}
+				else if ((bitmap & 0xFFFFU) == 0)
+				{
+					pages_bitmap[base_inx + j] |= 0xFFFFU;
+					return base_addr + (j * BITMAP_WSIZE + 16) * SMALL_PAGE_SIZE;
+				}
+			}
+		}
 	}
-	if (user_tt_start <= sp_start && sp_start < user_tt_end)
-	{
-		sp_start = ALIGN_TO_SMALL_PAGE(user_tt_end);
-	}
-	next_free_smallpage_location = sp_start + SMALL_PAGE_SIZE;
-	return vir2phys((void*) sp_start);
+	panic("Out of memory: not enough free long pages", NO_NUM);
+	return 0;
 }
 
 void allocate_page_tables(struct proc *pr)
@@ -297,9 +348,8 @@ void allocate_page_tables(struct proc *pr)
 	uint32_t virt_start, virt_end;
 	struct mem_map *mm;
 	
-	tt = GetNextFreeUserTTLocation();
-	pr->p_ttbase = vir2phys(tt);
-	//kprintf("1st-level table for %s: 0x%08X\n", pr->p_name, pr->p_ttbase);
+	tt = GetNextFreeUserTTLocation(&pr->p_ttbase);
+	// kprintf("1st-level table for %s: 0x%08X\n", pr->p_name, pr->p_ttbase);
 	for (int seg = T; seg <= S; seg++)
 	{
 		mm = &(pr->p_memmap[seg]);
@@ -353,41 +403,53 @@ void allocate_pages(struct proc *pr)
 		}
 	}
 
-	// if (pr->p_nr == 0)
-	// {
-	// 	kprintf("MMU tables for %s:\n", pr->p_name);
-	// 	kprintf("p_ttbase = 0x%08X\n", pr->p_ttbase);
-	// 	print_mmu_tables(tt, 1);
-	// }
+	if (pr->p_nr == 0)
+	{
+		kprintf("MMU tables for %s:\n", pr->p_name);
+		kprintf("p_ttbase = 0x%08X\n", pr->p_ttbase);
+		print_mmu_tables(tt, 1);
+	}
 
-	// if (pr->p_nr == 4)
-	// {
-	// 	kprintf("Kernel page table #1:\n");
-	// 	print_page_table(kernel_page_table);
-	// 	kprintf("Kernel page table #2:\n");
-	// 	print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
-	// }
+	if (pr->p_nr == 4)
+	{
+		kprintf("Kernel's first-level table:\n");
+		print_1st_level_table(kernel_1st_level_tt, 0);
+		kprintf("Kernel page table #1:\n");
+		print_page_table(kernel_page_table);
+		kprintf("Kernel page table #2:\n");
+		print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
+	}
 }
 
 uint32_t allocate_task_stack(void)
 {
 	int i;
-	uint32_t vaddr;
 
-	/* Find the lowest 2 empty entries in the kernel's page table.
-	 * One for a guard page and another for the task stack. */
-	for (i = 0; i < PAGE_TABLE_NOF_ENTRIES-1; i++)
+	/* Find the highest entry in the kernel's page table #0
+	 * occupied by a stack.
+	 */
+	i = PAGE_TABLE_NOF_ENTRIES - 1;
+	while ((kernel_page_table[i] & 3) != 0)
 	{
-		if ((kernel_page_table[i] & 3) == 0 && 
-		    (kernel_page_table[i+1] & 3) == 0)
-		{
-			break;
-		}
+		if ((kernel_page_table[i-1] & 3) == 0)
+			i -= 2;
+		else
+			i -= 1;
 	}
-	i++;	/* Skip guard page */
-	SetSmallPageDescriptor((uint32_t*)kernel_page_table, i, GetNextFreeSmallPageLocation(), AP_PL1_RW, 5, 0, 1, 0);
-	vaddr = KERNEL_VIRTUAL_BASE + (i << 12);
-	return vaddr + SMALL_PAGE_SIZE;
+
+	if ((kernel_page_table[i-1] & 3) == 0)
+	{
+		SetSmallPageDescriptor(kernel_page_table, i, GetNextFreeSmallPageLocation(),
+				       AP_PL1_RW, 5, 0, 1, 0);
+		// New stack pointer sits at the next page boundary
+		return KERNEL_VIRTUAL_BASE + (i+1) * SMALL_PAGE_SIZE;
+	}
+	else
+	{
+		panic("Not enough space to allocate a new task stack", NO_NUM);
+	}
+	
+	return 0;
 }
 
 void *get_header_from_image(int progindex)
@@ -433,13 +495,6 @@ void copy_vir2phys(void *vir_src, uint32_t phys_dest, size_t len)
 	void *vir_dest = phys2vir(phys_dest);
 	kprintf("virt_dest = 0x%08X\n", vir_dest);
 	memcpy(vir_dest, vir_src, len);
-
-	// int *p = vir_dest;
-	// kprintf("Contents of physical address 0:\n");
-	// for (int i = 0; i < len/4; i++, p++)
-	// {
-	// 	kprintf("%2d: 0x%08X\n", i, *p);
-	// }
 }
 
 uint32_t get_asid(void)
@@ -452,4 +507,155 @@ uint32_t get_asid(void)
 void release_asid(uint32_t asid)
 {
 	;
+}
+
+static void MarkPhysicalRangeAsUsedInSection(int section_inx, int first_page, int last_page)
+{
+	section_entry* se;
+	size_t base_inx;
+	uint32_t *pb;
+	int i;
+	uint32_t bitmask;
+	
+	se = &sections_table[section_inx];
+	base_inx = section_inx*BITMAP_LEN_PER_SECTION;
+	for (i = first_page; i < last_page; i++)
+	{
+		pb = &pages_bitmap[base_inx + i / BITMAP_WSIZE];
+		bitmask = 1U << (BITMAP_WSIZE - 1 - i % BITMAP_WSIZE);
+		if ((*pb & bitmask) == 0)
+		{
+			se->pages_in_use += 1;
+			*pb |= bitmask;
+		}
+	}
+}
+
+static void MarkPhysicalRangeAsUsed(uint32_t start, uint32_t end)
+{
+	int firstSection, lastSection, lastBitmapWord;
+	uint32_t firstPage, lastPage, bitmask;
+	int i;
+	section_entry* se;
+	uint32_t *pb;
+	size_t base_inx;
+
+	if (start >= end)
+	{
+		panic("Bad physical address range", NO_NUM);
+	}
+
+	firstSection = (start >> ARM_SECTION_BITLEN);
+	firstPage = (start & ARM_SECTION_ALIGN) >> SMALL_PAGE_BITLEN;
+	lastSection = (end >> ARM_SECTION_BITLEN);
+	lastPage = (end & ARM_SECTION_ALIGN) >> SMALL_PAGE_BITLEN;
+	if ((end & SMALL_PAGE_ALIGN) != 0)
+	{
+		lastPage++;
+	}
+	//kprintf("start = 0x%08X, end = 0x%08X, firstSection = 0x%X, lastSection = 0x%X, firstPage = 0x%X, lastPage = 0x%X\n", start, end, firstSection, lastSection, firstPage, lastPage);
+
+	if (firstSection == lastSection)
+	{
+		MarkPhysicalRangeAsUsedInSection(firstSection, firstPage, lastPage);
+	}
+	else
+	{
+		if (firstPage != 0)
+		{
+			MarkPhysicalRangeAsUsedInSection(firstSection, firstPage, NOF_PAGES_PER_SECTION);
+			firstSection++;
+		}
+		for (i = firstSection; i < lastSection; i++)
+		{
+			se = &sections_table[i];
+			se->pages_in_use = NOF_PAGES_PER_SECTION;
+			memset(&pages_bitmap[i*BITMAP_LEN_PER_SECTION], ~0, BITMAP_SIZE_PER_SECTION);
+		}
+		if (lastPage != 0)
+		{
+			MarkPhysicalRangeAsUsedInSection(lastSection, 0, lastPage);
+		}
+	}
+}
+
+static void ExpandDataSegment(void)
+{
+	int i, j;
+	uint32_t base;
+
+	// Find the highest occupied entry in the lower part of the kernel's page table #1
+	for (i = 0; i < PAGE_TABLE_NOF_ENTRIES; i++)
+	{
+		if ((kernel_page_table[i] & 3) == 0)
+			break;
+	}
+	base = GetNextFreeLongPageLocation();
+	memset(phys2vir(base), 0, LARGE_PAGE_SIZE);
+	SetLongPageDescriptor(kernel_page_table, i, base, AP_PL1_RW, 5, 0, 1, 0, 1);
+}
+
+static void InitPhysicalMemoryTracking(void)
+{
+	uint32_t kernel_stack_start, kernel_stack_end;
+	uint32_t kernel_mmu_tables_start, kernel_mmu_tables_end;
+	uint32_t user_tt_start, user_tt_end;
+	uint32_t end_of_pages_bitmap, end_of_data_segment;
+	uint32_t pages_bitmap_size;
+	int i;
+	extern char end, __data_start;
+	int doExpansion = 0;
+
+	kernel_stack_start = KERNEL_PHYSICAL_BASE + ALIGN_TO_SMALL_PAGE(end_of_image);
+	/* Add space for kernel stack */
+	kernel_stack_end = kernel_stack_start + KERNEL_STACK_SIZE;
+
+	/* Align next position to a 1st-level table */
+	kernel_mmu_tables_start = ALIGN_TO_POWER_OF_2(kernel_stack_end, KERNEL_FIRST_LEVEL_TT_SIZE);
+	kernel_1st_level_tt = phys2vir(kernel_mmu_tables_start);
+	kernel_page_table = phys2vir(kernel_mmu_tables_start + KERNEL_FIRST_LEVEL_TT_SIZE);
+	/* Add space for kernel's MMU tables */
+	kernel_mmu_tables_end = kernel_mmu_tables_start + KERNEL_MMU_TABLES_SIZE;
+
+	/* Align to next possible user 1st-level table */
+	user_tt_start = ALIGN_TO_POWER_OF_2(kernel_mmu_tables_end, USER_FIRST_LEVEL_TT_SIZE);
+	next_free_user_tt_location = user_tt_start;
+	user_tt_end = user_tt_start + (number_of_programs - 1) * USER_FIRST_LEVEL_TT_SIZE;
+
+	/* Allocate pages_bitmap */
+	pages_bitmap = (uint32_t*) ALIGN_TO_POWER_OF_2((uint32_t) (&end), 4);
+	pages_bitmap_size = NOF_SECTIONS * BITMAP_SIZE_PER_SECTION;
+	end_of_pages_bitmap = (uint32_t)(pages_bitmap) + pages_bitmap_size;
+	end_of_data_segment = (uint32_t) (&__data_start) + LARGE_PAGE_SIZE;
+	if (end_of_pages_bitmap > end_of_data_segment)
+	{
+		// We need to do this later to take into account lower portions
+		// of memory that are already in use.
+		kprintf("pages_bitmap = 0x%08X, pages_bitmap_size = %d\n", pages_bitmap, pages_bitmap_size);
+		kprintf("end of pages_bitmap = 0x%08X\n", end_of_pages_bitmap);
+		kprintf("current end of data segment = 0x%08X\n", end_of_data_segment);
+		doExpansion = 1;
+	}
+
+	for (i = 0; i < NOF_SECTIONS; i++)
+	{
+		sections_table[i].pages_in_use = 0;
+	}
+	// The lower portion of pages_bitmap is already set to zero because is part of BSS
+
+	/* First megabyte will be marked as used although is actually inaccessible */
+	MarkPhysicalRangeAsUsed(0, kernel_stack_end);
+	MarkPhysicalRangeAsUsed(kernel_mmu_tables_start, kernel_mmu_tables_end);
+	MarkPhysicalRangeAsUsed(user_tt_start, user_tt_end);
+
+	if (doExpansion)
+	{
+		ExpandDataSegment();
+	}
+
+	// kprintf("user_tt_start: 0x%08X\n", user_tt_start);
+	// kprintf("user_tt_end: 0x%08X\n", user_tt_end);
+	// kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
+	// kprintf("kernel_mmu_tables_end: 0x%08X\n", kernel_mmu_tables_end);
+	// kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
 }

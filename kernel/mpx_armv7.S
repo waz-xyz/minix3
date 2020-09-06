@@ -133,28 +133,27 @@ skip_header:
 	subs	r2, #1
 	bne	1b
 
-	/* Set small page table entries for L2 table index = 0x21 and beyond
+	/* Set small page table entries for L2 table index = 0xFF and below
 	   with base addresses starting at r9. Small pages for kernel stack. */
-	ldr	r4, =#0x556
+	ldr	r4, =#0x556			// page settings
 	mov	r3, r9
 	mov	r2, #KERNEL_NUM_STACK_PAGES
-	add	r1, r7, #(4 * 0x21)
+	add	r1, r7, #(4 * 0xFFU)
 one_more_page:
 	add	r0, r3, r4
-	str	r0, [r1], #4
+	str	r0, [r1], #-4
 	add	r3, #SMALL_PAGE_SIZE
 	subs	r2, #1
 	bne	one_more_page
+	sub	r1, #4				// leave a guard page
 
-	/* Set small page table entry for L2 table index = 0x22
+	/* Set a small page table entry immediately below the guard stack page,
 	   with base address at 0x41210000. Small page for LED output. */
-	add	r1, r7, #(4 * 0x22)
 	ldr	r0, =#0x41210036
-	str	r0, [r1]
+	str	r0, [r1], #-4
 
-	/* Set small page table entry for L2 table index = 0x23
+	/* Set a small page table entry immediately below the last entry,
 	   with base address at 0xE0000000. Small page for PS UART. */
-	add	r1, r7, #(4 * 0x23)
 	ldr	r0, =#0xE0000036
 	str	r0, [r1]
 
@@ -203,11 +202,10 @@ mmu_is_on:
 	ldr	r5, =cstart
 	blx	r5
 
-forever:
-	b	forever
+forever:b	.
 
 SetLeds:
-	ldr	r1, =#0x80022000
+	ldr	r1, =#(KERNEL_VIRTUAL_BASE + ARM_SECTION_SIZE - KERNEL_STACK_SIZE - 2*SMALL_PAGE_SIZE)
 	str	r0, [r1]
 	bx	lr
 
