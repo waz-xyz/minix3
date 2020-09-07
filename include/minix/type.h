@@ -95,17 +95,18 @@ struct kinfo {
 	phys_bytes code_size;		
 	phys_bytes data_base;		/* base of kernel data */
 	phys_bytes data_size;
-	vir_bytes proc_addr;		/* virtual address of process table */
+	vir_bytes  proc_addr;		/* virtual address of process table */
 	phys_bytes kmem_base;		/* kernel memory layout (/dev/kmem) */
 	phys_bytes kmem_size;
 	phys_bytes bootdev_base;	/* boot device from boot image (/dev/boot) */
 	phys_bytes bootdev_size;
 	phys_bytes ramdev_base;		/* boot device from boot image (/dev/boot) */
 	phys_bytes ramdev_size;
-	phys_bytes params_base;		/* parameters passed by boot monitor */
+	vir_bytes  params_base;		/* parameters passed by boot monitor */
 	phys_bytes params_size;
 	int nr_procs;			/* number of user processes */
 	int nr_tasks;			/* number of kernel tasks */
+	phys_bytes free_mem;		/* free memory in the system */
 	char release[6];		/* kernel release number */
 	char version[6];		/* kernel version number */
 #if DEBUG_LOCK_CHECK

@@ -3,15 +3,13 @@
 /*===========================================================================*
  *                                sys_int86				     *
  *===========================================================================*/
-PUBLIC int sys_int86(reg86p)
-struct reg86u *reg86p;
+PUBLIC int sys_int86(struct reg86u *reg86p)
 {
-    message m;
-    int result;
+	message m;
+	int result;
 
-    m.m1_p1= (char *)reg86p;
+	m.m1_p1 = (char *)reg86p;
 
-    result = _taskcall(SYSTASK, SYS_INT86, &m);
-    return(result);
+	result = _taskcall(SYSTASK, SYS_INT86, &m);
+	return result;
 }
-

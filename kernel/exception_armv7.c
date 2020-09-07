@@ -77,7 +77,7 @@ PUBLIC void exception(unsigned exception_type)
 				m_ptr = (message*)saved_proc->p_reg.r1;
 				bit_map = saved_proc->p_reg.r2;
 				kprintf("Entering sys_call on behalf of %s\n", saved_proc->p_name);
-				sys_call(call_nr, src_dst, m_ptr, bit_map);
+				saved_proc->p_reg.RET_REG = sys_call(call_nr, src_dst, m_ptr, bit_map);
 				kprintf("Exiting sys_call on behalf of %s\n", saved_proc->p_name);
 				kprintf("Next process is %s\n", next_ptr->p_name);
 				return;

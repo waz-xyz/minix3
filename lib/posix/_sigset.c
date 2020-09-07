@@ -16,60 +16,57 @@
 #include <signal.h>
 
 /* Low bit of signal masks. */
-#define SIGBIT_0	((sigset_t) 1)
+#define SIGBIT_0	((sigset_t)1)
 
 /* Mask of valid signals (0 - _NSIG). */
 #define SIGMASK		(((SIGBIT_0 << _NSIG) << 1) - 1)
 
-#define sigisvalid(signo) ((unsigned) (signo) <= _NSIG)
+#define	sigisvalid(signo)	((unsigned)(signo) <= _NSIG)
 
-PUBLIC int sigaddset(set, signo)
-sigset_t *set;
-int signo;
+PUBLIC int sigaddset(sigset_t *set, int signo)
 {
-  if (!sigisvalid(signo)) {
-  	errno = EINVAL;
-	return -1;
-  }
-  *set |= SIGBIT_0 << signo;
-  return 0;
+	if (!sigisvalid(signo))
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	*set |= SIGBIT_0 << signo;
+	return 0;
 }
 
-PUBLIC int sigdelset(set, signo)
-sigset_t *set;
-int signo;
+PUBLIC int sigdelset(sigset_t *set, int signo)
 {
-  if (!sigisvalid(signo)) {
-  	errno = EINVAL;
-	return -1;
-  }
-  *set &= ~(SIGBIT_0 << signo);
-  return 0;
+	if (!sigisvalid(signo))
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	*set &= ~(SIGBIT_0 << signo);
+	return 0;
 }
 
-PUBLIC int sigemptyset(set)
-sigset_t *set;
+PUBLIC int sigemptyset(sigset_t *set)
 {
-  *set = 0;
-  return 0;
+	*set = 0;
+	return 0;
 }
 
-PUBLIC int sigfillset(set)
-sigset_t *set;
+PUBLIC int sigfillset(sigset_t *set)
 {
-  *set = SIGMASK;
-  return 0;
+	*set = SIGMASK;
+	return 0;
 }
 
-PUBLIC int sigismember(set, signo)
-_CONST sigset_t *set;
-int signo;
+PUBLIC int sigismember(const sigset_t *set, int signo)
 {
-  if (!sigisvalid(signo)) {
-  	errno = EINVAL;
-	return -1;
-  }
-  if (*set & (SIGBIT_0 << signo))
-  	return 1;
-  return 0;
+	if (!sigisvalid(signo))
+	{
+		errno = EINVAL;
+		return -1;
+	}
+	if (*set & (SIGBIT_0 << signo))
+	{
+		return 1;
+	}
+	return 0;
 }

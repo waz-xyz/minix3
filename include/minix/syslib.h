@@ -112,8 +112,8 @@ int sys_segctl(int *index, u16_t *seg, vir_bytes *off, phys_bytes phys, vir_byte
 #define sys_getmonparams(v,vl)	sys_getinfo(GET_MONPARAMS, v,vl, 0,0)
 #define sys_getschedinfo(v1,v2)	sys_getinfo(GET_SCHEDINFO, v1,0, v2,0)
 #define sys_getlocktimings(dst)	sys_getinfo(GET_LOCKTIMING, dst, 0,0,0)
-#define sys_getbiosbuffer(virp, sizep) sys_getinfo(GET_BIOSBUFFER, virp, \
-	sizeof(*virp), sizep, sizeof(*sizep))
+#define sys_getbiosbuffer(virp, sizep) \
+	sys_getinfo(GET_BIOSBUFFER, virp, sizeof(*virp), sizep, sizeof(*sizep))
 int sys_getinfo(int request, void *val_ptr, int val_len, void *val_ptr2, int val_len2);
 
 /* Signal control. */
@@ -165,4 +165,3 @@ char *pci_dev_name(U16_t vid, U16_t did);
 char *pci_slot_name(int devind);
 
 #endif /* _SYSLIB_H */
-

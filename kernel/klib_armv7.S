@@ -26,12 +26,6 @@
 	.global disable_irq
 	.type	disable_irq, %function
 
-	.global cp_mess
-	.type	cp_mess, %function
-
-	.global set_mess
-	.type	set_mess, %function
-
 	.global phys_copy
 	.type	phys_copy, %function
 
@@ -90,52 +84,6 @@ idle_task:
 
 	.arm
 	.align	2
-
-/*===========================================================================*
- *				cp_mess					     *
- *===========================================================================*
- * PUBLIC void cp_mess(int src,
- *		       struct stackframe_s *src_regs,
- *		       struct stackframe_s *dst_regs);
- * This routine makes a fast copy of a message from the saved registers of a
- * process to another one. It also copies the source address provided as a
- * parameter to the call into the first word of the destination message.
- *
- * For the ARM architecture the messages are passed entirely in registers r4
- * to r12.
- */
-cp_mess:
-	push	{r4-r11}
-	str	r0, [r2, #R4_OFFSET]
-	add	r1, #R5_OFFSET
-	add	r2, #R5_OFFSET
-	ldm	r1, {r4-r11}
-	stm	r2, {r4-r11}
-	pop	{r4-r11}
-	bx	lr
-
-/*===========================================================================*
- *				set_mess				     *
- *===========================================================================*
- * PUBLIC void cp_mess(int src,
- *		       message *msg,
- *		       struct stackframe_s *dst_regs);
- * This routine makes a fast copy of a local message struct into the saved
- * registers of a process. It also copies the source address provided as a
- * parameter to the call into the first word of the destination message.
- *
- * For the ARM architecture the messages are passed entirely in registers r4
- * to r12.
- */
-set_mess:
-	push	{r4-r11}
-	str	r0, [r2, #R4_OFFSET]
-	add	r1, #4			// skip first field (m_source)
-	add	r2, #R5_OFFSET
-	ldm	r1, {r4-r11}
-	stm	r2, {r4-r11}
-	pop	{r4-r11}
-	bx	lr
 
 /*===========================================================================*
  *				phys_copy				     *

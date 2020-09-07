@@ -7,7 +7,7 @@
 void swab(const void *from, void *to, ssize_t count)
 {
   register char temp;
-  char *cfrom = from;
+  const char *cfrom = from;
   char *cto = to;
 
   count >>= 1;

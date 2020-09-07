@@ -46,7 +46,12 @@ PUBLIC void cstart(uint32_t kstack_phys_address,
 	kinfo.data_base = (phys_bytes) __data_start;
 	kinfo.data_size = (phys_bytes) (__bss_end - __data_start);	/* size of data segment */
 
+	/* Initialize MMU management. */
 	init_mmu_module();
+
+	/* Copy the boot parameters to the local buffer. */
+	kinfo.params_base = (vir_bytes) "";
+	kinfo.params_size = 1;
 
 	/* Record miscellaneous information for user-space servers. */
 	kinfo.nr_procs = NR_PROCS;

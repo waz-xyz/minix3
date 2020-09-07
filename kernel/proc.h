@@ -48,7 +48,7 @@ struct proc {
 	struct proc *p_nextready;	/* pointer to next ready process */
 	struct proc *p_caller_q;	/* head of list of procs wishing to send */
 	struct proc *p_q_link;		/* link to next proc wishing to send */
-	message *p_messbuf;		/* pointer to passed message buffer */
+	message p_messbuf;		/* message buffer */
 	int p_getfrom_e;		/* from whom does process want to receive? */
 	int p_sendto_e;			/* to whom does process want to send? */
 

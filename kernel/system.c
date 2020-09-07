@@ -106,8 +106,9 @@ PUBLIC void sys_task(void)
 		 */
 		if (result != EDONTREPLY)
 		{
-			m.m_type = result;			/* report status of call */
-			if (OK != (s=lock_send(m.m_source, &m)))
+			m.m_type = result;	/* report status of call */
+
+			if (OK != (s = lock_send(m.m_source, &m)))
 			{
 				kprintf("SYSTEM: reply to %d failed: %d\n", m.m_source, s);
 			}

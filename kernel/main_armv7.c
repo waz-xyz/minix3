@@ -145,7 +145,7 @@ PUBLIC void main()
 		/* Initialize the stack pointer for user processes. Take it down one
 		 * word to give crtso.s something to use as "argc".
 		 */
-		if (isusern(proc_nr(rp)))
+		if (isuserp(rp))
 		{ /* user-space process? */
 			rp->p_reg.sp = (rp->p_memmap[S].mem_vir +
 					rp->p_memmap[S].mem_len);

@@ -43,6 +43,7 @@
 #include "kernel.h"
 #include "proc.h"
 #include <signal.h>
+#include <string.h>
 
 /* Scheduling and message passing functions. The functions are available to 
  * other parts of the kernel through lock_...(). The lock temporarily disables 
@@ -91,11 +92,8 @@ static inline void BuildMess(message *m_ptr, int src, struct proc *dst_ptr)
 #if (CHIP == ARM)
 static inline void CopyMess(proc_nr_t s, struct proc *sp, message *sm, struct proc *dp, message *dm)
 {
-	cp_mess(proc_addr(s)->p_endpoint, &sp->p_reg, &dp->p_reg);
-}
-static inline void SetMess(proc_nr_t s, message *sm, struct proc *dp, message *dm)
-{
-	set_mess(proc_addr(s)->p_endpoint, sm, &dp->p_reg);
+	memcpy(&dp->p_reg.r4, sm, sizeof(message));
+	dp->p_reg.r4 = proc_addr(s)->p_endpoint;
 }
 #endif /* (CHIP == ARM) */
 
@@ -161,7 +159,6 @@ PUBLIC int sys_call(
 		return ETRAPDENIED;		/* trap denied by mask or kernel */
 	}
 
-#if (CHIP == INTEL)
 	/* If the call involves a message buffer, i.e., for SEND, RECEIVE, SENDREC, 
 	 * or ECHO, check the message pointer. This check allows a message to be 
 	 * anywhere in data or stack or gap. It will have to be made more elaborate 
@@ -169,10 +166,8 @@ PUBLIC int sys_call(
 	 */
 	if (function & CHECK_PTR)
 	{
-		vlo = (vir_bytes) m_ptr >> CLICK_SHIFT;		
-		vhi = ((vir_bytes) m_ptr + MESS_SIZE - 1) >> CLICK_SHIFT;
-		if (vlo < caller_ptr->p_memmap[D].mem_vir || vlo > vhi ||
-		    vhi >= caller_ptr->p_memmap[S].mem_vir + caller_ptr->p_memmap[S].mem_len)
+		if (isuserp(caller_ptr) &&
+		    validate_user_ptr(proc_nr(caller_ptr), m_ptr, sizeof(*m_ptr), PTR_WRITABLE) == NULL)
 		{
 #if DEBUG_ENABLE_IPC_WARNINGS
 			kprintf("sys_call: invalid message pointer, trap %d, caller %d\n",
@@ -181,7 +176,6 @@ PUBLIC int sys_call(
 			return EFAULT; 		/* invalid message pointer */
 		}
 	}
-#endif
 
 	/* If the call is to send to a process, i.e., for SEND, SENDREC or NOTIFY,
 	 * verify that the caller is allowed to send to the given destination. 
@@ -345,14 +339,14 @@ PRIVATE int mini_send(
 	    (dst_ptr->p_getfrom_e == ANY || dst_ptr->p_getfrom_e == caller_ptr->p_endpoint))
 	{
 		/* Destination is indeed waiting for this message. */
-		CopyMess(caller_ptr->p_nr, caller_ptr, m_ptr, dst_ptr, dst_ptr->p_messbuf);
+		CopyMess(caller_ptr->p_nr, caller_ptr, m_ptr, dst_ptr, &dst_ptr->p_messbuf);
 		if ((dst_ptr->p_rts_flags &= ~RECEIVING) == 0)
 			enqueue(dst_ptr);
 	}
 	else if ((flags & NON_BLOCKING) == 0)
 	{
 		/* Destination is not waiting.  Block and dequeue caller. */
-		caller_ptr->p_messbuf = m_ptr;
+		caller_ptr->p_messbuf = *m_ptr;
 		if (caller_ptr->p_rts_flags == 0)
 			dequeue(caller_ptr);
 		caller_ptr->p_rts_flags |= SENDING;
@@ -436,7 +430,7 @@ PRIVATE int mini_receive(
 
 				/* Found a suitable source, deliver the notification message. */
 				BuildMess(&m, src_proc_nr, caller_ptr);	/* assemble message */
-				SetMess(src_proc_nr, &m, caller_ptr, m_ptr);
+				CopyMess(src_proc_nr, proc_addr(HARDWARE), &m, caller_ptr, m_ptr);
 				return OK;		/* report success */
 			}
 		}
@@ -455,7 +449,7 @@ PRIVATE int mini_receive(
 				}
 #endif
 				/* Found acceptable message. Copy it and update status. */
-				CopyMess((*xpp)->p_nr, *xpp, (*xpp)->p_messbuf, caller_ptr, m_ptr);
+				CopyMess((*xpp)->p_nr, *xpp, &(*xpp)->p_messbuf, caller_ptr, m_ptr);
 				if (((*xpp)->p_rts_flags &= ~SENDING) == 0)
 					enqueue(*xpp);
 				*xpp = (*xpp)->p_q_link;	/* remove from queue */
@@ -470,9 +464,8 @@ PRIVATE int mini_receive(
 	 */
 	if ((flags & NON_BLOCKING) == 0)
 	{
-		//set_leds(4); kprintf("\nBlock me."); while(1);
 		caller_ptr->p_getfrom_e = src_e;		
-		caller_ptr->p_messbuf = m_ptr;
+		//caller_ptr->p_messbuf = m_ptr;
 		if (caller_ptr->p_rts_flags == 0)
 			dequeue(caller_ptr);
 		caller_ptr->p_rts_flags |= RECEIVING;		
@@ -509,7 +502,7 @@ PRIVATE int mini_notify(
 		 * message is in the kernel's address space.
 		 */ 
 		BuildMess(&m, proc_nr(caller_ptr), dst_ptr);
-		SetMess(proc_nr(caller_ptr), &m, dst_ptr, dst_ptr->p_messbuf);
+		CopyMess(proc_nr(caller_ptr), proc_addr(HARDWARE), &m, dst_ptr, &dst_ptr->p_messbuf);
 		dst_ptr->p_rts_flags &= ~RECEIVING;	/* deblock destination */
 		if (dst_ptr->p_rts_flags == 0)
 			enqueue(dst_ptr);

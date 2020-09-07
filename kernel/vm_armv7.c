@@ -13,6 +13,13 @@
 #define	BITMAP_LEN_PER_SECTION	(NOF_PAGES_PER_SECTION / BITMAP_WSIZE)
 #define	BITMAP_SIZE_PER_SECTION	(NOF_PAGES_PER_SECTION / 8)
 
+#define	IS_SECTION_EMPTY(entry)		(((entry) & 3) == 0)
+#define	IS_PAGE_TABLE(entry)		(((entry) & 3) == 1)
+#define	IS_PAGE_EMPTY(entry)		(((entry) & 3) == 0)
+#define	GET_PAGE_TABLE_BASE(e)		((e) & ~PAGE_TABLE_ALIGN)
+#define	IS_READABLE_SMALL_PAGE(e)	(((e) & 0x232U) == 0x22U)
+#define	IS_WRITABLE_SMALL_PAGE(e)	(((e) & 0x232U) == 0x32U)
+
 typedef struct
 {
 	int pages_in_use;
@@ -41,6 +48,7 @@ static void *GetNextFreeUserTTLocation(uint32_t *phys_addr);
 static uint32_t GetNextFreePageTableLocation(void);
 static uint32_t GetNextFreeSmallPageLocation(void);
 static uint32_t GetNextFreeLongPageLocation(void);
+static uint32_t CountFreeMemory(void);
 
 void init_mmu_module(void)
 {
@@ -410,15 +418,15 @@ void allocate_pages(struct proc *pr)
 		print_mmu_tables(tt, 1);
 	}
 
-	if (pr->p_nr == 4)
-	{
-		kprintf("Kernel's first-level table:\n");
-		print_1st_level_table(kernel_1st_level_tt, 0);
-		kprintf("Kernel page table #1:\n");
-		print_page_table(kernel_page_table);
-		kprintf("Kernel page table #2:\n");
-		print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
-	}
+	// if (pr->p_nr == 4)
+	// {
+	// 	kprintf("Kernel's first-level table:\n");
+	// 	print_1st_level_table(kernel_1st_level_tt, 0);
+	// 	kprintf("Kernel page table #1:\n");
+	// 	print_page_table(kernel_page_table);
+	// 	kprintf("Kernel page table #2:\n");
+	// 	print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
+	// }
 }
 
 uint32_t allocate_task_stack(void)
@@ -579,6 +587,19 @@ static void MarkPhysicalRangeAsUsed(uint32_t start, uint32_t end)
 	}
 }
 
+static uint32_t CountFreeMemory(void)
+{
+	int i;
+	uint32_t freePages = 0;
+
+	for (i = 0; i < NOF_SECTIONS; i++)
+	{
+		freePages += NOF_PAGES_PER_SECTION - sections_table[i].pages_in_use;
+	}
+
+	return freePages * SMALL_PAGE_SIZE;
+}
+
 static void ExpandDataSegment(void)
 {
 	int i, j;
@@ -653,9 +674,60 @@ static void InitPhysicalMemoryTracking(void)
 		ExpandDataSegment();
 	}
 
+	kinfo.free_mem = CountFreeMemory();
+
 	// kprintf("user_tt_start: 0x%08X\n", user_tt_start);
 	// kprintf("user_tt_end: 0x%08X\n", user_tt_end);
 	// kprintf("kernel_mmu_tables_start: 0x%08X\n", kernel_mmu_tables_start);
 	// kprintf("kernel_mmu_tables_end: 0x%08X\n", kernel_mmu_tables_end);
 	// kprintf("kernel_page_table: 0x%08X\n", kernel_page_table);
+}
+
+void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type)
+{
+	/* len >= 1 */
+	struct proc *pr = proc_addr(proc_nr);
+	uint32_t *tt = phys2vir(pr->p_ttbase);
+	uint32_t addr_start = (uint32_t) ptr;
+	uint32_t addr_end = addr_start + len - 1;
+	int sect_inx_start = addr_start >> ARM_SECTION_BITLEN;
+	int page_inx_start = (addr_start & ARM_SECTION_ALIGN) >> SMALL_PAGE_BITLEN;
+	int sect_inx_end = addr_end >> ARM_SECTION_BITLEN;
+	int page_inx_end = (addr_end & ARM_SECTION_ALIGN) >> SMALL_PAGE_BITLEN;
+
+	if (len == 0)
+	{
+		panic("validate_user_ptr: len = 0", NO_NUM);
+	}
+	if (sect_inx_start > MAX_USER_SECTION || sect_inx_end > MAX_USER_SECTION)
+	{
+		kprintf("Invalid user ptr: %p\nBad section\n", ptr);
+		return NULL;
+	}
+	// kprintf("sect_inx_start = %d, sect_inx_end = %d\n", sect_inx_start, sect_inx_end);
+	for (int i = sect_inx_start; i <= sect_inx_end; i++)
+	{
+		// kprintf("page table #0x%X: \n", i);
+		if (!IS_PAGE_TABLE(tt[i]))
+		{
+			kprintf("Invalid user ptr: %p\nPage table not found\n", ptr);
+			return NULL;
+		}
+		uint32_t *pt = phys2vir(GET_PAGE_TABLE_BASE(tt[i]));
+		int start = (i == sect_inx_start) ? page_inx_start : 0;
+		int end = (i == sect_inx_end) ? page_inx_end : (NOF_PAGES_PER_SECTION - 1);
+		for (int j = start; j <= end; j++)
+		{
+			uint32_t entry = pt[j];
+			// kprintf("page entry 0x%X: 0x%08X\n", j, entry);
+			if (type == PTR_WRITABLE && !IS_WRITABLE_SMALL_PAGE(entry) ||
+			    type == PTR_READABLE && !IS_READABLE_SMALL_PAGE(entry))
+			{
+				kprintf("Invalid user ptr: %p\nInvalid entry\n", ptr);
+				return NULL;
+			}
+		}
+	}
+	
+	return ptr;
 }

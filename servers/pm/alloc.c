@@ -34,25 +34,25 @@
 PRIVATE struct hole hole[_NR_HOLES];
 PRIVATE u32_t high_watermark = 0;
 
-PRIVATE struct hole *hole_head;	 /* pointer to first hole */
-PRIVATE struct hole *free_slots; /* ptr to list of unused table slots */
+PRIVATE struct hole *hole_head;			/* pointer to first hole */
+PRIVATE struct hole *free_slots;		/* ptr to list of unused table slots */
 #if ENABLE_SWAP
-PRIVATE int swap_fd = -1;		   /* file descriptor of open swap file/device */
-PRIVATE u32_t swap_offset;		   /* offset to start of swap area on swap file */
-PRIVATE phys_clicks swap_base;		   /* memory offset chosen as swap base */
-PRIVATE phys_clicks swap_maxsize;	   /* maximum amount of swap "memory" possible */
-PRIVATE struct mproc *in_queue;		   /* queue of processes wanting to swap in */
-PRIVATE struct mproc *outswap = &mproc[0]; /* outswap candidate? */
-#else					   /* ! ENABLE_SWAP */
-#define swap_base ((phys_clicks)-1)
-#endif /* ENABLE_SWAP */
+PRIVATE int swap_fd = -1;			/* file descriptor of open swap file/device */
+PRIVATE u32_t swap_offset;			/* offset to start of swap area on swap file */
+PRIVATE phys_clicks swap_base;			/* memory offset chosen as swap base */
+PRIVATE phys_clicks swap_maxsize;		/* maximum amount of swap "memory" possible */
+PRIVATE struct mproc *in_queue;			/* queue of processes wanting to swap in */
+PRIVATE struct mproc *outswap = &mproc[0];	/* outswap candidate? */
+#else	/* ! ENABLE_SWAP */
+#define	swap_base	((phys_clicks)-1)
+#endif	/* ENABLE_SWAP */
 
 FORWARD void del_slot(struct hole *prev_ptr, struct hole *hp);
 FORWARD void merge(struct hole *hp);
 #if ENABLE_SWAP
 FORWARD int swap_out(void);
 #else
-#define swap_out() (0)
+#define	swap_out()	(0)
 #endif
 
 /*===========================================================================*

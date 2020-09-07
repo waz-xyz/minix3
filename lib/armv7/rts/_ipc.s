@@ -37,35 +37,29 @@ SYSVEC = 33			// trap to kernel
  */
 
 _send:
-	push	{r4-r12}
 	// r0 = destination
 	// r1 = message pointer
 	mov	r3, SEND		// _send(dest, ptr)
-	ldm	r1, {r4-r12}
 	svc	SYSVEC			// trap to the kernel
-	pop	{r4-r12}
 	bx	lr
 
 _receive:
-	push	{r4-r12}
+	push	{r4-r12, lr}
 	// r0 = src
 	// r1 = message pointer
 	mov	r3, RECEIVE		// _receive(src, ptr)
 	svc	SYSVEC			// trap to the kernel
 	stm	r1, {r4-r12}
-	pop	{r4-r12}
-	bx	lr
+	pop	{r4-r12, pc}
 
 _sendrec:
-	push	{r4-r12}
+	push	{r4-r12, lr}
 	// r0 = dest-src
 	// r1 = message pointer
 	mov	r3, SENDREC		// _sendrec(srcdest, ptr)
-	ldm	r1, {r4-r12}
 	svc	SYSVEC			// trap to the kernel
 	stm	r1, {r4-r12}
-	pop	{r4-r12}
-	bx	lr
+	pop	{r4-r12, pc}
 
 _notify:
 	// r0 = destination 
@@ -74,11 +68,9 @@ _notify:
 	bx	lr
 
 _echo:
-	push	{r4-r12}
+	push	{r4-r12, lr}
 	mov	r1, r0			// r1 = message pointer
 	mov	r3, ECHO		// _echo(ptr)
-	ldm	r1, {r4-r12}
 	svc	SYSVEC			// trap to the kernel
 	stm	r1, {r4-r12}
-	pop	{r4-r12}
-	bx	lr
+	pop	{r4-r12, pc}

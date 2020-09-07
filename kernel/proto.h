@@ -181,8 +181,6 @@ void generic_interrupt_handler(void);
 void halt_cpu(void);
 void intr_enable(void);
 void intr_disable(void);
-void cp_mess(int src, struct stackframe_s *src_regs, struct stackframe_s *dst_regs);
-void set_mess(int src, const message *msg, struct stackframe_s *dst_regs);
 void invalidate_system_structures(int type);
 void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
 void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
@@ -201,6 +199,7 @@ void init_mmu_module(void);
 void *phys2vir(uint32_t address);
 void release_asid(uint32_t);
 uint32_t vir2phys(void *address);
+void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type);
 
 /* mpx*.s */
 void idle_task(void);

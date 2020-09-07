@@ -29,7 +29,7 @@ LIBS = -lgcc -lc -ltimers
 # What to make.
 all: kernel
  
-kernel build install: $(HEAD) $(OBJS) kernel.ld
+kernel build install: $(HEAD) $(OBJS) kernel.ld system.a
 	cd system && $(MAKE) -$(MAKEFLAGS) $@
 	$(LD) $(LDFLAGS) -o kernel $(HEAD) $(OBJS) $(SYSTEM) $(LIBS)
 	#install -S 0 kernel

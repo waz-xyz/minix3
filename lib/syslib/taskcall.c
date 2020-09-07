@@ -6,15 +6,13 @@
 #include <lib.h>
 #include <minix/syslib.h>
 
-PUBLIC int _taskcall(who, syscallnr, msgptr)
-int who;
-int syscallnr;
-register message *msgptr;
+PUBLIC int _taskcall(int who, int syscallnr, message *msgptr)
 {
-  int status;
+	int status;
 
-  msgptr->m_type = syscallnr;
-  status = _sendrec(who, msgptr);
-  if (status != 0) return(status);
-  return(msgptr->m_type);
+	msgptr->m_type = syscallnr;
+	status = _sendrec(who, msgptr);
+	if (status != 0)
+		return status;
+	return msgptr->m_type;
 }

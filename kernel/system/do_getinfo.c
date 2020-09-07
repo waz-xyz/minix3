@@ -10,6 +10,7 @@
  */
 
 #include "../system.h"
+#include <string.h>
 
 static unsigned long bios_buf[1024];	/* 4K, what about alignment */
 static vir_bytes bios_buf_vir, bios_buf_len;
@@ -27,8 +28,8 @@ PUBLIC int do_getinfo(
  */
 {
 	size_t length;
-	phys_bytes src_phys; 
-	phys_bytes dst_phys; 
+	void *src_addr; 
+	void *dst_addr; 
 	int proc_nr, nr_e, nr;
 
 	/* Set source address and length based on request type. */
@@ -37,31 +38,32 @@ PUBLIC int do_getinfo(
 		case GET_MACHINE:
 		{
 			length = sizeof(struct machine);
-			src_phys = vir2phys(&machine);
+			src_addr = &machine;
 			break;
 		}
 		case GET_KINFO:
 		{
+			kprintf("!!!! kinfo wanted\n");
 			length = sizeof(struct kinfo);
-			src_phys = vir2phys(&kinfo);
+			src_addr = &kinfo;
 			break;
 		}
 		case GET_LOADINFO:
 		{
 			length = sizeof(struct loadinfo);
-			src_phys = vir2phys(&kloadinfo);
+			src_addr = &kloadinfo;
 			break;
 		}
 		case GET_IMAGE:
 		{
 			length = sizeof(struct boot_image) * NR_BOOT_PROCS;
-			src_phys = vir2phys(image);
+			src_addr = image;
 			break;
 		}
 		case GET_IRQHOOKS:
 		{
 			length = sizeof(struct irq_hook) * NR_IRQ_HOOKS;
-			src_phys = vir2phys(irq_hooks);
+			src_addr = irq_hooks;
 			break;
 		}
 		case GET_SCHEDINFO:
@@ -71,24 +73,24 @@ PUBLIC int do_getinfo(
 			* Copy the queue heads and fall through to copy the process table. 
 			*/
 			length = sizeof(struct proc *) * NR_SCHED_QUEUES;
-			src_phys = vir2phys(rdy_head);
+			src_addr = rdy_head;
 			okendpt(m_ptr->m_source, &proc_nr);
-			dst_phys = numap_local(proc_nr, (vir_bytes) m_ptr->I_VAL_PTR2, length); 
-			if (src_phys == 0 || dst_phys == 0)
+			dst_addr = validate_user_ptr(proc_nr, m_ptr->I_VAL_PTR2, length, PTR_WRITABLE); 
+			if (src_addr == 0 || dst_addr == 0)
 				return EFAULT;
-			phys_copy(src_phys, dst_phys, length);
+			memcpy(dst_addr, src_addr, length);
 			/* fall through */
 		}
 		case GET_PROCTAB:
 		{
 			length = sizeof(struct proc) * (NR_PROCS + NR_TASKS);
-			src_phys = vir2phys(proc);
+			src_addr = proc;
 			break;
 		}
 		case GET_PRIVTAB:
 		{
 			length = sizeof(struct priv) * (NR_SYS_PROCS);
-			src_phys = vir2phys(priv);
+			src_addr = priv;
 			break;
 		}
 		case GET_PROC:
@@ -97,12 +99,13 @@ PUBLIC int do_getinfo(
 			if(!isokendpt(nr_e, &nr))		/* validate request */
 				return EINVAL;
 			length = sizeof(struct proc);
-			src_phys = vir2phys(proc_addr(nr));
+			src_addr = proc_addr(nr);
 			break;
 		}
 		case GET_MONPARAMS:
 		{
-			src_phys = kinfo.params_base;		/* already is a physical */
+			kprintf("!!!! MonParams wanted\n");
+			src_addr = (void*) kinfo.params_base;
 			length = kinfo.params_size;
 			break;
 		}
@@ -112,26 +115,26 @@ PUBLIC int do_getinfo(
 			int i;
 
 			copy = krandom;
-			for (i= 0; i<RANDOM_SOURCES; i++)
+			for (i = 0; i < RANDOM_SOURCES; i++)
 			{
 				krandom.bin[i].r_size = 0;	/* invalidate random data */
 				krandom.bin[i].r_next = 0;
 			}
 			length = sizeof(struct randomness);
-			src_phys = vir2phys(&copy);
+			src_addr = &copy;
 			break;
 		}
 		case GET_KMESSAGES:
 		{
 			length = sizeof(struct kmessages);
-			src_phys = vir2phys(&kmess);
+			src_addr = &kmess;
 			break;
 		}
 #if DEBUG_TIME_LOCKS
 		case GET_LOCKTIMING:
 		{
 			length = sizeof(timingdata);
-			src_phys = vir2phys(timingdata);
+			src_phys = timingdata;
 			break;
 		}
 #endif
@@ -141,23 +144,23 @@ PUBLIC int do_getinfo(
 			bios_buf_len = sizeof(bios_buf);
 
 			length = sizeof(bios_buf_len);
-			src_phys = vir2phys(&bios_buf_len);
+			src_addr = &bios_buf_len;
 			if (length != m_ptr->I_VAL_LEN2_E)
 				return EINVAL;
 			if (!isokendpt(m_ptr->m_source, &proc_nr))
 				panic("bogus source", m_ptr->m_source);
-			dst_phys = numap_local(proc_nr, (vir_bytes) m_ptr->I_VAL_PTR2, length); 
-			if (src_phys == 0 || dst_phys == 0)
+			dst_addr = validate_user_ptr(proc_nr, m_ptr->I_VAL_PTR2, length, PTR_WRITABLE); 
+			if (src_addr == 0 || dst_addr == 0)
 				return EFAULT;
-			phys_copy(src_phys, dst_phys, length);
+			memcpy(dst_addr, src_addr, length);
 			length = sizeof(bios_buf_vir);
-			src_phys = vir2phys(&bios_buf_vir);
+			src_addr = &bios_buf_vir;
 			break;
 		}
 		case GET_IRQACTIDS:
 		{
 			length = sizeof(irq_actids);
-			src_phys = vir2phys(irq_actids);
+			src_addr = irq_actids;
 			break;
 		}
 		default:
@@ -169,10 +172,10 @@ PUBLIC int do_getinfo(
 		return E2BIG;
 	if (!isokendpt(m_ptr->m_source, &proc_nr)) 
 		panic("bogus source", m_ptr->m_source);
-	dst_phys = numap_local(proc_nr, (vir_bytes) m_ptr->I_VAL_PTR, length); 
-	if (src_phys == 0 || dst_phys == 0)
+	dst_addr = validate_user_ptr(proc_nr, m_ptr->I_VAL_PTR, length, PTR_WRITABLE); 
+	if (src_addr == 0 || dst_addr == 0)
 		return EFAULT;
-	phys_copy(src_phys, dst_phys, length);
+	memcpy(dst_addr, src_addr, length);
 	
 	return OK;
 }

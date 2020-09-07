@@ -3,14 +3,14 @@
 /*===========================================================================*
  *                                sys_endksig				     *
  *===========================================================================*/
-PUBLIC int sys_endksig(proc_nr)
-int proc_nr;				/* process number */
+PUBLIC int sys_endksig(
+	int proc_nr			/* process number */
+)
 {
-    message m;
-    int result;
+	message m;
+	int result;
 
-    m.SIG_ENDPT = proc_nr;
-    result = _taskcall(SYSTASK, SYS_ENDKSIG, &m);
-    return(result);
+	m.SIG_ENDPT = proc_nr;
+	result = _taskcall(SYSTASK, SYS_ENDKSIG, &m);
+	return result;
 }
-
