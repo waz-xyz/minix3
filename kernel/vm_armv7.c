@@ -16,7 +16,8 @@
 #define	IS_PAGE_TABLE(entry)		(((entry) & 3) == 1)
 #define	IS_PAGE_EMPTY(entry)		(((entry) & 3) == 0)
 #define	GET_PAGE_TABLE_BASE(e)		((e) & ~PAGE_TABLE_ALIGN)
-#define	IS_READABLE_SMALL_PAGE(e)	(((e) & 0x232U) == 0x22U)
+#define	GET_PAGE_ENTRY_BASE(e)		((e) & ~SMALL_PAGE_ALIGN)
+#define	IS_READABLE_SMALL_PAGE(e)	(((e) & 0x222U) == 0x22U)
 #define	IS_WRITABLE_SMALL_PAGE(e)	(((e) & 0x232U) == 0x32U)
 
 typedef struct
@@ -24,6 +25,12 @@ typedef struct
 	int pages_in_use;
 	short prev, next;
 } section_entry;
+
+struct vir_addr_rider
+{
+	vir_bytes address;
+	uint32_t *tt;
+};
 
 static uint32_t *kernel_1st_level_tt = NULL;
 static uint32_t *kernel_page_table = NULL;
@@ -410,22 +417,22 @@ void allocate_pages(struct proc *pr)
 		}
 	}
 
-	if (pr->p_nr == 0)
+	if (pr->p_nr == 3)
 	{
 		kprintf("MMU tables for %s:\n", pr->p_name);
 		kprintf("p_ttbase = 0x%08X\n", pr->p_ttbase);
 		print_mmu_tables(tt, 1);
 	}
 
-	if (pr->p_nr == 4)
-	{
-		kprintf("Kernel's first-level table:\n");
-		print_1st_level_table(kernel_1st_level_tt, 0);
-		kprintf("Kernel page table #1:\n");
-		print_page_table(kernel_page_table);
-		kprintf("Kernel page table #2:\n");
-		print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
-	}
+	// if (pr->p_nr == 4)
+	// {
+	// 	kprintf("Kernel's first-level table:\n");
+	// 	print_1st_level_table(kernel_1st_level_tt, 0);
+	// 	kprintf("Kernel page table #1:\n");
+	// 	print_page_table(kernel_page_table);
+	// 	kprintf("Kernel page table #2:\n");
+	// 	print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
+	// }
 }
 
 uint32_t allocate_task_stack(void)
@@ -700,7 +707,7 @@ void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type)
 	}
 	if (sect_inx_start > MAX_USER_SECTION || sect_inx_end > MAX_USER_SECTION)
 	{
-		kprintf("Invalid user ptr: %p\nBad section\n", ptr);
+		kprintf("Invalid user ptr (bad section): 0x%08X\n", ptr);
 		return NULL;
 	}
 	// kprintf("sect_inx_start = %d, sect_inx_end = %d\n", sect_inx_start, sect_inx_end);
@@ -709,7 +716,7 @@ void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type)
 		// kprintf("page table #0x%X: \n", i);
 		if (!IS_PAGE_TABLE(tt[i]))
 		{
-			kprintf("Invalid user ptr: %p\nPage table not found\n", ptr);
+			kprintf("Invalid user ptr (page table not found): 0x%08X\n", ptr);
 			return NULL;
 		}
 		uint32_t *pt = phys2vir(GET_PAGE_TABLE_BASE(tt[i]));
@@ -722,11 +729,217 @@ void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type)
 			if (type == PTR_WRITABLE && !IS_WRITABLE_SMALL_PAGE(entry) ||
 			    type == PTR_READABLE && !IS_READABLE_SMALL_PAGE(entry))
 			{
-				kprintf("Invalid user ptr: %p\nInvalid entry\n", ptr);
+				kprintf("Invalid user ptr (invalid page entry): 0x%08X\n", ptr);
 				return NULL;
 			}
 		}
 	}
 	
 	return ptr;
+}
+
+/*===========================================================================*
+ *				phys_copy				     *
+ *===========================================================================*/
+PUBLIC void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count)
+/* Copy a block of physical memory. */
+{
+	kprintf("Starting phys_copy...\n");
+	void *src, *dst;
+	if (source >= MAX_PHYSICAL_MEMORY)
+	{
+		panic("phys_copy: invalid source address", NO_NUM);
+	}
+	if (dest >= MAX_PHYSICAL_MEMORY)
+	{
+		panic("phys_copy: invalid destination address", NO_NUM);
+	}
+	src = phys2vir(source);
+	dst = phys2vir(dest);
+	memcpy(dst, src, count);
+}
+
+/*===========================================================================*
+ *				phys_memset				     *
+ *===========================================================================*/
+PUBLIC void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes bytecount)
+/* Fill a block of physical memory with pattern. */
+{
+	kprintf("Starting phys_memset...\n");
+	void *p;
+	if (source >= MAX_PHYSICAL_MEMORY)
+	{
+		panic("phys_memset: invalid source address", NO_NUM);
+	}
+	p = phys2vir(source);
+	memset(p, pattern, bytecount);
+}
+
+static void InitVirtualAddressRider(struct vir_addr_rider *rider, vir_bytes address, uint32_t ttbase)
+{
+	rider->address = address;
+	rider->tt = phys2vir(ttbase);
+}
+
+static int CopyFromPhysicalAddressToVirtualRider(struct vir_addr_rider *rider,
+						 phys_bytes src_addr,
+						 size_t len)
+{
+	void *src;
+	void *dst;
+	int section_index;
+	int page_index;
+	uint32_t pg_offset;
+	uint32_t tt_entry;
+	uint32_t *pg_table;
+	uint32_t pg_entry;
+	uint32_t phys_base;
+	size_t copy_size;
+
+	while (len > 0)
+	{
+		src = phys2vir(src_addr);
+		section_index = (rider->address) >> ARM_SECTION_BITLEN;
+		page_index = (rider->address & ARM_SECTION_ALIGN) >> SMALL_PAGE_BITLEN;
+
+		if (section_index > MAX_USER_SECTION)
+		{
+			kprintf("Invalid destination address (bad section): 0x%08X\n", rider->address);
+			return EFAULT;
+		}
+		tt_entry = rider->tt[section_index];
+		if (!IS_PAGE_TABLE(tt_entry))
+		{
+			kprintf("Invalid destination address (page table not found): 0x%08X\n", rider->address);
+			return EFAULT;
+		}
+		pg_table = phys2vir(GET_PAGE_TABLE_BASE(tt_entry));
+		pg_entry = pg_table[page_index];
+		if (!IS_WRITABLE_SMALL_PAGE(pg_entry))
+		{
+			kprintf("Invalid destination address (invalid page entry): 0x%08X\n", rider->address);
+			return EFAULT;
+		}
+		phys_base = GET_PAGE_ENTRY_BASE(pg_entry);
+		pg_offset = rider->address & SMALL_PAGE_ALIGN;
+		dst = phys2vir(phys_base + pg_offset);
+		copy_size = SMALL_PAGE_SIZE - pg_offset;
+		if (copy_size > len)
+		{
+			copy_size = len;
+		}
+		memcpy(dst, src, copy_size);
+		rider->address += copy_size;
+		src_addr += copy_size;
+		len -= copy_size;
+	}
+
+	return OK;
+}
+
+/*===========================================================================*
+ *				virtual_copy				     *
+ *===========================================================================*/
+PUBLIC int virtual_copy(
+	struct vir_addr *src_addr,	/* source virtual address */
+	struct vir_addr *dst_addr,	/* destination virtual address */
+	vir_bytes bytes			/* # of bytes to copy  */
+)	
+/* Copy bytes from virtual/physical address src_addr to virtual/physical address dst_addr. */
+{
+	phys_bytes src_phys_addr, dst_phys_addr;	/* absolute source and destination */ 
+	vir_bytes src_offset;
+	struct vir_addr_rider dst_rider;
+	int proc_nr;
+	uint32_t *tt;
+	int section_index;
+	int page_index;
+	uint32_t pg_offset;
+	uint32_t tt_entry;
+	uint32_t *pg_table;
+	uint32_t pg_entry;
+	uint32_t phys_base;
+	size_t copy_size;
+
+	kprintf("virtual_copy: starting copy from %d to %d\n", src_addr->proc_nr_e, dst_addr->proc_nr_e);
+	/* Check copy count. */
+	if (bytes <= 0) return EDOM;
+
+	if (dst_addr->proc_nr_e != NONE)
+	{
+		if (!isokendpt(dst_addr->proc_nr_e, &proc_nr))
+			return EDEADSRCDST;
+		InitVirtualAddressRider(&dst_rider, dst_addr->offset, proc_addr(proc_nr)->p_ttbase);
+	}
+	else
+	{
+		dst_phys_addr = dst_addr->offset;
+	}
+
+	if (src_addr->proc_nr_e != NONE)
+	{
+		if (!isokendpt(src_addr->proc_nr_e, &proc_nr))
+			return EDEADSRCDST;
+		kprintf("virtual_copy: starting copy from virtual to virtual address\n");
+		tt = phys2vir(proc_addr(proc_nr)->p_ttbase);
+		src_offset = src_addr->offset;
+		while (bytes > 0)
+		{
+			section_index = src_offset >> ARM_SECTION_BITLEN;
+			page_index = (src_offset & ARM_SECTION_ALIGN) >> SMALL_PAGE_BITLEN;
+
+			if (section_index > MAX_USER_SECTION)
+			{
+				kprintf("Invalid source address (bad section): 0x%08X\n", src_offset);
+				return EFAULT;
+			}
+			tt_entry = tt[section_index];
+			if (!IS_PAGE_TABLE(tt_entry))
+			{
+				kprintf("Invalid source address (page table not found): 0x%08X\n", src_offset);
+				return EFAULT;
+			}
+			pg_table = phys2vir(GET_PAGE_TABLE_BASE(tt_entry));
+			pg_entry = pg_table[page_index];
+			if (!IS_READABLE_SMALL_PAGE(pg_entry))
+			{
+				kprintf("Invalid source address (invalid page entry): 0x%08X\n", src_offset);
+				return EFAULT;
+			}
+			phys_base = GET_PAGE_ENTRY_BASE(pg_entry);
+			pg_offset = src_offset & SMALL_PAGE_ALIGN;
+			src_phys_addr = phys_base + pg_offset;
+			copy_size = SMALL_PAGE_SIZE - pg_offset;
+			if (copy_size > bytes)
+			{
+				copy_size = bytes;
+			}
+			if (dst_addr->proc_nr_e != NONE)
+			{
+				CopyFromPhysicalAddressToVirtualRider(&dst_rider, src_phys_addr, copy_size);
+			}
+			else
+			{
+				phys_copy(src_phys_addr, dst_phys_addr, copy_size);
+				dst_phys_addr += copy_size;
+			}
+			src_offset += copy_size;
+			bytes -= copy_size;
+		}
+	}
+	else
+	{
+		src_phys_addr = src_addr->offset;
+		if (dst_addr->proc_nr_e != NONE)
+		{
+			CopyFromPhysicalAddressToVirtualRider(&dst_rider, src_phys_addr, bytes);
+		}
+		else
+		{
+			phys_copy(src_phys_addr, dst_phys_addr, bytes);
+		}
+	}
+	kprintf("virtual_copy: copy completed\n");
+
+	return OK;
 }

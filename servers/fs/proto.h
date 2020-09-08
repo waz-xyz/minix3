@@ -184,7 +184,7 @@ _PROTOTYPE( unsigned conv2, (int norm, int w)				);
 _PROTOTYPE( long conv4, (int norm, long x)				);
 _PROTOTYPE( int fetch_name, (char *path, int len, int flag)		);
 _PROTOTYPE( int no_sys, (void)						);
-_PROTOTYPE( int isokendpt_f, (char *f, int l, int e, int *p, int ft));
+_PROTOTYPE( int isokendpt_f, (const char *f, int l, int e, int *p, int ft));
 _PROTOTYPE( void panic, (char *who, char *mess, int num)		);
 
 #define okendpt(e, p) isokendpt_f(__FILE__, __LINE__, (e), (p), 1)

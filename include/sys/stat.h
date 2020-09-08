@@ -11,29 +11,29 @@
 #endif
 
 struct stat {
-  dev_t st_dev;			/* major/minor device number */
-  ino_t st_ino;			/* i-node number */
-  mode_t st_mode;		/* file mode, protection bits, etc. */
-  short int st_nlink;		/* # links; TEMPORARY HACK: should be nlink_t*/
-  uid_t st_uid;			/* uid of the file's owner */
-  short int st_gid;		/* gid; TEMPORARY HACK: should be gid_t */
-  dev_t st_rdev;
-  off_t st_size;		/* file size */
-  time_t st_atime;		/* time of last access */
-  time_t st_mtime;		/* time of last data modification */
-  time_t st_ctime;		/* time of last file status change */
+	dev_t st_dev;		/* major/minor device number */
+	ino_t st_ino;		/* i-node number */
+	mode_t st_mode;		/* file mode, protection bits, etc. */
+	short int st_nlink;	/* # links; TEMPORARY HACK: should be nlink_t*/
+	uid_t st_uid;		/* uid of the file's owner */
+	short int st_gid;	/* gid; TEMPORARY HACK: should be gid_t */
+	dev_t st_rdev;
+	off_t st_size;		/* file size */
+	time_t st_atime;	/* time of last access */
+	time_t st_mtime;	/* time of last data modification */
+	time_t st_ctime;	/* time of last file status change */
 };
 
 /* Traditional mask definitions for st_mode. */
-#define S_IFMT  0170000	/* type of file */
-#define S_IFLNK 0120000	/* symbolic link */
-#define S_IFREG 0100000	/* regular */
-#define S_IFBLK 0060000	/* block special */
-#define S_IFDIR 0040000	/* directory */
-#define S_IFCHR 0020000	/* character special */
-#define S_IFIFO 0010000	/* this is a FIFO */
-#define S_ISUID 0004000	/* set user id on execution */
-#define S_ISGID 0002000	/* set group id on execution */
+#define S_IFMT  0170000		/* type of file */
+#define S_IFLNK 0120000		/* symbolic link */
+#define S_IFREG 0100000		/* regular */
+#define S_IFBLK 0060000		/* block special */
+#define S_IFDIR 0040000		/* directory */
+#define S_IFCHR 0020000		/* character special */
+#define S_IFIFO 0010000		/* this is a FIFO */
+#define S_ISUID 0004000		/* set user id on execution */
+#define S_ISGID 0002000		/* set group id on execution */
 				/* next is reserved for future use */
 #define S_ISVTX   01000		/* save swapped text even after use */
 
@@ -67,14 +67,14 @@ struct stat {
 #define S_ISFIFO(m)	(((m) & S_IFMT) == S_IFIFO)	/* is a pipe/FIFO */
 
 /* Function Prototypes. */
-_PROTOTYPE( int chmod, (const char *_path, _mnx_Mode_t _mode)		);
-_PROTOTYPE( int fstat, (int _fildes, struct stat *_buf)			);
-_PROTOTYPE( int mkdir, (const char *_path, _mnx_Mode_t _mode)		);
-_PROTOTYPE( int mkfifo, (const char *_path, _mnx_Mode_t _mode)		);
-_PROTOTYPE( int stat, (const char *_path, struct stat *_buf)		);
-_PROTOTYPE( mode_t umask, (_mnx_Mode_t _cmask)				);
+int chmod(const char *_path, _mnx_Mode_t _mode);
+int fstat(int _fildes, struct stat *_buf);
+int mkdir(const char *_path, _mnx_Mode_t _mode);
+int mkfifo(const char *_path, _mnx_Mode_t _mode);
+int stat(const char *_path, struct stat *_buf);
+mode_t umask(_mnx_Mode_t _cmask);
 
 /* Open Group Base Specifications Issue 6 (not complete) */
-_PROTOTYPE( int lstat, (const char *_path, struct stat *_buf)		);
+int lstat(const char *_path, struct stat *_buf);
 
 #endif /* _STAT_H */

@@ -20,18 +20,6 @@
 	.global intr_enable
 	.type	intr_enable, %function
 
-	.global enable_irq
-	.type	enable_irq, %function
-
-	.global disable_irq
-	.type	disable_irq, %function
-
-	.global phys_copy
-	.type	phys_copy, %function
-
-	.global phys_memset
-	.type	phys_memset, %function
-
 	.global read_psr
 	.type	read_psr, %function
 
@@ -84,26 +72,6 @@ idle_task:
 
 	.arm
 	.align	2
-
-/*===========================================================================*
- *				phys_copy				     *
- *===========================================================================*
- * PUBLIC void phys_copy(phys_bytes source, phys_bytes destination,
- *			phys_bytes bytecount);
- * Copy a block of physical memory.
- */
-phys_copy:
-	bx	lr
-
-/*===========================================================================*
- *				phys_memset				     *
- *===========================================================================*
- * PUBLIC void phys_memset(phys_bytes source, unsigned long pattern,
- *	phys_bytes bytecount);
- * Fill a block of physical memory with pattern.
- */
-phys_memset:
-	bx	lr
 
 /*===========================================================================*
  *			      read_psr					     *

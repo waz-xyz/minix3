@@ -119,7 +119,7 @@ PUBLIC void main(void)
 					rp->p_memmap[D].mem_plen = (phdr->p_vaddr & SMALL_PAGE_ALIGN) + phdr->p_filesz;
 				}
 			}
-			rp->p_memmap[S].mem_vir = KERNEL_VIRTUAL_BASE - USER_DEFAULT_STACK_SIZE;
+			rp->p_memmap[S].mem_vir = USER_DEFAULT_STACK_END - USER_DEFAULT_STACK_SIZE;
 			rp->p_memmap[S].mem_len = USER_DEFAULT_STACK_SIZE;
 			rp->p_memmap[S].mem_phys = rp->p_memmap[S].mem_plen = 0;
 			rp->p_reg.pc = ehdr->e_entry;

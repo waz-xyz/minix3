@@ -20,6 +20,7 @@
  *   check_pending:  check if a pending signal can now be delivered
  */
 
+#include "../../kernel/const.h"
 #include "pm.h"
 #include <sys/stat.h>
 #include <sys/ptrace.h>
@@ -55,10 +56,12 @@ PUBLIC int do_sigaction(void)
 	if (m_in.sig_nr < 1 || m_in.sig_nr > _NSIG)
 		return EINVAL;
 	svp = &mp->mp_sigact[m_in.sig_nr];
+LED_CONTROL = LED_GREEN;
 	if ((struct sigaction *)m_in.sig_osa != NULL)
 	{
 		r = sys_vircopy(PM_PROC_NR, (vir_bytes)svp,
-				 who_e, (vir_bytes)m_in.sig_osa, (phys_bytes)sizeof(svec));
+				who_e, (vir_bytes)m_in.sig_osa,
+				(phys_bytes)sizeof(svec));
 		if (r != OK)
 			return r;
 	}

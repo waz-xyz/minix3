@@ -31,11 +31,11 @@ void lock_enqueue(struct proc *rp);
 void lock_dequeue(struct proc *rp);
 void balance_queues(struct timer *tp);
 #if DEBUG_ENABLE_IPC_WARNINGS
-int isokendpt_f(char *file, int line, int e, int *p, int f);
-#define isokendpt_d(e, p, f) isokendpt_f(__FILE__, __LINE__, (e), (p), (f))
+int isokendpt_f(const char *file, int line, int e, int *p, int f);
+#define isokendpt_d(e, p, f)	isokendpt_f(__FILE__, __LINE__, (e), (p), (f))
 #else
 int isokendpt_f(int e, int *p, int f);
-#define isokendpt_d(e, p, f) isokendpt_f((e), (p), (f))
+#define isokendpt_d(e, p, f)	isokendpt_f((e), (p), (f))
 #endif
 
 /* system.c */
@@ -44,7 +44,6 @@ void send_sig(int proc_nr, int sig_nr);
 void cause_sig(int proc_nr, int sig_nr);
 void sys_task(void);
 void get_randomness(int source);
-int virtual_copy(struct vir_addr *src, struct vir_addr *dst, vir_bytes bytes);
 #define numap_local(proc_nr, vir_addr, bytes) \
 	umap_local(proc_addr(proc_nr), D, (vir_addr), (bytes))
 phys_bytes umap_local(struct proc *rp, int seg, vir_bytes vir_addr, vir_bytes bytes);
@@ -182,8 +181,6 @@ void halt_cpu(void);
 void intr_enable(void);
 void intr_disable(void);
 void invalidate_system_structures(int type);
-void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
-void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
 uint32_t read_psr(int type);
 uint32_t read_system_register(int type);
 void set_leds(int status);
@@ -200,6 +197,9 @@ void *phys2vir(uint32_t address);
 void release_asid(uint32_t);
 uint32_t vir2phys(void *address);
 void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type);
+void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
+void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
+int virtual_copy(struct vir_addr *src, struct vir_addr *dst, vir_bytes bytes);
 
 /* mpx*.s */
 void idle_task(void);

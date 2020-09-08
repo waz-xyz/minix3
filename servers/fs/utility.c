@@ -142,7 +142,7 @@ long x;				/* 32-bit long to be byte swapped */
 /*===========================================================================*
  *				isokendpt_f				     *
  *===========================================================================*/
-PUBLIC int isokendpt_f(char *file, int line, int endpoint, int *proc, int fatal)
+PUBLIC int isokendpt_f(const char *file, int line, int endpoint, int *proc, int fatal)
 {
 	int failed = 0;
 	*proc = _ENDPOINT_P(endpoint);

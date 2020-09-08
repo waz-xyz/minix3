@@ -199,6 +199,7 @@ PUBLIC int sys_call(
 #if DEBUG_ENABLE_IPC_WARNINGS
 			kprintf("sys_call: trap %d from %d to %d deadlocked, group size %d\n",
 				function, proc_nr(caller_ptr), src_dst, group_size);
+			panic("Deadlock!", NO_NUM);
 #endif
 			return ELOCKED;
 		}
@@ -821,8 +822,9 @@ PUBLIC void lock_dequeue(
  *				isokendpt_f				     *
  *===========================================================================*/
 #if DEBUG_ENABLE_IPC_WARNINGS
-PUBLIC int isokendpt_f(char *file, int line, int e, int *p, int fatalflag)
+PUBLIC int isokendpt_f(const char *file, int line, int e, int *p, int fatalflag)
 #else
+#pragma error foo
 PUBLIC int isokendpt_f(int e, int *p, int fatalflag)
 #endif
 {

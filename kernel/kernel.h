@@ -26,9 +26,9 @@
 #include "config.h"		/* configuration, MUST be first */
 #include "const.h"		/* constants, MUST be second */
 #include "type.h"		/* type definitions, MUST be third */
+#include "debug.h"		/* debugging, MUST be fourth */
 #include "proto.h"		/* function prototypes */
 #include "glo.h"		/* global variables */
 #include "ipc.h"		/* IPC constants */
-#include "debug.h"		/* debugging, MUST be last kernel header */
 
 #endif /* KERNEL_H */

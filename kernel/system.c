@@ -75,8 +75,9 @@ PUBLIC void sys_task(void)
 	{
 		/* Get work. Block and wait until a request message arrives. */
 		receive(ANY, &m);			
-		call_nr = (unsigned) m.m_type - KERNEL_CALL;	
+		call_nr = (unsigned) m.m_type - KERNEL_CALL;
 		who_e = m.m_source;
+		kprintf("sys_task: Received call_nr = %d from %d\n", call_nr, who_e);
 		okendpt(who_e, &who_p);
 		caller_ptr = proc_addr(who_p);
 
@@ -444,64 +445,6 @@ PUBLIC phys_bytes umap_remote(
 
 	return fm->mem_phys + (phys_bytes) vir_addr; 
 }
-
-/*===========================================================================*
- *				virtual_copy				     *
- *===========================================================================*/
-PUBLIC int virtual_copy(
-	struct vir_addr *src_addr,	/* source virtual address */
-	struct vir_addr *dst_addr,	/* destination virtual address */
-	vir_bytes bytes			/* # of bytes to copy  */
-)	
-/* Copy bytes from virtual address src_addr to virtual address dst_addr. 
- * Virtual addresses can be in ABS, LOCAL_SEG, REMOTE_SEG, or BIOS_SEG.
- */
-{
-	struct vir_addr *vir_addr[2];	/* virtual source and destination address */
-	phys_bytes phys_addr[2];	/* absolute source and destination */ 
-	int seg_index;
-	int i;
-
-	/* Check copy count. */
-	if (bytes <= 0) return EDOM;
-
-	/* Do some more checks and map virtual addresses to physical addresses. */
-	vir_addr[_SRC_] = src_addr;
-	vir_addr[_DST_] = dst_addr;
-	for (i = _SRC_; i <= _DST_; i++)
-	{
-		int proc_nr, type;
-		struct proc *p;
-
-		type = (i == _SRC_) ? PTR_READABLE : PTR_WRITABLE;
-
-		if (vir_addr[i]->proc_nr_e != NONE)
-		{
-			/* virtual address */
-			if (isokendpt(vir_addr[i]->proc_nr_e, &proc_nr))
-				p = proc_addr(proc_nr);
-			else
-				return EDEADSRCDST;
-			if (validate_user_ptr(proc_nr, (void*)vir_addr[i]->offset, bytes, type) == NULL)
-				return EFAULT;
-			//phys_addr[i] = get_physical_address(p, vir_addr[i]->offset);
-		}
-		else
-		{
-			/* physical address */
-			phys_addr[i] = vir_addr[i]->offset;
-		}
-
-		/* Check if mapping succeeded. */
-		if (phys_addr[i] == 0 && vir_addr[i]->proc_nr_e != NONE) 
-			return EFAULT;
-	}
-
-	/* Now copy bytes between physical addresseses. */
-	phys_copy(phys_addr[_SRC_], phys_addr[_DST_], (phys_bytes) bytes);
-	return OK;
-}
-
 
 /*===========================================================================*
  *			         clear_endpoint				     *

@@ -43,7 +43,7 @@ PUBLIC int main(void)
 
 	LED_CONTROL = LED_RED;
 	pm_init();	/* initialize process manager tables */
-
+	
 	/* This is PM's main loop-  get work and do it, forever and forever. */
 	while (TRUE)
 	{
@@ -71,6 +71,7 @@ PUBLIC int main(void)
 		}
 		else
 		{
+			printf("pm.c:main: Calling call_vec[%d]\n", call_nr);
 			result = (*call_vec[call_nr])();
 		}
 
@@ -278,7 +279,7 @@ PRIVATE void pm_init(void)
 	mess.PR_ENDPT = NONE;
 	if (sendrec(FS_PROC_NR, &mess) != OK || mess.m_type != OK)
 		panic(__FILE__, "can't sync up with FS", NO_NUM);
-// LED_CONTROL = LED_GREEN; LED_CONTROL = LED_BLUE;
+
 #if ENABLE_BOOTDEV
 	/* Possibly we must correct the memory chunks for the boot device. */
 	if (kinfo.bootdev_size > 0)
