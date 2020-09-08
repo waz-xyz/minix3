@@ -469,7 +469,7 @@ unsigned nr_req;		/* length of request vector */
 		if (iov->iov_size < SECTOR_SIZE + sizeof(fmt_param))
 			return(EINVAL);
 
-		if ((s=sys_datacopy(proc_nr, iov->iov_addr + SECTOR_SIZE,
+		if ((s=sys_vircopy(proc_nr, iov->iov_addr + SECTOR_SIZE,
 			SELF, (vir_bytes) &fmt_param, 
 			(phys_bytes) sizeof(fmt_param))) != OK)
 			panic("FLOPPY", "Sys_vircopy failed", s);
@@ -562,7 +562,7 @@ unsigned nr_req;		/* length of request vector */
 
 		if (r == OK && opcode == DEV_SCATTER) {
 			/* Copy the user bytes to the DMA buffer. */
-			if ((s=sys_datacopy(proc_nr, *up,  SELF, 
+			if ((s=sys_vircopy(proc_nr, *up,  SELF, 
 				(vir_bytes) tmp_buf,
 				(phys_bytes) SECTOR_SIZE)) != OK)
 			panic("FLOPPY", "Sys_vircopy failed", s);
@@ -582,7 +582,7 @@ unsigned nr_req;		/* length of request vector */
 
 		if (r == OK && opcode == DEV_GATHER) {
 			/* Copy the DMA buffer to user space. */
-			if ((s=sys_datacopy(SELF, (vir_bytes) tmp_buf, 
+			if ((s=sys_vircopy(SELF, (vir_bytes) tmp_buf, 
 				proc_nr, *up, 
 				(phys_bytes) SECTOR_SIZE)) != OK)
 			panic("FLOPPY", "Sys_vircopy failed", s);

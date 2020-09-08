@@ -219,7 +219,7 @@ char *user_addr;		/* user space address where stat buf goes */
   statbuf.st_ctime = rip->i_ctime;
 
   /* Copy the struct to user space. */
-  r = sys_datacopy(FS_PROC_NR, (vir_bytes) &statbuf,
+  r = sys_vircopy(FS_PROC_NR, (vir_bytes) &statbuf,
   		who_e, (vir_bytes) user_addr, (phys_bytes) sizeof(statbuf));
   return(r);
 }
@@ -239,7 +239,7 @@ PUBLIC int do_fstatfs()
 
   st.f_bsize = rfilp->filp_ino->i_sp->s_block_size;
 
-  r = sys_datacopy(FS_PROC_NR, (vir_bytes) &st,
+  r = sys_vircopy(FS_PROC_NR, (vir_bytes) &st,
   		who_e, (vir_bytes) m_in.buffer, (phys_bytes) sizeof(st));
 
    return(r);
@@ -289,8 +289,8 @@ PUBLIC int do_rdlink()
        else {
 	       if(rip->i_size < copylen) copylen = rip->i_size;
                bp = get_block(rip->i_dev, b, NORMAL);
-               r = sys_vircopy(SELF, D, (vir_bytes) bp->b_data,
-		who_e, D, (vir_bytes) m_in.name2, (vir_bytes) copylen);
+               r = sys_vircopy(SELF, (vir_bytes) bp->b_data,
+		who_e, (vir_bytes) m_in.name2, (vir_bytes) copylen);
 
                if (r == OK) r = copylen;
                put_block(bp, DIRECTORY_BLOCK);

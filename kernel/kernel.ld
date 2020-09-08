@@ -1,6 +1,6 @@
 ENTRY(_start)
 
-virtbase = 0x80000000;
+virtbase = 0xC0000000;
 smallpagealign = 0x1000;
 largepagealign = 0x10000;
 

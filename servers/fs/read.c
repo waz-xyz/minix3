@@ -310,13 +310,13 @@ int *completed;			/* number of bytes copied */
 
   if (rw_flag == READING) {
 	/* Copy a chunk from the block buffer to user space. */
-	r = sys_vircopy(FS_PROC_NR, D, (phys_bytes) (bp->b_data+off),
-			usr, seg, (phys_bytes) buff,
+	r = sys_vircopy(FS_PROC_NR, (phys_bytes) (bp->b_data+off),
+			usr, (phys_bytes) buff,
 			(phys_bytes) chunk);
   } else {
 	/* Copy a chunk from user space to the block buffer. */
-	r = sys_vircopy(usr, seg, (phys_bytes) buff,
-			FS_PROC_NR, D, (phys_bytes) (bp->b_data+off),
+	r = sys_vircopy(usr, (phys_bytes) buff,
+			FS_PROC_NR, (phys_bytes) (bp->b_data+off),
 			(phys_bytes) chunk);
 	bp->b_dirt = DIRTY;
   }

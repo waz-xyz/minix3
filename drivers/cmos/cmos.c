@@ -166,7 +166,7 @@ PRIVATE int gettime(int who, int y2kflag, vir_bytes dst_time)
    */
   if (get_cmostime(&time1, y2kflag) != 0)
 	return(EFAULT);
-  sys_datacopy(SELF, (vir_bytes) &time1, 
+  sys_vircopy(SELF, (vir_bytes) &time1, 
   	who, dst_time, sizeof(struct tm));
 
   return(OK);

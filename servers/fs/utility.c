@@ -73,7 +73,7 @@ int flag;			/* M3 means path may be in message */
 	r = OK;
   } else {
 	/* String is not contained in the message.  Get it from user space. */
-	r = sys_datacopy(who_e, (vir_bytes) path,
+	r = sys_vircopy(who_e, (vir_bytes) path,
 		FS_PROC_NR, (vir_bytes) user_path, (phys_bytes) len);
   }
   return(r);

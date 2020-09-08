@@ -92,7 +92,7 @@ static inline void BuildMess(message *m_ptr, int src, struct proc *dst_ptr)
 #if (CHIP == ARM)
 static inline void CopyMess(proc_nr_t s, struct proc *sp, message *sm, struct proc *dp, message *dm)
 {
-	memcpy(&dp->p_reg.r4, sm, sizeof(message));
+	memcpy(&(dp->p_reg.r4), sm, sizeof(message));
 	dp->p_reg.r4 = proc_addr(s)->p_endpoint;
 }
 #endif /* (CHIP == ARM) */
@@ -127,7 +127,6 @@ PUBLIC int sys_call(
 		return EINVAL;
 	}
 #endif
-	//set_leds(4); kprintf("In sys_call"); while(1);
 	/* Require a valid source and/ or destination process, unless echoing. */
 	if (src_dst_e != ANY && function != ECHO)
 	{
@@ -225,7 +224,7 @@ PUBLIC int sys_call(
 		{	
 			break;				/* done, or SEND failed */
 		}					/* fall through for SENDREC */
-	case RECEIVE:			
+	case RECEIVE:
 		if (function == RECEIVE)
 			caller_ptr->p_misc_flags &= ~REPLY_PENDING;
 		result = mini_receive(caller_ptr, src_dst_e, m_ptr, flags);
@@ -572,7 +571,6 @@ PRIVATE void enqueue(
 	if (rp->p_ready)
 		kprintf("enqueue() already ready process\n");
 #endif
-
 	/* Determine where to insert to process. */
 	sched(rp, &q, &front);
 
@@ -601,6 +599,9 @@ PRIVATE void enqueue(
 	rp->p_ready = 1;
 	check_runqueues("enqueue");
 #endif
+	// kprintf("enqueue: next_ptr = 0x%08X\n", next_ptr);
+	// kprintf("enqueue: next_ptr->p_name = %s\n", next_ptr->p_name);
+	// kprintf("enqueue: next_ptr->p_nr = %d\n", next_ptr->p_nr);
 }
 
 /*===========================================================================*
@@ -706,6 +707,8 @@ PRIVATE void pick_proc(void)
 		if ((rp = rdy_head[q]) != NIL_PROC)
 		{
 			next_ptr = rp;			/* run process 'rp' next */
+			// kprintf("next_ptr->p_name = %s\n", next_ptr->p_name);
+			// kprintf("next_ptr->p_nr = %d\n", next_ptr->p_nr);
 			if (priv(rp)->s_flags & BILLABLE)	 	
 				bill_ptr = rp;		/* bill for system time */
 			return;				 

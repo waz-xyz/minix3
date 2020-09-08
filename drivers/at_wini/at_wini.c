@@ -2284,7 +2284,7 @@ message *m;
 	}
 
 	if (m->REQUEST == DIOCTIMEOUT) {
-		if ((r=sys_datacopy(m->IO_ENDPT, (vir_bytes)m->ADDRESS,
+		if ((r=sys_vircopy(m->IO_ENDPT, (vir_bytes)m->ADDRESS,
 			SELF, (vir_bytes)&timeout, sizeof(timeout))) != OK)
 			return r;
 	
@@ -2311,7 +2311,7 @@ message *m;
 					timeout_ticks = timeout;
 			}
 	
-			if ((r=sys_datacopy(SELF, (vir_bytes)&prev, 
+			if ((r=sys_vircopy(SELF, (vir_bytes)&prev, 
 				m->IO_ENDPT, (vir_bytes)m->ADDRESS, sizeof(prev))) != OK)
 				return r;
 		}
@@ -2321,7 +2321,7 @@ message *m;
 		int count;
 		if (w_prepare(m->DEVICE) == NIL_DEV) return ENXIO;
 		count = w_wn->open_ct;
-		if ((r=sys_datacopy(SELF, (vir_bytes)&count, 
+		if ((r=sys_vircopy(SELF, (vir_bytes)&count, 
 			m->IO_ENDPT, (vir_bytes)m->ADDRESS, sizeof(count))) != OK)
 			return r;
 		return OK;

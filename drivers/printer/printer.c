@@ -345,7 +345,7 @@ PRIVATE void prepare_output()
   register int chunk;
 
   if ( (chunk = user_left) > sizeof obuf) chunk = sizeof obuf;
-  if (OK!=sys_datacopy(proc_nr, user_vir, SELF, (vir_bytes) obuf, chunk)) {
+  if (OK!=sys_vircopy(proc_nr, user_vir, SELF, (vir_bytes) obuf, chunk)) {
   	done_status = EFAULT;
   	output_done();
   	return;

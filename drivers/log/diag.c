@@ -107,7 +107,7 @@ PUBLIC int do_diagnostics(message *m)
   src = (vir_bytes) m->DIAG_PRINT_BUF;
   count = m->DIAG_BUF_COUNT; 
   while (count > 0 && i < sizeof(diagbuf)-1) {
-      if (sys_datacopy(proc_nr_e, src, SELF, (vir_bytes) &c, 1) != OK) 
+      if (sys_vircopy(proc_nr_e, src, SELF, (vir_bytes) &c, 1) != OK) 
           break;		/* stop copying on error */
       src ++;
       count --;

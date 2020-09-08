@@ -121,7 +121,7 @@ PUBLIC void mem2user(dpeth_t *dep, buff_t *rxbuff)
 	if (bytes > pktsize) bytes = pktsize;
 
 	/* Reads from Rx buffer to user area */
-	sys_datacopy(SELF, (vir_bytes)buffer, iovp->iod_proc_nr,
+	sys_vircopy(SELF, (vir_bytes)buffer, iovp->iod_proc_nr,
 		     iovp->iod_iovec[ix].iov_addr, bytes);
 	buffer += bytes;
 
@@ -150,7 +150,7 @@ PUBLIC void user2mem(dpeth_t *dep, buff_t *txbuff)
 
 	bytes = iovp->iod_iovec[ix].iov_size;	/* Size of buffer */
 	if (bytes > pktsize) bytes = pktsize;
-	sys_datacopy(iovp->iod_proc_nr, iovp->iod_iovec[ix].iov_addr,
+	sys_vircopy(iovp->iod_proc_nr, iovp->iod_iovec[ix].iov_addr,
 		     SELF, (vir_bytes)buffer, bytes);
 	buffer += bytes;
 

@@ -31,8 +31,6 @@ FORWARD void get_work(void);
 FORWARD void pm_init(void);
 FORWARD int get_nice_value(int queue);
 
-#define	printf(...)	
-
 /*===========================================================================*
  *				main					     *
  *===========================================================================*/
@@ -44,12 +42,12 @@ PUBLIC int main(void)
 	sigset_t sigset;
 
 	LED_CONTROL = LED_RED;
-	pm_init(); /* initialize process manager tables */
+	pm_init();	/* initialize process manager tables */
 
 	/* This is PM's main loop-  get work and do it, forever and forever. */
 	while (TRUE)
 	{
-		get_work(); /* wait for an PM system call */
+		get_work();	/* wait for an PM system call */
 
 		/* Check for system notifications first. Special cases. */
 		if (call_nr == SYN_ALARM)
@@ -265,10 +263,8 @@ PRIVATE void pm_init(void)
 		mess.PR_SLOT = ip->proc_nr;
 		mess.PR_PID = rmp->mp_pid;
 		mess.PR_ENDPT = rmp->mp_endpoint;
-LED_CONTROL = LED_GREEN;
 		if (OK != (s = send(FS_PROC_NR, &mess)))
 			panic(__FILE__, "can't sync up with FS", s);
-LED_CONTROL = LED_BLUE;
 		printf(" %s", ip->proc_name);		/* display process name */
 	}
 	printf(".\n");	/* last process done */
@@ -282,7 +278,7 @@ LED_CONTROL = LED_BLUE;
 	mess.PR_ENDPT = NONE;
 	if (sendrec(FS_PROC_NR, &mess) != OK || mess.m_type != OK)
 		panic(__FILE__, "can't sync up with FS", NO_NUM);
-
+// LED_CONTROL = LED_GREEN; LED_CONTROL = LED_BLUE;
 #if ENABLE_BOOTDEV
 	/* Possibly we must correct the memory chunks for the boot device. */
 	if (kinfo.bootdev_size > 0)

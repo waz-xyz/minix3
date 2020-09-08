@@ -499,7 +499,7 @@ message *m;
                 int count;
                 if (w_prepare(m->DEVICE) == NIL_DEV) return ENXIO;
                 count = w_wn->open_ct;
-                if ((r=sys_datacopy(SELF, (vir_bytes)&count,
+                if ((r=sys_vircopy(SELF, (vir_bytes)&count,
                         m->IO_ENDPT, (vir_bytes)m->ADDRESS, sizeof(count))) != OK)
                         return r;
                 return OK;

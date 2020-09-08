@@ -43,7 +43,6 @@ PUBLIC int do_getinfo(
 		}
 		case GET_KINFO:
 		{
-			kprintf("!!!! kinfo wanted\n");
 			length = sizeof(struct kinfo);
 			src_addr = &kinfo;
 			break;
@@ -104,7 +103,6 @@ PUBLIC int do_getinfo(
 		}
 		case GET_MONPARAMS:
 		{
-			kprintf("!!!! MonParams wanted\n");
 			src_addr = (void*) kinfo.params_base;
 			length = kinfo.params_size;
 			break;

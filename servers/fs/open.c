@@ -525,8 +525,8 @@ PUBLIC int do_slink()
   if ((r = err_code) == OK) {
        r = (bp = new_block(sip, (off_t) 0)) == NIL_BUF
            ? err_code
-           : sys_vircopy(who_e, D, (vir_bytes) m_in.name1,
-                       SELF, D, (vir_bytes) bp->b_data,
+           : sys_vircopy(who_e, (vir_bytes) m_in.name1,
+                       SELF, (vir_bytes) bp->b_data,
 		       (vir_bytes) m_in.name1_length-1);
 
 	if(r == OK) {

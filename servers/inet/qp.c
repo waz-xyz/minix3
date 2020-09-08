@@ -148,7 +148,7 @@ void *buffer;
 	return sys_copy(proc, SEG_D, (phys_bytes)vaddr, this_proc, SEG_D,
 		(phys_bytes)buffer, (phys_bytes)vlen);
 #else /* Minix 3 */
-	return sys_vircopy(proc, D, vaddr, SELF, D, (vir_bytes)buffer, vlen);
+	return sys_vircopy(proc, vaddr, SELF, (vir_bytes)buffer, vlen);
 #endif
 }
 
@@ -163,7 +163,7 @@ void *buffer;
 	return sys_copy(this_proc, SEG_D, (phys_bytes)buffer,
 		proc, SEG_D, (phys_bytes)vaddr, (phys_bytes)vlen);
 #else /* Minix 3 */
-	return sys_vircopy(SELF, D, (vir_bytes)buffer, proc, D, vaddr, vlen);
+	return sys_vircopy(SELF, (vir_bytes)buffer, proc, vaddr, vlen);
 #endif
 }
 

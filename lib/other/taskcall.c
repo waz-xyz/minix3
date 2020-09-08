@@ -13,7 +13,7 @@ PUBLIC int _taskcall(int who, int syscallnr, message *msgptr)
 	msgptr->m_type = syscallnr;
 	status = _sendrec(who, msgptr);
 	if (status != 0)
-		return (status);
+		return status;
 
 	return msgptr->m_type;
 }

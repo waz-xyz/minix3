@@ -1,20 +1,21 @@
-#include "sysutil.h" 
+#include "sysutil.h"
 
 /*===========================================================================*
- *				    report					     *
+ *				    report				     *
  *===========================================================================*/
-PUBLIC void report(who, mess, num)
-char *who;				/* server identification */
-char *mess;				/* message format to print */
-int num;				/* number to go with the message */
+PUBLIC void report(
+	char *who,			/* server identification */
+	char *mess,			/* message format to print */
+	int num				/* number to go with the message */
+)
+/* Display a message for a server. */
 {
-/* Display a message for a server. */ 
-
-  if (num != NO_NUM) {
-      printf("%s: %s %d\n", who, mess, num);
-  } else {
-      printf("%s: %s\n", who, mess);
-  }
+	if (num != NO_NUM)
+	{
+		printf("%s: %s %d\n", who, mess, num);
+	}
+	else
+	{
+		printf("%s: %s\n", who, mess);
+	}
 }
-
-

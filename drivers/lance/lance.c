@@ -1297,7 +1297,7 @@ void *loc_addr;
   phys_copy(src, vir2phys(loc_addr), (phys_bytes) count);
   */
 	int cps;
-	cps = sys_datacopy(user_proc, user_addr, SELF, (vir_bytes) loc_addr, count);
+	cps = sys_vircopy(user_proc, user_addr, SELF, (vir_bytes) loc_addr, count);
 	if (cps != OK) printf("lance: warning, scopy failed: %d\n", cps);
 }
 
@@ -1342,9 +1342,9 @@ vir_bytes count;
       
       phys_copy(phys_user, phys_hw, (phys_bytes) bytes);
       */
-      if ( (r=sys_datacopy(iovp->iod_proc_nr, iovp->iod_iovec[i].iov_addr + offset,
+      if ( (r=sys_vircopy(iovp->iod_proc_nr, iovp->iod_iovec[i].iov_addr + offset,
       	SELF, nic_addr, count )) != OK )
-      	panic( "lance", "sys_datacopy failed", r );
+      	panic( "lance", "sys_vircopy failed", r );
       	
       count -= bytes;
       nic_addr += bytes;
@@ -1391,8 +1391,8 @@ vir_bytes count;
 
       phys_copy(phys_hw, phys_user, (phys_bytes) bytes);
       */
-      if ( (r=sys_datacopy( SELF, nic_addr, iovp->iod_proc_nr, iovp->iod_iovec[i].iov_addr + offset, bytes )) != OK )
-      	panic( "lance", "sys_datacopy failed: ", r );
+      if ( (r=sys_vircopy( SELF, nic_addr, iovp->iod_proc_nr, iovp->iod_iovec[i].iov_addr + offset, bytes )) != OK )
+      	panic( "lance", "sys_vircopy failed: ", r );
       
       count -= bytes;
       nic_addr += bytes;
@@ -1481,7 +1481,7 @@ void *loc_addr;
   phys_copy(vir2phys(loc_addr), dst, (phys_bytes) count);
   */
 	int cps;
-	cps = sys_datacopy(SELF, (vir_bytes) loc_addr, user_proc, user_addr, count);
+	cps = sys_vircopy(SELF, (vir_bytes) loc_addr, user_proc, user_addr, count);
 	if (cps != OK) printf("lance: warning, scopy failed: %d\n", cps);
 }
 

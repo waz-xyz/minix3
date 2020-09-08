@@ -55,7 +55,7 @@ PUBLIC int do_vcopy(
 		req = &vir_cp_req[i];
 
 		/* Check if physical addressing is used without SYS_PHYSVCOPY. */
-		if (((req->src.segment | req->dst.segment) & PHYS_SEG) != 0
+		if ((req->src.proc_nr_e == NONE || req->dst.proc_nr_e == NONE)
 		    && m_ptr->m_type != SYS_PHYSVCOPY)
 			return EPERM;
 		if ((s = virtual_copy(&req->src, &req->dst, req->count)) != OK)

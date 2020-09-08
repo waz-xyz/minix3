@@ -5,7 +5,6 @@
 #include <string.h>
 #include <elf.h>
 
-#define OFFSET_16MB		0x1000000
 #define	NOF_SECTIONS		(DDR_MEM_SIZE_IN_MB)
 #define	NOF_PAGES_PER_SECTION	(ARM_SECTION_SIZE / SMALL_PAGE_SIZE)
 #define	BITMAP_WSIZE		32
@@ -418,15 +417,15 @@ void allocate_pages(struct proc *pr)
 		print_mmu_tables(tt, 1);
 	}
 
-	// if (pr->p_nr == 4)
-	// {
-	// 	kprintf("Kernel's first-level table:\n");
-	// 	print_1st_level_table(kernel_1st_level_tt, 0);
-	// 	kprintf("Kernel page table #1:\n");
-	// 	print_page_table(kernel_page_table);
-	// 	kprintf("Kernel page table #2:\n");
-	// 	print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
-	// }
+	if (pr->p_nr == 4)
+	{
+		kprintf("Kernel's first-level table:\n");
+		print_1st_level_table(kernel_1st_level_tt, 0);
+		kprintf("Kernel page table #1:\n");
+		print_page_table(kernel_page_table);
+		kprintf("Kernel page table #2:\n");
+		print_page_table(kernel_page_table + PAGE_TABLE_SIZE/4);
+	}
 }
 
 uint32_t allocate_task_stack(void)
@@ -476,7 +475,7 @@ uint32_t vir2phys(void *address)
 	{
 		return addr - KERNEL_VIRTUAL_BASE + KERNEL_PHYSICAL_BASE;
 	}
-	else if (KERNEL_RAW_ACCESS_BASE <= addr && addr < (KERNEL_RAW_ACCESS_BASE + OFFSET_16MB))
+	else if (KERNEL_RAW_ACCESS_BASE <= addr && (addr - KERNEL_RAW_ACCESS_BASE) < MAX_PHYSICAL_MEMORY)
 	{
 		return addr - KERNEL_RAW_ACCESS_BASE;
 	}
@@ -488,7 +487,7 @@ uint32_t vir2phys(void *address)
 
 void *phys2vir(uint32_t address)
 {
-	if (address < OFFSET_16MB)
+	if (address < MAX_PHYSICAL_MEMORY)
 	{
 		return (void*)(address + KERNEL_RAW_ACCESS_BASE);
 	}

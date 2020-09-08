@@ -54,7 +54,7 @@ message *m_ptr;					/* request message pointer */
    * that looks like "/sbin/service arg1 arg2 ...". Arguments are optional.
    */
   if (m_ptr->RS_CMD_LEN > MAX_COMMAND_LEN) return(E2BIG);
-  if (OK!=(s=sys_datacopy(m_ptr->m_source, (vir_bytes) m_ptr->RS_CMD_ADDR, 
+  if (OK!=(s=sys_vircopy(m_ptr->m_source, (vir_bytes) m_ptr->RS_CMD_ADDR, 
   	SELF, (vir_bytes) rp->r_cmd, m_ptr->RS_CMD_LEN))) return(s);
   rp->r_cmd[m_ptr->RS_CMD_LEN] = '\0';		/* ensure it is terminated */
   if (rp->r_cmd[0] != '/') return(EINVAL);	/* insist on absolute path */
@@ -146,7 +146,7 @@ PUBLIC int do_rescue(message *m_ptr)
 
   /* Copy rescue directory from user. */
   if (m_ptr->RS_CMD_LEN > MAX_RESCUE_DIR_LEN) return(E2BIG);
-  if (OK!=(s=sys_datacopy(m_ptr->m_source, (vir_bytes) m_ptr->RS_CMD_ADDR, 
+  if (OK!=(s=sys_vircopy(m_ptr->m_source, (vir_bytes) m_ptr->RS_CMD_ADDR, 
   	SELF, (vir_bytes) rescue_dir, m_ptr->RS_CMD_LEN))) return(s);
   rescue_dir[m_ptr->RS_CMD_LEN] = '\0';		/* ensure it is terminated */
   if (rescue_dir[0] != '/') return(EINVAL);	/* insist on absolute path */
@@ -451,7 +451,7 @@ message *m_ptr;
 
   dst_proc = m_ptr->m_source;
   dst_addr = (vir_bytes) m_ptr->m1_p1;
-  if (OK != (s=sys_datacopy(SELF, src_addr, dst_proc, dst_addr, len)))
+  if (OK != (s=sys_vircopy(SELF, src_addr, dst_proc, dst_addr, len)))
   	return(s);
   return(OK);
 }

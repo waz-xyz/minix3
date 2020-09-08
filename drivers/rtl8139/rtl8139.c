@@ -2004,7 +2004,7 @@ vir_bytes count;
 void *loc_addr;
 {
 	int cps;
-	cps = sys_datacopy(SELF, (vir_bytes) loc_addr, user_proc, user_addr, count);
+	cps = sys_vircopy(SELF, (vir_bytes) loc_addr, user_proc, user_addr, count);
 	if (cps != OK) printf("RTL8139: warning, scopy failed: %d\n", cps);
 }
 

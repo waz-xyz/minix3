@@ -993,10 +993,8 @@ int size;
 #else /* Minix 3 */
 		vir_cp_req[i].count= size;
 		vir_cp_req[i].src.proc_nr_e = proc;
-		vir_cp_req[i].src.segment = D;
 		vir_cp_req[i].src.offset = (vir_bytes) src;
 		vir_cp_req[i].dst.proc_nr_e = this_proc;
-		vir_cp_req[i].dst.segment = D;
 		vir_cp_req[i].dst.offset = (vir_bytes) ptr2acc_data(acc);
 #endif
 
@@ -1055,10 +1053,8 @@ char *dest;
 			cpvec[i].cpv_size= size;
 #else /* Minix 3 */
 			vir_cp_req[i].src.proc_nr_e = this_proc;
-			vir_cp_req[i].src.segment = D;
 			vir_cp_req[i].src.offset= (vir_bytes)ptr2acc_data(acc);
 			vir_cp_req[i].dst.proc_nr_e = proc;
-			vir_cp_req[i].dst.segment = D;
 			vir_cp_req[i].dst.offset= (vir_bytes)dest;
 			vir_cp_req[i].count= size;
 #endif

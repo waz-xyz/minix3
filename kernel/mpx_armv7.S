@@ -87,10 +87,10 @@ skip_header:
 	add	r1, r0, #KERNEL_MMU_TABLES_SIZE
 	bl	memclr
 	
-	/* Set page table descriptor for L1 table index = 0x800
+	/* Set page table descriptor for L1 table index = 0xC00
 	   with base address at the end of the first-level table.
 	   Preserve the page table location at r7. */
-	add	r1, r8, #(4 * 0x800)
+	add	r1, r8, #(4 * 0xC00)
 	add	r7, r8, #KERNEL_FIRST_LEVEL_TT_SIZE
 	add	r0, r7, #1		/* Make it point to a page table */
 	str	r0, [r1]
@@ -103,11 +103,11 @@ skip_header:
 	add	r0, r0, #1		/* Make it point to a page table */
 	str	r0, [r1]
 
-	/* Set section descriptors for L1 table index = 0x810 and beyond
+	/* Set section descriptors for L1 table index = 0x800 and beyond
 	   with base addresses starting at 0.
-	   Enable access to the first 16 MBs of physical memory. */
-	mov	r2, #16
-	add	r1, r8, #(4 * 0x810)
+	   Enable access to 1024 MB of physical memory. */
+	mov	r2, #1024
+	add	r1, r8, #(4 * 0x800)
 	mov	r3, #0
 	ldr	r4, =#0x640A
 1:	add	r0, r3, r4

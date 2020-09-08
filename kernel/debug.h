@@ -41,8 +41,8 @@ struct lock_timingdata {
 extern struct lock_timingdata timingdata[TIMING_CATEGORIES];
 
 /* Prototypes for the timing functionality. */
-_PROTOTYPE( void timer_start, (int cat, char *name) );
-_PROTOTYPE( void timer_end, (int cat) );
+void timer_start(int cat, char *name);
+void timer_end(int cat);
 
 #define locktimestart(c, v) timer_start(c, v)
 #define locktimeend(c) timer_end(c)
@@ -55,7 +55,7 @@ _PROTOTYPE( void timer_end, (int cat) );
  * The check is run when the queues are updated with ready() and unready().
  */ 
 #if DEBUG_SCHED_CHECK 					
-_PROTOTYPE( void check_runqueues, (char *when) );
+void check_runqueues(char *when);
 #endif /* DEBUG_SCHED_CHECK */
 
 /* The timing and checking of kernel locking requires a redefine of the lock()

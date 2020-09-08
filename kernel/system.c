@@ -463,49 +463,37 @@ PUBLIC int virtual_copy(
 	int i;
 
 	/* Check copy count. */
-	if (bytes <= 0) return(EDOM);
+	if (bytes <= 0) return EDOM;
 
 	/* Do some more checks and map virtual addresses to physical addresses. */
 	vir_addr[_SRC_] = src_addr;
 	vir_addr[_DST_] = dst_addr;
-	for (i=_SRC_; i<=_DST_; i++)
+	for (i = _SRC_; i <= _DST_; i++)
 	{
 		int proc_nr, type;
 		struct proc *p;
 
-		type = vir_addr[i]->segment & SEGMENT_TYPE;
-		if(type != PHYS_SEG && isokendpt(vir_addr[i]->proc_nr_e, &proc_nr))
-			p = proc_addr(proc_nr);
-		else
-			p = NULL;
+		type = (i == _SRC_) ? PTR_READABLE : PTR_WRITABLE;
 
-		/* Get physical address. */
-		switch(type) {
-		case LOCAL_SEG:
-			if (!p) return EDEADSRCDST;
-			seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
-			phys_addr[i] = umap_local(p, seg_index, vir_addr[i]->offset, bytes);
-			break;
-		case REMOTE_SEG:
-			if (!p) return EDEADSRCDST;
-			seg_index = vir_addr[i]->segment & SEGMENT_INDEX;
-			phys_addr[i] = umap_remote(p, seg_index, vir_addr[i]->offset, bytes);
-			break;
-#if (MACHINE == IBM_PC)
-		case BIOS_SEG:
-			if (!p) return EDEADSRCDST;
-			phys_addr[i] = umap_bios(p, vir_addr[i]->offset, bytes );
-			break;
-#endif
-		case PHYS_SEG:
+		if (vir_addr[i]->proc_nr_e != NONE)
+		{
+			/* virtual address */
+			if (isokendpt(vir_addr[i]->proc_nr_e, &proc_nr))
+				p = proc_addr(proc_nr);
+			else
+				return EDEADSRCDST;
+			if (validate_user_ptr(proc_nr, (void*)vir_addr[i]->offset, bytes, type) == NULL)
+				return EFAULT;
+			//phys_addr[i] = get_physical_address(p, vir_addr[i]->offset);
+		}
+		else
+		{
+			/* physical address */
 			phys_addr[i] = vir_addr[i]->offset;
-			break;
-		default:
-			return EINVAL;
 		}
 
 		/* Check if mapping succeeded. */
-		if (phys_addr[i] <= 0 && vir_addr[i]->segment != PHYS_SEG) 
+		if (phys_addr[i] == 0 && vir_addr[i]->proc_nr_e != NONE) 
 			return EFAULT;
 	}
 

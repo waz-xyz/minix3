@@ -49,24 +49,25 @@ PUBLIC int do_sigaction(void)
 	struct sigaction svec;
 	struct sigaction *svp;
 
+	printf("!!!! Starting do_sigaction\n");
 	if (m_in.sig_nr == SIGKILL)
 		return OK;
 	if (m_in.sig_nr < 1 || m_in.sig_nr > _NSIG)
 		return EINVAL;
 	svp = &mp->mp_sigact[m_in.sig_nr];
-	if ((struct sigaction *)m_in.sig_osa != (struct sigaction *)NULL)
+	if ((struct sigaction *)m_in.sig_osa != NULL)
 	{
-		r = sys_datacopy(PM_PROC_NR, (vir_bytes)svp,
+		r = sys_vircopy(PM_PROC_NR, (vir_bytes)svp,
 				 who_e, (vir_bytes)m_in.sig_osa, (phys_bytes)sizeof(svec));
 		if (r != OK)
 			return r;
 	}
 
-	if ((struct sigaction *)m_in.sig_nsa == (struct sigaction *)NULL)
+	if ((struct sigaction *)m_in.sig_nsa == NULL)
 		return OK;
 
 	/* Read in the sigaction structure. */
-	r = sys_datacopy(who_e, (vir_bytes)m_in.sig_nsa,
+	r = sys_vircopy(who_e, (vir_bytes)m_in.sig_nsa,
 			 PM_PROC_NR, (vir_bytes)&svec, (phys_bytes)sizeof(svec));
 	if (r != OK)
 		return r;

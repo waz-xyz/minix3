@@ -47,7 +47,7 @@ PUBLIC int main(void)
 	int error;
 
 	fs_init();
-
+	printf("fs init completed\n");
 	/* This is the main loop that gets work, processes it, and sends replies. */
 	while (TRUE)
 	{

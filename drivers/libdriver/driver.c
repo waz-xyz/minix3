@@ -227,7 +227,7 @@ message *mp;		/* pointer to read or write message */
     if (nr_req > NR_IOREQS) nr_req = NR_IOREQS;
     iovec_size = (phys_bytes) (nr_req * sizeof(iovec[0]));
 
-    if (OK != sys_datacopy(mp->m_source, (vir_bytes) mp->ADDRESS, 
+    if (OK != sys_vircopy(mp->m_source, (vir_bytes) mp->ADDRESS, 
     		SELF, (vir_bytes) iovec, iovec_size))
         panic((*dp->dr_name)(),"bad I/O vector by", mp->m_source);
     iov = iovec;
@@ -243,7 +243,7 @@ message *mp;		/* pointer to read or write message */
 #if 0
   if (mp->m_source >= 0) {
 #endif
-    sys_datacopy(SELF, (vir_bytes) iovec, 
+    sys_vircopy(SELF, (vir_bytes) iovec, 
     	mp->m_source, (vir_bytes) mp->ADDRESS, iovec_size);
   return(r);
 }
@@ -358,7 +358,7 @@ message *mp;			/* pointer to ioctl request */
 
   if (mp->REQUEST == DIOCSETP) {
 	/* Copy just this one partition table entry. */
-	if (OK != (s=sys_datacopy(mp->IO_ENDPT, (vir_bytes) mp->ADDRESS,
+	if (OK != (s=sys_vircopy(mp->IO_ENDPT, (vir_bytes) mp->ADDRESS,
 		SELF, (vir_bytes) &entry, sizeof(entry))))
 	    return s;
 	dv->dv_base = entry.base;
@@ -368,7 +368,7 @@ message *mp;			/* pointer to ioctl request */
 	entry.base = dv->dv_base;
 	entry.size = dv->dv_size;
 	(*dp->dr_geometry)(&entry);
-	if (OK != (s=sys_datacopy(SELF, (vir_bytes) &entry,
+	if (OK != (s=sys_vircopy(SELF, (vir_bytes) &entry,
 		mp->IO_ENDPT, (vir_bytes) mp->ADDRESS, sizeof(entry))))
 	    return s;
   }

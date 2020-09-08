@@ -16,10 +16,10 @@
 #include <signal.h>
 
 /* Low bit of signal masks. */
-#define SIGBIT_0	((sigset_t)1)
+#define SIGBIT_0		((sigset_t)1)
 
 /* Mask of valid signals (0 - _NSIG). */
-#define SIGMASK		(((SIGBIT_0 << _NSIG) << 1) - 1)
+#define SIGMASK			(((SIGBIT_0 << _NSIG) << 1) - 1)
 
 #define	sigisvalid(signo)	((unsigned)(signo) <= _NSIG)
 

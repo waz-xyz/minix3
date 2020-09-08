@@ -33,10 +33,8 @@ PUBLIC int do_copy(
 
 	/* Dismember the command message. */
 	vir_addr[_SRC_].proc_nr_e = m_ptr->CP_SRC_ENDPT;
-	vir_addr[_SRC_].segment = m_ptr->CP_SRC_SPACE;
 	vir_addr[_SRC_].offset = (vir_bytes) m_ptr->CP_SRC_ADDR;
 	vir_addr[_DST_].proc_nr_e = m_ptr->CP_DST_ENDPT;
-	vir_addr[_DST_].segment = m_ptr->CP_DST_SPACE;
 	vir_addr[_DST_].offset = (vir_bytes) m_ptr->CP_DST_ADDR;
 	bytes = (phys_bytes) m_ptr->CP_NR_BYTES;
 
@@ -50,20 +48,21 @@ PUBLIC int do_copy(
 		/* Check if process number was given implictly with SELF and is valid. */
 		if (vir_addr[i].proc_nr_e == SELF)
 			vir_addr[i].proc_nr_e = m_ptr->m_source;
-		if (vir_addr[i].segment != PHYS_SEG && !isokendpt(vir_addr[i].proc_nr_e, &p))
+		if (!isokendpt(vir_addr[i].proc_nr_e, &p))
 			return EINVAL;
 
 		/* Check if physical addressing is used without SYS_PHYSCOPY. */
-		if ((vir_addr[i].segment & PHYS_SEG) && m_ptr->m_type != SYS_PHYSCOPY)
+		if (vir_addr[i].proc_nr_e == NONE && m_ptr->m_type != SYS_PHYSCOPY)
 			return EPERM;
 	}
 
 	/* Check for overflow. This would happen for 64K segments and 16-bit 
 	 * vir_bytes. Especially copying by the PM on do_fork() is affected. 
 	 */
-	if (bytes != (vir_bytes) bytes) return(E2BIG);
+	if (bytes != (vir_bytes) bytes) return E2BIG;
 
 	/* Now try to make the actual virtual copy. */
 	return virtual_copy(&vir_addr[_SRC_], &vir_addr[_DST_], bytes);
 }
+
 #endif /* (USE_VIRCOPY || USE_PHYSCOPY) */

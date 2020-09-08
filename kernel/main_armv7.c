@@ -33,7 +33,7 @@ static void shutdown(timer_t *tp);
 /*===========================================================================*
  *				main                                         *
  *===========================================================================*/
-PUBLIC void main()
+PUBLIC void main(void)
 {
 	/* Start the ball rolling. */
 	struct boot_image *ip;		/* boot image pointer */

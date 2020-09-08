@@ -227,7 +227,7 @@ message *m_ptr;
 	if(DmaBusy < 0) { /* Dma tranfer not yet started */
 
 		DmaMode = DEV_WRITE;           /* Dma mode is writing */
-		sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)DmaPtr, (phys_bytes)DspFragmentSize);
+		sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)DmaPtr, (phys_bytes)DspFragmentSize);
 		dsp_dma_setup(DmaPhys, DspFragmentSize * DMA_NR_OF_BUFFERS);
 		dsp_setup();
 		DmaBusy = 0;         /* Dma is busy */
@@ -236,13 +236,13 @@ message *m_ptr;
 
 	} else if(DmaBusy != DmaFillNext) { /* Dma transfer started, but Dma buffer not yet full */
 
-		sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)DmaPtr + DmaFillNext * DspFragmentSize, (phys_bytes)DspFragmentSize);
+		sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)DmaPtr + DmaFillNext * DspFragmentSize, (phys_bytes)DspFragmentSize);
 		dprint(" filled dma[%d]\n", DmaFillNext);
 		DmaFillNext = (DmaFillNext + 1) % DMA_NR_OF_BUFFERS;
 
 	} else if(BufReadNext < 0) { /* Dma buffer full, fill first element of second buffer */ 
 
-		sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)Buffer, (phys_bytes)DspFragmentSize);
+		sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)Buffer, (phys_bytes)DspFragmentSize);
 		dprint(" filled buf[0]\n");
 		BufReadNext = 0;
 		BufFillNext = 1;
@@ -253,7 +253,7 @@ message *m_ptr;
 			receive(HARDWARE, &mess);
 			dsp_hardware_msg();
 		}
-		sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)Buffer + BufFillNext * DspFragmentSize, (phys_bytes)DspFragmentSize);
+		sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)Buffer + BufFillNext * DspFragmentSize, (phys_bytes)DspFragmentSize);
 		dprint(" filled buf[%d]\n", BufFillNext);
 		BufFillNext = (BufFillNext + 1) % DSP_NR_OF_BUFFERS;
 

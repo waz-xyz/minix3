@@ -2,11 +2,10 @@
 #define sigsuspend _sigsuspend
 #include <signal.h>
 
-PUBLIC int sigsuspend(set)
-_CONST sigset_t *set;
+PUBLIC int sigsuspend(const sigset_t *set)
 {
-  message m;
+	message m;
 
-  m.m2_l1 = (long) *set;
-  return(_syscall(MM, SIGSUSPEND, &m));
+	m.m2_l1 = (long)*set;
+	return _syscall(MM, SIGSUSPEND, &m);
 }

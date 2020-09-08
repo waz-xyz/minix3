@@ -135,7 +135,7 @@ PUBLIC int do_getsysinfo(void)
 	}
 
 	dst_addr = (vir_bytes)m_in.info_where;
-	if (OK != (s = sys_datacopy(SELF, src_addr, who_e, dst_addr, len)))
+	if (OK != (s = sys_vircopy(SELF, src_addr, who_e, dst_addr, len)))
 		return s;
 	return OK;
 }
@@ -165,7 +165,7 @@ PUBLIC int do_getprocnr(void)
 	else if (m_in.namelen > 0) /* lookup process by name */
 	{
 		key_len = MIN(m_in.namelen, PROC_NAME_LEN);
-		if (OK != (s = sys_datacopy(who_e, (vir_bytes)m_in.addr,
+		if (OK != (s = sys_vircopy(who_e, (vir_bytes)m_in.addr,
 					    SELF, (vir_bytes)search_key, key_len)))
 			return s;
 		search_key[key_len] = '\0';	/* terminate for safety */
@@ -212,7 +212,7 @@ PUBLIC int do_reboot(void)
 		int r;
 		if (m_in.reboot_strlen >= sizeof(monitor_code))
 			return EINVAL;
-		if ((r = sys_datacopy(who_e, (vir_bytes)m_in.reboot_code,
+		if ((r = sys_vircopy(who_e, (vir_bytes)m_in.reboot_code,
 				      SELF, (vir_bytes)monitor_code, m_in.reboot_strlen)) != OK)
 			return r;
 		code_addr = (vir_bytes)monitor_code;
@@ -315,7 +315,7 @@ PUBLIC int do_svrctl(void)
 		size_t copy_len;
 
 		/* Copy sysgetenv structure to PM. */
-		if (sys_datacopy(who_e, ptr, SELF, (vir_bytes)&sysgetenv, sizeof(sysgetenv)) != OK)
+		if (sys_vircopy(who_e, ptr, SELF, (vir_bytes)&sysgetenv, sizeof(sysgetenv)) != OK)
 			return EFAULT;
 
 		/* Set a param override? */
@@ -329,11 +329,11 @@ PUBLIC int do_svrctl(void)
 			    || sysgetenv.vallen >= sizeof(local_param_overrides[local_params].value))
 				return EINVAL;
 
-			if ((s = sys_datacopy(who_e, (vir_bytes)sysgetenv.key,
+			if ((s = sys_vircopy(who_e, (vir_bytes)sysgetenv.key,
 					      SELF, (vir_bytes)local_param_overrides[local_params].name,
 					      sysgetenv.keylen)) != OK)
 				return s;
-			if ((s = sys_datacopy(who_e, (vir_bytes)sysgetenv.val,
+			if ((s = sys_vircopy(who_e, (vir_bytes)sysgetenv.val,
 					      SELF, (vir_bytes)local_param_overrides[local_params].value,
 					      sysgetenv.keylen)) != OK)
 				return s;
@@ -356,7 +356,7 @@ PUBLIC int do_svrctl(void)
 			/* Try to get a copy of the requested key. */
 			if (sysgetenv.keylen > sizeof(search_key))
 				return EINVAL;
-			if ((s = sys_datacopy(who_e, (vir_bytes)sysgetenv.key,
+			if ((s = sys_vircopy(who_e, (vir_bytes)sysgetenv.key,
 					      SELF, (vir_bytes)search_key, sysgetenv.keylen)) != OK)
 				return s;
 
@@ -383,7 +383,7 @@ PUBLIC int do_svrctl(void)
 
 		/* Value found, make the actual copy (as far as possible). */
 		copy_len = MIN(val_len, sysgetenv.vallen);
-		if ((s = sys_datacopy(SELF, (vir_bytes)val_start,
+		if ((s = sys_vircopy(SELF, (vir_bytes)val_start,
 				      who_e, (vir_bytes)sysgetenv.val, copy_len)) != OK)
 			return s;
 
@@ -398,7 +398,7 @@ PUBLIC int do_svrctl(void)
 		if (mp->mp_effuid != SUPER_USER)
 			return EPERM;
 
-		if (sys_datacopy(who_e, (phys_bytes)ptr,
+		if (sys_vircopy(who_e, (phys_bytes)ptr,
 				 PM_PROC_NR, (phys_bytes)&swapon,
 				 (phys_bytes)sizeof(swapon)) != OK)
 			return EFAULT;

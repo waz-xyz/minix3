@@ -74,14 +74,14 @@ PUBLIC int do_exec(void)
 	/* Get the exec file name and see if the file is executable. */
 	src = (vir_bytes)m_in.exec_name;
 	dst = (vir_bytes)name_buf;
-	r = sys_datacopy(who_e, (vir_bytes)src, PM_PROC_NR, (vir_bytes)dst, (phys_bytes)m_in.exec_len);
+	r = sys_vircopy(who_e, (vir_bytes)src, PM_PROC_NR, (vir_bytes)dst, (phys_bytes)m_in.exec_len);
 	if (r != OK)
 		return r;		/* file name not in user data segment */
 
 	/* Fetch the stack from the user before destroying the old core image. */
 	src = (vir_bytes)m_in.stack_ptr;
 	dst = (vir_bytes)mbuf;
-	r = sys_datacopy(who_e, (vir_bytes)src, PM_PROC_NR, (vir_bytes)dst, (phys_bytes)stk_bytes);
+	r = sys_vircopy(who_e, (vir_bytes)src, PM_PROC_NR, (vir_bytes)dst, (phys_bytes)stk_bytes);
 	/* can't fetch stack (e.g. bad virtual addr) */
 	if (r != OK)
 		return EACCES;
@@ -133,7 +133,7 @@ PUBLIC int do_exec(void)
 	vsp -= stk_bytes;
 	patch_ptr(mbuf, vsp);
 	src = (vir_bytes)mbuf;
-	r = sys_datacopy(PM_PROC_NR, (vir_bytes)src, who_e, (vir_bytes)vsp, (phys_bytes)stk_bytes);
+	r = sys_vircopy(PM_PROC_NR, (vir_bytes)src, who_e, (vir_bytes)vsp, (phys_bytes)stk_bytes);
 	if (r != OK)
 		panic(__FILE__, "do_exec stack copy err on", who_e);
 

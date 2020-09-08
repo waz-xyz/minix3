@@ -76,10 +76,11 @@ PUBLIC void exception(unsigned exception_type)
 				src_dst = saved_proc->p_reg.r0;
 				m_ptr = (message*)saved_proc->p_reg.r1;
 				bit_map = saved_proc->p_reg.r2;
-				kprintf("Entering sys_call on behalf of %s\n", saved_proc->p_name);
+				kprintf("\n**Entering sys_call on behalf of %s**\n", saved_proc->p_name);
 				saved_proc->p_reg.RET_REG = sys_call(call_nr, src_dst, m_ptr, bit_map);
-				kprintf("Exiting sys_call on behalf of %s\n", saved_proc->p_name);
-				kprintf("Next process is %s\n", next_ptr->p_name);
+				kprintf("**Exiting sys_call on behalf of %s**\n", saved_proc->p_name);
+				if (next_ptr != NULL)
+					kprintf("**Next process is %s**\n", next_ptr->p_name);
 				return;
 			case IRQ_EXCEPTION:
 			case FAST_IRQ_EXCEPTION:

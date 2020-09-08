@@ -66,19 +66,9 @@ int sys_setalarm(clock_t exp_time, int abs_time);
 	sys_irqctl(IRQ_RMPOLICY, irq_vec, 0, hook_id)
 int sys_irqctl(int request, int irq_vec, int policy, int *irq_hook_id);
 
-/* Shorthands for sys_vircopy() and sys_physcopy() system calls. */
-#define sys_biosin(bios_vir, dst_vir, bytes) \
-	sys_vircopy(SELF, BIOS_SEG, bios_vir, SELF, D, dst_vir, bytes)
-#define sys_biosout(src_vir, bios_vir, bytes) \
-	sys_vircopy(SELF, D, src_vir, SELF, BIOS_SEG, bios_vir, bytes)
-#define sys_datacopy(src_proc, src_vir, dst_proc, dst_vir, bytes) \
-	sys_vircopy(src_proc, D, src_vir, dst_proc, D, dst_vir, bytes)
-#define sys_textcopy(src_proc, src_vir, dst_proc, dst_vir, bytes) \
-	sys_vircopy(src_proc, T, src_vir, dst_proc, T, dst_vir, bytes)
-#define sys_stackcopy(src_proc, src_vir, dst_proc, dst_vir, bytes) \
-	sys_vircopy(src_proc, S, src_vir, dst_proc, S, dst_vir, bytes)
-int sys_vircopy(int src_proc, int src_seg, vir_bytes src_vir,
-		int dst_proc, int dst_seg, vir_bytes dst_vir,
+/* sys_vircopy() and sys_physcopy() system calls. */
+int sys_vircopy(int src_proc, vir_bytes src_vir,
+		int dst_proc, vir_bytes dst_vir,
 		phys_bytes bytes);
 
 #define sys_abscopy(src_phys, dst_phys, bytes) \

@@ -156,7 +156,7 @@ message *m_ptr;
 
   dst_proc = m_ptr->m_source;
   dst_addr = (vir_bytes) m_ptr->m1_p1;
-  if (OK != (s=sys_datacopy(SELF, src_addr, dst_proc, dst_addr, len)))
+  if (OK != (s=sys_vircopy(SELF, src_addr, dst_proc, dst_addr, len)))
   	return(s);
   return(OK);
 }

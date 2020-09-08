@@ -232,7 +232,7 @@ static void get_userdata(int user_proc, vir_bytes user_addr, int count, void *lo
   vir_bytes len;
 
   len = (count > IOVEC_NR ? IOVEC_NR : count) * sizeof(iovec_t);
-  if ((rc = sys_datacopy(user_proc, user_addr, SELF, (vir_bytes)loc_addr, len)) != OK)
+  if ((rc = sys_vircopy(user_proc, user_addr, SELF, (vir_bytes)loc_addr, len)) != OK)
 	panic(DevName, CopyErrMsg, rc);
   return;
 }
@@ -497,7 +497,7 @@ static void do_getstat(message * mp)
   dep->de_client = mp->DL_PROC;
 
   if (dep->de_mode == DEM_ENABLED) (*dep->de_getstatsf) (dep);
-  if ((rc = sys_datacopy(SELF, (vir_bytes)&dep->de_stat,
+  if ((rc = sys_vircopy(SELF, (vir_bytes)&dep->de_stat,
 	                 mp->DL_PROC, (vir_bytes)mp->DL_ADDR,
 			 (vir_bytes) sizeof(dep->de_stat))) != OK)
         panic(DevName, CopyErrMsg, rc);

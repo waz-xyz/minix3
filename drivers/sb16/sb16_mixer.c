@@ -191,7 +191,7 @@ int flag;	/* 0 = get, 1 = set */
 	struct volume_level level;
 	int cmd_left, cmd_right, shift, max_level;
 
-	sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)&level, (phys_bytes)sizeof(level));
+	sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)&level, (phys_bytes)sizeof(level));
 
 	shift = 3;
 	max_level = 0x1F;
@@ -257,7 +257,7 @@ int flag;	/* 0 = get, 1 = set */
 		level.right >>= shift;
 
 		/* Copy back to user */
-		sys_datacopy(SELF, (vir_bytes)&level, m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, (phys_bytes)sizeof(level));
+		sys_vircopy(SELF, (vir_bytes)&level, m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, (phys_bytes)sizeof(level));
 	}
 
 	return OK;
@@ -276,7 +276,7 @@ int channel;    /* 0 = left, 1 = right */
 	struct inout_ctrl input;
 	int input_cmd, input_mask, mask, del_mask, shift;
 
-	sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)&input, (phys_bytes)sizeof(input));
+	sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)&input, (phys_bytes)sizeof(input));
 
 	input_cmd = (channel == 0 ? MIXER_IN_LEFT : MIXER_IN_RIGHT);
 
@@ -322,7 +322,7 @@ int channel;    /* 0 = left, 1 = right */
 		}
 
 		/* Copy back to user */
-		sys_datacopy(SELF, (vir_bytes)&input, m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, (phys_bytes)sizeof(input));
+		sys_vircopy(SELF, (vir_bytes)&input, m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, (phys_bytes)sizeof(input));
 	}
 
 	return OK;
@@ -340,7 +340,7 @@ int flag;	/* 0 = get, 1 = set */
 	struct inout_ctrl output;
 	int output_mask, mask, del_mask, shift;
 
-	sys_datacopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)&output, (phys_bytes)sizeof(output));
+	sys_vircopy(m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, SELF, (vir_bytes)&output, (phys_bytes)sizeof(output));
 
 	mask = mixer_get(MIXER_OUTPUT_CTRL); 
 
@@ -380,7 +380,7 @@ int flag;	/* 0 = get, 1 = set */
 		}
 
 		/* Copy back to user */
-		sys_datacopy(SELF, (vir_bytes)&output, m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, (phys_bytes)sizeof(output));
+		sys_vircopy(SELF, (vir_bytes)&output, m_ptr->IO_ENDPT, (vir_bytes)m_ptr->ADDRESS, (phys_bytes)sizeof(output));
 	}
 
 	return OK;

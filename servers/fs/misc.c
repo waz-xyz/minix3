@@ -64,7 +64,7 @@ PUBLIC int do_getsysinfo()
   }
 
   dst_addr = (vir_bytes) m_in.info_where;
-  if (OK != (s=sys_datacopy(SELF, src_addr, who_e, dst_addr, len)))
+  if (OK != (s=sys_vircopy(SELF, src_addr, who_e, dst_addr, len)))
   	return(s);
   return(OK);
 
@@ -178,7 +178,7 @@ PUBLIC int do_fcntl()
 	}
 
 	/* Copy flock data from userspace. */
-	if((r = sys_datacopy(who_e, (vir_bytes) m_in.name1, 
+	if((r = sys_vircopy(who_e, (vir_bytes) m_in.name1, 
 	  SELF, (vir_bytes) &flock_arg,
 	  (phys_bytes) sizeof(flock_arg))) != OK)
 		return r;
@@ -547,7 +547,7 @@ PUBLIC int do_svrctl()
 		return(EPERM);
 
 	/* Try to copy request structure to FS. */
-	if ((r = sys_datacopy(who_e, (vir_bytes) m_in.svrctl_argp,
+	if ((r = sys_vircopy(who_e, (vir_bytes) m_in.svrctl_argp,
 		FS_PROC_NR, (vir_bytes) &device,
 		(phys_bytes) sizeof(device))) != OK) 
 	    return(r);
@@ -576,7 +576,7 @@ PUBLIC int do_svrctl()
 	struct fsdevunmap fdu;
 	int r, major;
 	/* Try to copy request structure to FS. */
-	if ((r = sys_datacopy(who_e, (vir_bytes) m_in.svrctl_argp,
+	if ((r = sys_vircopy(who_e, (vir_bytes) m_in.svrctl_argp,
 		FS_PROC_NR, (vir_bytes) &fdu,
 		(phys_bytes) sizeof(fdu))) != OK) 
 	    return(r);
