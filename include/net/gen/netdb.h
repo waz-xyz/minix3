@@ -120,9 +120,8 @@ void		setnetent _ARGS((int));
 void		setprotoent _ARGS((int));
 void		setservent _ARGS((int));
 #ifdef _MINIX
-int		servxcheck _ARGS((unsigned long _peer, const char *_service,
-			void (*_logf) _ARGS((int _pass, const char *_name))));
-char		*servxfile _ARGS((const char *_file));
+int		servxcheck(unsigned _peer, const char *_service, void (*_logf) (int _pass, const char *_name));
+char		*servxfile(const char *_file);
 #endif
 
 #endif /* !_NETDB_H_ */

@@ -1,3 +1,5 @@
+#include <elf.h>
+
 /* Constants describing the disk */
 #define SECTOR_SIZE	512
 #define SECTOR_SHIFT	9
@@ -33,13 +35,13 @@
 #endif
 
 typedef struct vector {
-  u16_t offset;
-  u16_t segment;
+	u16_t offset;
+	u16_t segment;
 } vector;
 
 struct image_header {
-  char name[IM_NAME_MAX + 1];	/* Null terminated. */
-  struct exec process;
+	char name[IM_NAME_MAX + 1];	/* Null terminated. */
+	Elf32_Ehdr process;
 };
 
 EXTERN vector rem_part;		/* boot partition table entry */
@@ -60,12 +62,12 @@ extern u16_t eqscancode;	/* Set by peek/getch() if they see a '=' */
 #define E_FUNCTION	0x10	/* Function definition */
 
 typedef struct environment {
-  struct environment *next;
-  char flags;
-  char *name;			/* name = value */
-  char *arg;			/* name(arg) {value} */
-  char *value;
-  char *defval;			/* Safehouse for default values */
+	struct environment *next;
+	char flags;
+	char *name;			/* name = value */
+	char *arg;			/* name(arg) {value} */
+	char *value;
+	char *defval;			/* Safehouse for default values */
 } environment;
 
 /* External variables */
@@ -74,11 +76,11 @@ EXTERN int fsok;		/* True if the boot device contains an FS */
 EXTERN u32_t lowsec;		/* Offset to the file system on the boot dev */
 
 /* Prototypes */
-_PROTOTYPE( off_t r_super, (void));
-_PROTOTYPE( void r_stat, (Ino_t _inum, struct stat *_stp ));
-_PROTOTYPE( ino_t r_readdir, (char *_name ));
-_PROTOTYPE( off_t r_vir2abs, (off_t _virblk ));
-_PROTOTYPE( ino_t r_lookup, (Ino_t _cwd, char *_path ));
+off_t r_super(void);
+void r_stat(Ino_t _inum, struct stat *_stp);
+ino_t r_readdir(char *_name);
+off_t r_vir2abs(off_t _virbl);
+ino_t r_lookup(Ino_t _cwd, char *_path);
 
 #ifdef _MONHEAD
 _PROTOTYPE( void readerr, (off_t _sec, int _err ));

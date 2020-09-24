@@ -62,7 +62,7 @@
 #define LAST_DIR         PATH_PENULTIMATE
 #define LAST_DIR_NOTDOT  PATH_PENULTIMATE | PATH_STRIPDOT
 #define LAST_DIR_EATSYM  PATH_NONSYMBOLIC
-#define SYMLOOP		16
+#define SYMLOOP			16
 
 #define CLEAN              0	/* disk and memory copies identical */
 #define DIRTY              1	/* disk and memory copies differ */
@@ -74,32 +74,32 @@
 
 #define END_OF_FILE   (-104)	/* eof detected */
 
-#define ROOT_INODE         1		/* inode number for root directory */
-#define BOOT_BLOCK  ((block_t) 0)	/* block number of boot block */
-#define SUPER_BLOCK_BYTES (1024)	/* bytes offset */
-#define START_BLOCK 	2		/* first block of FS (not counting SB) */
+#define ROOT_INODE		1		/* inode number for root directory */
+#define BOOT_BLOCK		((block_t) 0)	/* block number of boot block */
+#define SUPER_BLOCK_BYTES	(1024)		/* bytes offset */
+#define START_BLOCK 		2		/* first block of FS (not counting SB) */
 
-#define DIR_ENTRY_SIZE       usizeof (struct direct)  /* # bytes/dir entry   */
-#define NR_DIR_ENTRIES(b)   ((b)/DIR_ENTRY_SIZE)  /* # dir entries/blk   */
-#define SUPER_SIZE      usizeof (struct super_block)  /* super_block size    */
-#define PIPE_SIZE(b)          (V1_NR_DZONES*(b))  /* pipe size in bytes  */
+#define DIR_ENTRY_SIZE		usizeof (struct direct)	/* # bytes/dir entry   */
+#define NR_DIR_ENTRIES(b)	((b)/DIR_ENTRY_SIZE)	/* # dir entries/blk   */
+#define SUPER_SIZE		usizeof (struct super_block)	/* super_block size    */
+#define PIPE_SIZE(b)		(V1_NR_DZONES*(b))	/* pipe size in bytes  */
 
-#define FS_BITMAP_CHUNKS(b) ((b)/usizeof (bitchunk_t))/* # map chunks/blk   */
-#define FS_BITCHUNK_BITS		(usizeof(bitchunk_t) * CHAR_BIT)
+#define FS_BITMAP_CHUNKS(b)	((b)/usizeof (bitchunk_t))/* # map chunks/blk   */
+#define FS_BITCHUNK_BITS	(usizeof(bitchunk_t) * CHAR_BIT)
 #define FS_BITS_PER_BLOCK(b)	(FS_BITMAP_CHUNKS(b) * FS_BITCHUNK_BITS)
 
 /* Derived sizes pertaining to the V1 file system. */
-#define V1_ZONE_NUM_SIZE           usizeof (zone1_t)  /* # bytes in V1 zone  */
-#define V1_INODE_SIZE             usizeof (d1_inode)  /* bytes in V1 dsk ino */
+#define V1_ZONE_NUM_SIZE	usizeof (zone1_t)  /* # bytes in V1 zone  */
+#define V1_INODE_SIZE		usizeof (d1_inode)  /* bytes in V1 dsk ino */
 
 /* # zones/indir block */
-#define V1_INDIRECTS (_STATIC_BLOCK_SIZE/V1_ZONE_NUM_SIZE)  
+#define V1_INDIRECTS		(_STATIC_BLOCK_SIZE/V1_ZONE_NUM_SIZE)  
 
 /* # V1 dsk inodes/blk */
-#define V1_INODES_PER_BLOCK (_STATIC_BLOCK_SIZE/V1_INODE_SIZE)
+#define V1_INODES_PER_BLOCK	(_STATIC_BLOCK_SIZE/V1_INODE_SIZE)
 
 /* Derived sizes pertaining to the V2 file system. */
-#define V2_ZONE_NUM_SIZE            usizeof (zone_t)  /* # bytes in V2 zone  */
-#define V2_INODE_SIZE             usizeof (d2_inode)  /* bytes in V2 dsk ino */
-#define V2_INDIRECTS(b)   ((b)/V2_ZONE_NUM_SIZE)  /* # zones/indir block */
-#define V2_INODES_PER_BLOCK(b) ((b)/V2_INODE_SIZE)/* # V2 dsk inodes/blk */
+#define V2_ZONE_NUM_SIZE	usizeof (zone_t)  /* # bytes in V2 zone  */
+#define V2_INODE_SIZE		usizeof (d2_inode)  /* bytes in V2 dsk ino */
+#define V2_INDIRECTS(b)		((b)/V2_ZONE_NUM_SIZE)  /* # zones/indir block */
+#define V2_INODES_PER_BLOCK(b)	((b)/V2_INODE_SIZE)/* # V2 dsk inodes/blk */

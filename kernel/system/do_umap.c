@@ -16,7 +16,7 @@
  *				do_umap					    *
  *==========================================================================*/
 PUBLIC int do_umap(
-    message *m_ptr /* pointer to request message */
+	message *m_ptr		/* pointer to request message */
 )
 /* Map virtual address to physical, for non-kernel processes. */
 {
@@ -32,8 +32,7 @@ PUBLIC int do_umap(
 	else if (!isokendpt(endpt, &proc_nr))
 		return EINVAL;
 
-	phys_addr = umap_local(proc_addr(proc_nr), 0, offset, count);
-	//phys_addr = umap_remote(proc_addr(proc_nr), 0, offset, count);
+	phys_addr = validate_user_ptr(proc_nr, offset, count, PTR_READABLE);
 
 	m_ptr->CP_DST_ADDR = phys_addr;
 	return (phys_addr == 0) ? EFAULT : OK;

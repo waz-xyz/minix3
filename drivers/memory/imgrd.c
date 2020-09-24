@@ -11,4 +11,4 @@ unsigned char imgrd[]=
 #include "ramdisk/image.c"
 };
 
-size_t imgrd_size= sizeof(imgrd);
+size_t imgrd_size = sizeof(imgrd);

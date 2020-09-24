@@ -6,24 +6,27 @@ i = ../../include
 s = $i/sys
 b = $i/ibm
 m = $i/minix
+l = ../../lib/bin
+d = ../bin
 
 # Programs, flags, etc.
-CC = exec cc
-CFLAGS = -I$i
-LDFLAGS = -i
-LIBS = -lsysutil -lsys
+CC = ${TOOLCHAIN_PREFIX}gcc
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+# LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(SERVER).map -Wl,--cref -L$l
+# LIBS = -lsysutil -lsys
 
 OBJECTS = driver.o drvlib.o
 
-all build install: $(OBJECTS)	
-
+all build install: $(OBJECTS)
+	cp *.o $d
+	
 # $(CC) -c $@ $(LDFLAGS) $(OBJ) $(LIBS)
 
 clean:
-	rm -f *.o *.bak 
+	rm -f $(OBJECTS)
 
 depend: 
 	$(MKDEP) $(CFLAGS) *.c > .depend
 
 # Include generated dependencies.
-include .depend
+-include .depend

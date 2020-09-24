@@ -67,7 +67,7 @@ EXTERN _PROTOTYPE( void (*level0_func), (void) );
 #if (CHIP == ARM)
 
 /* Interrupt related variables. */
-EXTERN irq_hook_t irq_hooks[NR_IRQ_HOOKS];	/* hooks for general use */
+EXTERN irq_hook_t irq_hooks[NR_IRQ_VECTORS];	/* hooks for general use */
 EXTERN irq_hook_t *irq_handlers[NR_IRQ_VECTORS];/* list of IRQ handlers */
 EXTERN int irq_actids[NR_IRQ_VECTORS];		/* IRQ ID bits active */
 

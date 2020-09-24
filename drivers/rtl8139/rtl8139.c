@@ -1366,7 +1366,7 @@ int vectored;
 			  	    NO_NUM);
 				}
 
-				if (OK != sys_umap(re_client, D, iovp->iov_addr, s, &phys_user))
+				if (OK != sys_umap(re_client, iovp->iov_addr, s, &phys_user))
 				  panic("rtl8139","umap_local failed\n", NO_NUM);
 
 #if 0
@@ -1393,7 +1393,7 @@ int vectored;
 		if (size < ETH_MIN_PACK_SIZE || size > ETH_MAX_PACK_SIZE_TAGGED)
 			panic("rtl8139","invalid packet size", size);
 #if 0
-		if (OK != sys_umap(re_client, D, (vir_bytes)mp->DL_ADDR, size, &phys_user))
+		if (OK != sys_umap(re_client, (vir_bytes)mp->DL_ADDR, size, &phys_user))
 			panic("rtl8139","umap_local failed\n", NO_NUM);
 
 		p= rep->re_tx[tx_head].ret_buf;
@@ -1401,8 +1401,8 @@ int vectored;
 	if (cps != OK) printf("RTL8139: warning, sys_abscopy failed: %d\n", cps);
 #else
 		ret = rep->re_tx[tx_head].v_ret_buf;
-		cps = sys_vircopy(re_client, D, (vir_bytes)mp->DL_ADDR, 
-			SELF, D, (vir_bytes) ret, size);
+		cps = sys_vircopy(re_client, (vir_bytes)mp->DL_ADDR, 
+			SELF, (vir_bytes) ret, size);
 	if (cps != OK) printf("RTL8139: warning, sys_abscopy failed: %d\n", cps);
 #endif
 	}

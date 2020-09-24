@@ -65,7 +65,7 @@ PUBLIC int do_privctl(
 
 		for (i = 0; i < BITMAP_CHUNKS(NR_SYS_PROCS); i++)	/* remove pending: */
 			priv(rp)->s_notify_pending.chunk[i] = 0;	/* - notifications */
-		priv(rp)->s_int_pending = 0;				/* - interrupts */
+		priv(rp)->s_int_pending = 0;				/* - interrupt */
 		sigemptyset(&priv(rp)->s_sig_pending);			/* - signals */
 
 		/* Now update the process' privileges as requested. */

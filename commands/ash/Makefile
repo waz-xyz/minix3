@@ -16,10 +16,15 @@ OBJS=	builtins.o cd.o dirent.o error.o eval.o exec.o expand.o input.o \
 # editline package by Simmule Turner and Rich Salz.  (The big, bloated
 # and GPL contaminated FSF readline should work too.)
 #
-CPPFLAGS= -DSHELL -I. -D_MINIX -D_POSIX_SOURCE
-CFLAGS=	-wo -i $(CPPFLAGS)
-LIBS=	-ledit
-CC = exec cc
+i = ../../include
+l = ../../lib/bin
+CPPFLAGS = -DSHELL -I. -D_MINIX -D_POSIX_SOURCE
+CFLAGS = $(CPPFLAGS) -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -L$l
+LIBS = -ledit
+CC = ${TOOLCHAIN_PREFIX}gcc
+HOSTCC = gcc
+HOSTCFLAGS = -DSHELL -D_MINIX
 
 CLEANFILES= $(OBJS) \
 	builtins.c builtins.h init.c mkinit mknodes mksignames mksyntax \
@@ -29,8 +34,8 @@ CLEANFILES= $(OBJS) \
 all:	sh
 
 sh:	$(OBJS)
-	$(CC) $(CFLAGS) -o sh $(OBJS) $(LIBS)
-	install -S 100k sh
+	$(CC) $(CFLAGS) $(LDFLAGS) -o sh $(OBJS) $(LIBS)
+#	install -S 100k sh
 
 install:	/usr/bin/ash /usr/bin/sh /bin/sh /bin/bigsh
 
@@ -61,40 +66,40 @@ init.o: mkinit $(SRCS)
 	./mkinit '$(CC) -c $(CFLAGS) init.c' $(SRCS)
 
 mkinit: mkinit.c
-	$(CC) $(CFLAGS) mkinit.c -o $@
+	$(HOSTCC) $(HOSTCFLAGS) mkinit.c -o $@
 
 nodes.c nodes.h: mknodes nodetypes nodes.c.pat
 	./mknodes nodetypes nodes.c.pat
 
 mknodes: mknodes.c
-	$(CC) $(CFLAGS) mknodes.c -o $@
+	$(HOSTCC) $(HOSTCFLAGS) mknodes.c -o $@
 
 signames.c signames.h: mksignames
 	./mksignames
 
 mksignames: mksignames.c
-	$(CC) $(CFLAGS) mksignames.c -o $@
+	$(HOSTCC) $(HOSTCFLAGS) mksignames.c -o $@
 
 syntax.c syntax.h: mksyntax
 	./mksyntax
 
 mksyntax: mksyntax.c parser.h
-	$(CC) $(CFLAGS) mksyntax.c -o $@
+	$(HOSTCC) $(HOSTCFLAGS) mksyntax.c -o $@
 
 bltin/operators.h:	bltin/mkexpr bltin/binary_op bltin/unary_op
 	cd bltin && sh mkexpr
 
 bltin/echo.o:	bltin/echo.c
-	cd bltin && $(CC) -I.. $(CFLAGS) -c echo.c
+	cd bltin && $(CC) -I../$i -I.. $(CFLAGS) -c echo.c
 
 bltin/expr.o:	bltin/expr.c
-	cd bltin && $(CC) -I.. $(CFLAGS) -c expr.c
+	cd bltin && $(CC) -I../$i -I.. $(CFLAGS) -c expr.c
 
 bltin/operators.o:	bltin/operators.c
-	cd bltin && $(CC) -I.. $(CFLAGS) -c operators.c
+	cd bltin && $(CC) -I../$i -I.. $(CFLAGS) -c operators.c
 
 bltin/regexp.o:	bltin/regexp.c
-	cd bltin && $(CC) -I.. $(CFLAGS) -c regexp.c
+	cd bltin && $(CC) -I../$i -I.. $(CFLAGS) -c regexp.c
 
 # Dependencies you say?  This will have to do.
 $(OBJS): error.h eval.h exec.h expand.h init.h input.h \

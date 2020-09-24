@@ -46,6 +46,10 @@ PUBLIC int do_copy(
 		/* Check if process number was given implictly with SELF and is valid. */
 		if (vir_addr[i].proc_nr_e == SELF)
 			vir_addr[i].proc_nr_e = m_ptr->m_source;
+		if (i == _SRC_)
+			kprintf("src endpoint = %d\n", vir_addr[i].proc_nr_e);
+		else if (i == _DST_)
+			kprintf("dst endpoint = %d\n", vir_addr[i].proc_nr_e);
 		if (!isokendpt(vir_addr[i].proc_nr_e, &p))
 			return EINVAL;
 

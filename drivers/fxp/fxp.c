@@ -776,8 +776,7 @@ fxp_t *fp;
 	fxp_do_conf(fp);
 
 	/* Set pointer to statistical counters */
-	r= sys_umap(SELF, D, (vir_bytes)&fp->fxp_stat, sizeof(fp->fxp_stat),
-		&bus_addr);
+	r= sys_umap(SELF, (vir_bytes)&fp->fxp_stat, sizeof(fp->fxp_stat), &bus_addr);
 	if (r != OK)
 		panic("FXP","sys_umap failed", r);
 	fxp_cu_ptr_cmd(fp, SC_CU_LOAD_DCA, bus_addr, TRUE /* check idle */);

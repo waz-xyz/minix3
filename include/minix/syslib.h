@@ -38,7 +38,7 @@ int sys_nice(int proc, int priority);
 
 int sys_int86(struct reg86u *reg86p);
 int sys_vm_setbuf(phys_bytes base, phys_bytes size, phys_bytes high);
-int sys_vm_map(int proc_nr, int do_map, phys_bytes base, phys_bytes size, phys_bytes offset);
+int sys_vm_map(int proc_nr, int do_map, phys_bytes base, phys_bytes size, vir_bytes old_offset, vir_bytes *new_offset);
 
 /* Shorthands for sys_sdevio() system call. */
 #define sys_insb(port, proc_nr, buffer, count) \
@@ -72,9 +72,9 @@ int sys_vircopy(int src_proc, vir_bytes src_vir,
 		phys_bytes bytes);
 
 #define sys_abscopy(src_phys, dst_phys, bytes) \
-	sys_physcopy(NONE, PHYS_SEG, src_phys, NONE, PHYS_SEG, dst_phys, bytes)
-int sys_physcopy(int src_proc, int src_seg, vir_bytes src_vir,
-		 int dst_proc, int dst_seg, vir_bytes dst_vir,
+	sys_physcopy(NONE, src_phys, NONE, dst_phys, bytes)
+int sys_physcopy(int src_proc, vir_bytes src_vir,
+		 int dst_proc, vir_bytes dst_vir,
 		 phys_bytes bytes);
 int sys_memset(unsigned long pattern, phys_bytes base, phys_bytes bytes);
 
@@ -84,7 +84,7 @@ int sys_virvcopy(phys_cp_req *vec_ptr,int vec_size,int *nr_ok);
 int sys_physvcopy(phys_cp_req *vec_ptr,int vec_size,int *nr_ok);
 #endif
 
-int sys_umap(int proc_nr, int seg, vir_bytes vir_addr, vir_bytes bytes, phys_bytes *phys_addr);
+int sys_umap(int proc_nr, vir_bytes vir_addr, vir_bytes bytes, phys_bytes *phys_addr);
 int sys_segctl(int *index, u16_t *seg, vir_bytes *off, phys_bytes phys, vir_bytes size);
 
 /* Shorthands for sys_getinfo() system call. */

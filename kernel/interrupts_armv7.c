@@ -283,6 +283,7 @@ PUBLIC void generic_interrupt_handler(void)
 	int irq;
 
 	irq = ReadInterruptSource();
+	kprintf("generic_interrupt_handler: irq %d has arrived", irq);
 	hook = irq_handlers[irq];
 	intr_handle(hook);
 	if (irq_actids[irq] != 0)

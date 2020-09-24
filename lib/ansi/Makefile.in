@@ -77,8 +77,9 @@ libc_FILES=" \
 	sigmisc.c \
 	signal.c \
 	strcat.c \
-	strcoll.c \
+	strchr.c \
 	strcmp.c \
+	strcoll.c \
 	strcpy.c \
 	strcspn.c \
 	strerror.c \

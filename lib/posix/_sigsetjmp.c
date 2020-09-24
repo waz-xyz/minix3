@@ -4,8 +4,5 @@
 
 PUBLIC void siglongjmp(sigjmp_buf env, int val)
 {
-	if (env[0].__flags & SC_SIGCONTEXT)
-		longjmp(env, val);
-	else
-		_longjmp(env, val);
+	longjmp(env, val);
 }

@@ -3,41 +3,43 @@ DRIVER = memory
 
 # directories
 u = /usr
-i = $u/include
+i = ../../include
+l = ../../lib/bin
 s = $i/sys
 m = $i/minix
 b = $i/ibm
-d = ..
+d = ../bin
 
 # programs, flags, etc.
 MAKE = exec make
-CC =	exec cc
-CFLAGS = -I$i
-LDFLAGS = -i
+CC = ${TOOLCHAIN_PREFIX}gcc
+MKDEP = $(CC) -M -MG
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(DRIVER).map -Wl,--cref -L$l
 LIBS = -lsys -lsysutil
 
 # imgrd_s.s is the ACK assembler version of the ramdisk. For more portability,
 # use the C version imgrd.c. However, the C compiler takes too much memory
 # compiling imgrd.c.
-IMGRD=imgrd_s.o
-#IMGRD=imgrd.c
+#IMGRD=imgrd_s.o
+IMGRD=imgrd.o
 
 OBJ = memory.o $(IMGRD)
-LIBDRIVER = $d/libdriver/driver.o
+LIBDRIVER = $d/driver.o
 
 
 # build local binary
-all build:	$(DRIVER)
+all build:	$d/$(DRIVER)
 
-$(DRIVER):	ramdisk_image $(OBJ) $(LIBDRIVER)
+$d/$(DRIVER):	ramdisk_image $(OBJ) $(LIBDRIVER)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBDRIVER) $(LIBS)
-	install -S 8k $(DRIVER)
+	#install -S 8k $(DRIVER)
 
 imgrd.o:        ramdisk/image.c
 imgrd_s.o:      ramdisk/image.s
 
 $(LIBDRIVER): 
-	cd $d/libdriver && $(MAKE) 
+	cd ../libdriver && $(MAKE) 
 
 ramdisk_image:
 	cd ramdisk && make
@@ -49,13 +51,12 @@ install: /usr/sbin/$(DRIVER)
 
 # clean up local files
 clean:
-	rm -f $(DRIVER) *.o *.bak 
+	rm -f $d/$(DRIVER) *.o *.bak 
 	cd ramdisk && make clean
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" memory.c ../libdriver/*.c > .depend
+	$(MKDEP) $(CFLAGS) memory.c ../libdriver/*.c > .depend
 	cd ramdisk && make depend
 
 # Include generated dependencies.
-include .depend
-
+-include .depend

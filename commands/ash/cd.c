@@ -78,7 +78,8 @@ extern int didudir;		/* set if /u/logname or ~logname expanded */
 
 
 int
-cdcmd(argc, argv)  char **argv; {
+cdcmd(int argc, char **argv)
+{
 	char *dest;
 	char *path;
 	char *p;

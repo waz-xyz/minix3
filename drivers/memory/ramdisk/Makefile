@@ -1,12 +1,19 @@
 # Makefile for ramdisk image
 
-PROGRAMS=at_wini bios_wini cdprobe dev2name floppy loadramdisk newroot \
-	pci sh service sysenv
+ifeq (${ARCH}, x86)
+PROTO_FILE = proto.x86
+PROGRAMS = at_wini bios_wini cdprobe dev2name floppy loadramdisk newroot pci sh service sysenv
+endif
+ifeq (${ARCH}, arm)
+PROTO_FILE = proto.arm
+PROGRAMS = dev2name loadramdisk newroot sh service sysenv
+endif
 
-MAKEDEV=/usr/bin/MAKEDEV
 MKDEP = $(CC) -M -MG
+STRIP = ${TOOLCHAIN_PREFIX}strip
 
-all:	image.c image.s
+# all:	image.c image.s
+all:	image.c
 
 clean:
 	rm -rf $(PROGRAMS) bintoc image image.c proto.gen
@@ -23,70 +30,70 @@ bintoc:	bintoc.c
 	$(CC) -o $@ bintoc.c
 
 image:	proto.gen mtab rc $(PROGRAMS) ../../../tools/mkfs
-	../../../tools/mkfs -B 2048 image proto.gen || { rm -f image; false; }
+	../../../tools/mkfs -t -B 2048 image proto.gen || { rm -f image; false; }
 
 at_wini: ../../at_wini/at_wini
-	install -s ../../$@/$@ $@
+	$(STRIP) ../../$@/$@ -o $@
 
 ../../at_wini/at_wini:
 	cd ../../at_wini && make
 
 bios_wini: ../../bios_wini/bios_wini
-	install -s ../../$@/$@ $@
+	$(STRIP) ../../$@/$@ -o $@
 
 ../../bios_wini/bios_wini:
 	cd ../../bios_wini && make
 
 floppy: ../../floppy/floppy
-	install -s ../../$@/$@ $@
+	$(STRIP) ../../$@/$@ -o $@
 
 ../../floppy/floppy:
 	cd ../../floppy && make
 
 pci: ../../pci/pci
-	install -s ../../$@/$@ $@
+	$(STRIP) ../../$@/$@ -o $@
 
 ../../pci/pci:
 	cd ../../pci && make
 
 cdprobe:  ../../../commands/simple/cdprobe
-	install -s ../../../commands/simple/$@ $@
+	$(STRIP) ../../../commands/simple/$@ -o $@
 
 ../../../commands/simple/cdprobe: 
 	cd ../../../commands/simple && make cdprobe
 
 dev2name:  ../../../commands/simple/dev2name
-	install -s ../../../commands/simple/$@ $@
+	$(STRIP) ../../../commands/simple/$@ -o $@
 
 ../../../commands/simple/dev2name: 
 	cd ../../../commands/simple && make dev2name
 
 loadramdisk:  ../../../commands/simple/loadramdisk
-	install -s ../../../commands/simple/$@ $@
+	$(STRIP) ../../../commands/simple/$@ -o $@
 
 ../../../commands/simple/loadramdisk: 
 	cd ../../../commands/simple && make loadramdisk
 
 newroot:  ../../../commands/simple/newroot
-	install -s ../../../commands/simple/$@ $@
+	$(STRIP) ../../../commands/simple/$@ -o $@
 
 ../../../commands/simple/newroot: 
 	cd ../../../commands/simple && make newroot
 
 sysenv:  ../../../commands/simple/sysenv
-	install -s ../../../commands/simple/$@ $@
+	$(STRIP) ../../../commands/simple/$@ -o $@
 
 ../../../commands/simple/sysenv: 
 	cd ../../../commands/simple && make sysenv
 
 sh:	../../../commands/ash/sh
-	install -s ../../../commands/ash/$@ $@
+	$(STRIP) ../../../commands/ash/$@ -o $@
 
 ../../../commands/ash/sh: 
 	cd ../../../commands/ash && make sh
 
 service: ../../../servers/rs/service
-	install -s ../../../servers/rs/$@ $@
+	$(STRIP) ../../../servers/rs/$@ -o $@
 
 ../../../servers/rs/service: 
 	cd ../../../servers/rs && make service
@@ -94,10 +101,10 @@ service: ../../../servers/rs/service
 depend: 
 	$(MKDEP) $(CFLAGS) *.c > .depend
 
-proto.gen: proto.sh proto
-	sh -e proto.sh >proto.gen
+proto.gen: proto.sh $(PROTO_FILE)
+	sh -e proto.sh $(PROTO_FILE) >proto.gen
 
-../../../tools/mkfs:
+../../../tools/mkfs: ../../../tools/mkfs32.c ../../../tools/mkfs_dep.c
 	cd ../../../tools && make mkfs
 
 # Include generated dependencies.

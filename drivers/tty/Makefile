@@ -3,26 +3,29 @@ DRIVER = tty
 
 # directories
 u = /usr
-i = $u/include
-s = $i/sys
-m = $i/minix
-b = $i/ibm
-d = ..
+i = ../../include
+l = ../../lib/bin
+d = ../bin
 
 # programs, flags, etc.
 MAKE = exec make
-CC =	exec cc
-CFLAGS = -I$i
-LDFLAGS = -i
+CC = ${TOOLCHAIN_PREFIX}gcc
+MKDEP = $(CC) -M -MG
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(DRIVER).map -Wl,--cref -L$l
 LIBS = -lsys -lsysutil -ltimers
 
-OBJ = tty.o console.o vidcopy.o keyboard.o pty.o rs232.o 
+OBJ = tty.o pty.o rs232.o
+
+ifeq (${ARCH}, x86)
+OBJ += console.o vidcopy.o keyboard.o
+endif
 
 # build local binary 
-all build:	$(DRIVER)
-$(DRIVER):	$(OBJ) 
+all build:	$d/$(DRIVER)
+$d/$(DRIVER):	$(OBJ) 
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBS)
-	install -S 256w $(DRIVER)
+	#install -S 256w $(DRIVER)
 
 # install with other drivers
 install:	
@@ -37,9 +40,7 @@ clean:
 	rm -f $(DRIVER) *.o *.bak 
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c > .depend
+	$(MKDEP) $(CFLAGS) *.c > .depend
 
 # Include generated dependencies.
-include .depend
-
-
+-include .depend

@@ -56,10 +56,12 @@ static char sccsid[] = "@(#)mkinit.c	5.3 (Berkeley) 3/13/91";
  */
 
 
-#include <sys/cdefs.h>
-
+#include "sys/cdefs.h"
 #include <sys/types.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 
@@ -149,18 +151,23 @@ int amiddecls;				/* for formatting */
 
 
 void readfile(), doevent(), doinclude(), dodecl(), output();
-void addstr(), addchar(), writetext();
+void addstr(), writetext();
+void addchar(char c, struct text *text);
+int file_changed(void);
+int touch(char *file);
+int match(char *name, char *line);
+int gooddefine(char *line);
 
 #define equal(s1, s2)	(strcmp(s1, s2) == 0)
 
 FILE *ckfopen();
 char *savestr();
-void *ckmalloc __P((int));
-void error();
+void *ckmalloc(size_t);
+void error(char *msg);
 
-main(argc, argv)
-	char **argv;
-	{
+int
+main(int argc, char **argv)
+{
 	char **ap;
 	int fd;
 	char c;
@@ -223,10 +230,8 @@ readfile(fname)
 
 
 int
-match(name, line)
-	char *name;
-	char *line;
-	{
+match(char *name, char *line)
+{
 	register char *p, *q;
 
 	p = name, q = line;
@@ -241,9 +246,8 @@ match(name, line)
 
 
 int
-gooddefine(line)
-	char *line;
-	{
+gooddefine(char *line)
+{
 	register char *p;
 
 	if (! match("#define", line))
@@ -405,7 +409,7 @@ output() {
  */
 
 int
-file_changed() {
+file_changed(void) {
 	register FILE *f1, *f2;
 	register int c;
 
@@ -425,9 +429,8 @@ file_changed() {
  */
 
 int
-touch(file)
-	char *file;
-	{
+touch(char *file)
+{
 	int fd;
 	char c;
 
@@ -466,9 +469,8 @@ addstr(s, text)
 
 
 void
-addchar(c, text)
-	register struct text *text;
-	{
+addchar(char c, struct text *text)
+{
 	struct block *bp;
 
 	if (--text->nleft < 0) {
@@ -516,9 +518,8 @@ ckfopen(file, mode)
 }
 
 void *
-ckmalloc(nbytes) {
+ckmalloc(size_t nbytes) {
 	register char *p;
-	char *malloc();
 
 	if ((p = malloc(nbytes)) == NULL)
 		error("Out of space");
@@ -537,9 +538,8 @@ savestr(s)
 }
 
 void
-error(msg)
-	char *msg;
-	{
+error(char *msg)
+{
 	if (curfile != NULL)
 		fprintf(stderr, "%s:%d: ", curfile, linno);
 	fprintf(stderr, "%s\n", msg);

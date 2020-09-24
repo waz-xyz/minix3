@@ -2,10 +2,8 @@
 
 PUBLIC int sys_physcopy(
 	int src_proc,			/* source process */
-	int src_seg,			/* source memory segment */
 	vir_bytes src_vir,		/* source virtual address */
 	int dst_proc,			/* destination process */
-	int dst_seg,			/* destination memory segment */
 	vir_bytes dst_vir,		/* destination virtual address */
 	phys_bytes bytes		/* how many bytes */
 )
@@ -20,10 +18,8 @@ PUBLIC int sys_physcopy(
 	if (bytes == 0L)
 		return (OK);
 	copy_mess.CP_SRC_ENDPT = src_proc;
-	copy_mess.CP_SRC_SPACE = src_seg;
 	copy_mess.CP_SRC_ADDR = (long)src_vir;
 	copy_mess.CP_DST_ENDPT = dst_proc;
-	copy_mess.CP_DST_SPACE = dst_seg;
 	copy_mess.CP_DST_ADDR = (long)dst_vir;
 	copy_mess.CP_NR_BYTES = (long)bytes;
 	return _taskcall(SYSTASK, SYS_PHYSCOPY, &copy_mess);

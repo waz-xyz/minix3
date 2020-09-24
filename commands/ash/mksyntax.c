@@ -49,6 +49,8 @@ static char sccsid[] = "@(#)mksyntax.c	5.2 (Berkeley) 3/8/91";
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "parser.h"
 
 
@@ -350,7 +352,7 @@ digit_convert() {
 		for (p = digit ; *p && *p != i ; p++);
 		if (*p == '\0')
 			p = digit;
-		fprintf(cfile, "      %d,\n", p - digit);
+		fprintf(cfile, "      %ld,\n", p - digit);
 	}
 	fputs("};\n", cfile);
 }

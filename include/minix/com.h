@@ -41,8 +41,7 @@
 #define MEM_PROC_NR	4	/* memory driver (RAM disk, null, etc.) */
 #define LOG_PROC_NR	5	/* log device driver */
 #define TTY_PROC_NR	6	/* terminal (TTY) driver */
-//#define INIT_PROC_NR	7	/* init -- goes multiuser */
-#define	INIT_PROC_NR	4	/* for lite image */
+#define INIT_PROC_NR	7	/* init -- goes multiuser */
 
 /* Number of processes contained in the system image. */
 #define NR_BOOT_PROCS	(NR_TASKS + INIT_PROC_NR + 1)

@@ -2,11 +2,10 @@
 #define close	_close
 #include <unistd.h>
 
-PUBLIC int close(fd)
-int fd;
+PUBLIC int close(int fd)
 {
-  message m;
+	message m;
 
-  m.m1_i1 = fd;
-  return(_syscall(FS, CLOSE, &m));
+	m.m1_i1 = fd;
+	return _syscall(FS, CLOSE, &m);
 }

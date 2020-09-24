@@ -52,7 +52,6 @@ int rw_flag;			/* READING or WRITING */
   struct filp *wf;
   int block_size;
   int completed, r2 = OK;
-  phys_bytes p;
 
   /* PM loads segments by putting funny things in other bits of the
    * message, indicated by a high bit in fd.
@@ -79,7 +78,7 @@ int rw_flag;			/* READING or WRITING */
    * if not, copying will fail later.
    * do this after 0-check above because umap doesn't want to map 0 bytes.
    */
-  if ((r = sys_umap(usr, seg, (vir_bytes) m_in.buffer, m_in.nbytes, &p)) != OK) {
+  if ((r = sys_umap(usr, (vir_bytes) m_in.buffer, m_in.nbytes, NULL)) != OK) {
 	printf("FS: read_write: umap failed for process %d\n", usr);
 	return r;
   }

@@ -63,14 +63,19 @@ typedef unsigned short bitchunk_t; /* collection of bits in a bitmap */
 
 typedef unsigned char   u8_t;	   /* 8 bit type */
 typedef unsigned short u16_t;	   /* 16 bit type */
-typedef unsigned long  u32_t;	   /* 32 bit type */
+typedef unsigned       u32_t;	   /* 32 bit type */
 
 typedef char            i8_t;      /* 8 bit signed type */
 typedef short          i16_t;      /* 16 bit signed type */
 typedef long           i32_t;      /* 32 bit signed type */
 
+#ifdef __LP64__
+typedef unsigned long      u64_t;
+typedef          long      i64_t;
+#else
 typedef unsigned long long      u64_t;
 typedef          long long      i64_t;
+#endif
 
 /* The following types are needed because MINIX uses K&R style function
  * definitions (for maximum portability).  When a short, such as dev_t, is

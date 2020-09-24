@@ -61,7 +61,7 @@ PUBLIC void cstart(uint32_t kstack_phys_address,
 	strncpy(kinfo.version, OS_VERSION, sizeof(kinfo.version));
 	kinfo.version[sizeof(kinfo.version)-1] = '\0';
 	kinfo.proc_addr = (vir_bytes) proc;
-	kinfo.kmem_base = kinfo.code_base;
+	kinfo.kmem_base = KERNEL_PHYSICAL_BASE;
 	kinfo.kmem_size = (phys_bytes) (__end - kinfo.kmem_base);
 
 	/* Load average data initialization. */

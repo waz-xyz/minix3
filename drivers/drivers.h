@@ -1,9 +1,9 @@
 /* This is the master header for all device drivers. It includes some other
  * files and defines the principal constants.
  */
-#define _POSIX_SOURCE      1	/* tell headers to include POSIX stuff */
-#define _MINIX             1	/* tell headers to include MINIX stuff */
-#define _SYSTEM		   1	/* get negative error number in <errno.h> */
+#define _POSIX_SOURCE   1       /* tell headers to include POSIX stuff */
+#define _MINIX          1	/* tell headers to include MINIX stuff */
+#define _SYSTEM         1	/* get negative error number in <errno.h> */
 
 /* The following are so basic, all the *.c files get them automatically. */
 #include <minix/config.h>	/* MUST be first */
@@ -19,9 +19,14 @@
 #include <minix/sysutil.h>
 #include <minix/bitmap.h>
 
+#if (MACHINE == IBM_PC)
 #include <ibm/interrupt.h>	/* IRQ vectors and miscellaneous ports */
 #include <ibm/bios.h>		/* BIOS index numbers */
 #include <ibm/ports.h>		/* Well-known ports */
+#elif (MACHINE == ZYNQ)
+#include <arm/cpu.h>
+#include <arm/interrupt.h>
+#endif
 
 #include <string.h>
 #include <signal.h>

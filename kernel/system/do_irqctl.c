@@ -52,7 +52,10 @@ PUBLIC int do_irqctl(
 			if (irq_hooks[irq_hook_id].proc_nr_e != m_ptr->m_source)
 				return EPERM;
 			if (m_ptr->IRQ_REQUEST == IRQ_ENABLE)
-				enable_irq(&irq_hooks[irq_hook_id]);	
+			{
+				enable_irq(&irq_hooks[irq_hook_id]);
+				kprintf("do_irqctl: Enabling irq %d", irq_hook_id);
+			}
 			else 
 				disable_irq(&irq_hooks[irq_hook_id]);	
 			break;
@@ -104,7 +107,7 @@ PUBLIC int do_irqctl(
 			 * is returned on the notification message if a interrupt occurs.
 			 */
 			notify_id = (unsigned) m_ptr->IRQ_HOOK_ID;
-			if (notify_id > CHAR_BIT * sizeof(irq_id_t) - 1)
+			if (notify_id >= NR_IRQ_VECTORS)
 				return EINVAL;
 
 			/* Install the handler. */
@@ -169,7 +172,7 @@ PRIVATE int generic_handler(irq_hook_t *hook)
 	* sending the notification message, this bit map will be magically set
 	* as an argument. 
 	*/
-	priv(proc_addr(proc))->s_int_pending |= (1 << hook->notify_id);
+	priv(proc_addr(proc))->s_int_pending = hook->notify_id;
 
 	/* Build notification message and return. */
 	lock_notify(HARDWARE, hook->proc_nr_e);

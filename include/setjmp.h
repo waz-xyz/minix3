@@ -71,82 +71,32 @@
 #include <ansi.h>
 #endif
 
-#if !defined(__ACK__) && !defined(__BCC__) && !defined(__GNUC__)
-#define __ACK__
-#endif
-
-#ifdef __ACK__
-#define _SETJMP_SYMBOL 1
-#define _SETJMP_SAVES_REGS 0
-#endif
-#ifdef __BCC__
-#define _SETJMP_SYMBOL 0
-#define _SETJMP_SAVES_REGS 1
-#endif
-#ifdef __GNUC__
-#define _SETJMP_SYMBOL 1
-#define _SETJMP_SAVES_REGS 1
-#endif
-
 /* The jmp_buf data type.  Do not change the order of these fields -- some
  * C library code refers to these fields by name.  When _SETJMP_SAVES_REGS
  * is 1, the file <sys/jmp_buf.h> gives the usage of the sixteen registers.
  */
-typedef struct {
-  int __flags;			/* XXX - long might give better alignment */
-  long __mask;			/* must have size >= sizeof(sigset_t) */
-#if (_SETJMP_SAVES_REGS == 0)
-  _PROTOTYPE(void (*__pc),(void));	/* program counter */
-  void *__sp;			/* stack pointer */
-  void *__lb;			/* local base (ACKspeak for frame pointer) */
-#else
-  void *__regs[16];		/* size is machine dependent */
-#endif
+typedef unsigned long long __jmp_buf[32];
+
+typedef struct __jmp_buf_tag {
+	__jmp_buf __jb;
+	unsigned long __fl;
+	unsigned long __ss[128/sizeof(long)];
 } jmp_buf[1];
 
-#if (_SETJMP_SYMBOL == 1)
-
-_PROTOTYPE( int __setjmp, (jmp_buf _env, int _savemask)			);
-_PROTOTYPE( void longjmp, (jmp_buf _env, int _val)			);
-_PROTOTYPE(int sigjmp, (jmp_buf _jb, int _retval)			);
-
-#define setjmp(env)	__setjmp((env), 1)
+int setjmp (jmp_buf);
+_Noreturn void longjmp (jmp_buf, int);
 
 #ifdef _MINIX
-#define _setjmp(env)	__setjmp((env), 0)
-_PROTOTYPE(void _longjmp, (jmp_buf _env, int _val)			);
+int _setjmp (jmp_buf);
+_Noreturn void _longjmp (jmp_buf, int);
 #endif
 
 #ifdef _POSIX_SOURCE
 typedef jmp_buf sigjmp_buf;
-#ifdef __GNUC__
-#define siglongjmp longjmp
-#else
-_PROTOTYPE( void siglongjmp, (sigjmp_buf _env, int _val)		);
-#endif
-
-#define sigsetjmp(env, savemask) __setjmp((env), (savemask))
+int sigsetjmp (sigjmp_buf, int);
+_Noreturn void siglongjmp (sigjmp_buf, int);
 #endif /* _POSIX_SOURCE */
 
-#endif /* _SETJMP_SYMBOL == 1 */
-
-#if (_SETJMP_SYMBOL == 0)
-
-_PROTOTYPE( int setjmp, (jmp_buf _env)					);
-_PROTOTYPE( void longjmp, (jmp_buf _env, int _val)			);
-
-#ifdef _MINIX
-_PROTOTYPE( int _setjmp, (jmp_buf _env)					);
-_PROTOTYPE( void _longjmp, (jmp_buf _env, int _val)			);
-#endif
-
-#ifdef _POSIX_SOURCE
-#define sigjmp_buf jmp_buf
-_PROTOTYPE( void siglongjmp, (sigjmp_buf _env, int _val)		);
-/* XXX - the name _setjmp is no good - that's why ACK used __setjmp. */
-#define sigsetjmp(env, savemask) ((savemask) ? setjmp(env) : _setjmp(env))
-#endif /* _POSIX_SOURCE */
-
-#endif /* _SETJMP_SYMBOL == 0 */
+#define setjmp setjmp
 
 #endif /* _SETJMP_H */

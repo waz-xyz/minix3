@@ -133,8 +133,8 @@ SHELLPROC {
  * The eval commmand.
  */
 
-evalcmd(argc, argv)  
-	char **argv; 
+int
+evalcmd(int argc, char **argv)
 {
         char *p;
         char *concat;

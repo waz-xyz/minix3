@@ -11,6 +11,7 @@
 
 #include "bltin.h"
 #include "operators.h"
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -79,8 +80,9 @@ long atol();
 #endif
 
 
-
-main(argc, argv)  char **argv; {
+int
+main(int argc, char **argv)
+{
       char **ap;
       char *opname;
       char c;

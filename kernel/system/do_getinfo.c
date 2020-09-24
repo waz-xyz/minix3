@@ -74,8 +74,9 @@ PUBLIC int do_getinfo(
 			length = sizeof(struct proc *) * NR_SCHED_QUEUES;
 			src_addr = rdy_head;
 			okendpt(m_ptr->m_source, &proc_nr);
-			dst_addr = validate_user_ptr(proc_nr, m_ptr->I_VAL_PTR2, length, PTR_WRITABLE); 
-			if (src_addr == 0 || dst_addr == 0)
+			dst_addr = m_ptr->I_VAL_PTR2;
+			if (src_addr == NULL ||
+			    validate_user_ptr(proc_nr, (vir_bytes) m_ptr->I_VAL_PTR2, length, PTR_WRITABLE) == 0)
 				return EFAULT;
 			memcpy(dst_addr, src_addr, length);
 			/* fall through */
@@ -147,8 +148,9 @@ PUBLIC int do_getinfo(
 				return EINVAL;
 			if (!isokendpt(m_ptr->m_source, &proc_nr))
 				panic("bogus source", m_ptr->m_source);
-			dst_addr = validate_user_ptr(proc_nr, m_ptr->I_VAL_PTR2, length, PTR_WRITABLE); 
-			if (src_addr == 0 || dst_addr == 0)
+			dst_addr = m_ptr->I_VAL_PTR2;
+			if (src_addr == NULL ||
+			    validate_user_ptr(proc_nr, (vir_bytes)m_ptr->I_VAL_PTR2, length, PTR_WRITABLE) == 0)
 				return EFAULT;
 			memcpy(dst_addr, src_addr, length);
 			length = sizeof(bios_buf_vir);
@@ -170,8 +172,9 @@ PUBLIC int do_getinfo(
 		return E2BIG;
 	if (!isokendpt(m_ptr->m_source, &proc_nr)) 
 		panic("bogus source", m_ptr->m_source);
-	dst_addr = validate_user_ptr(proc_nr, m_ptr->I_VAL_PTR, length, PTR_WRITABLE); 
-	if (src_addr == 0 || dst_addr == 0)
+	dst_addr = m_ptr->I_VAL_PTR;
+	if (src_addr == NULL ||
+	    validate_user_ptr(proc_nr, (vir_bytes)m_ptr->I_VAL_PTR, length, PTR_WRITABLE) == 0)
 		return EFAULT;
 	memcpy(dst_addr, src_addr, length);
 	

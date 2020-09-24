@@ -27,14 +27,12 @@
 char *match_begin[10];
 short match_length[10];
 short number_parens;
-static int match();
-
+static int match(char *pattern, char *string);
 
 
 char *
-re_compile(pattern)
-	char *pattern;
-	{
+re_compile(char *pattern)
+{
 	register char *p;
 	register char c;
 	char *comp;
@@ -175,11 +173,9 @@ out:
 }
 
 
-
-re_match(pattern, string)
-	char *pattern;
-	char *string;
-	{
+int
+re_match(char *pattern, char *string)
+{
 	char **pp;
 
 	match_begin[0] = string;
@@ -190,11 +186,9 @@ re_match(pattern, string)
 
 
 
-static
-match(pattern, string)
-	char *pattern;
-	char *string;
-	{
+static int
+match(char *pattern, char *string)
+{
 	register char *p, *q;
 	int counting;
 	int low, high, count;

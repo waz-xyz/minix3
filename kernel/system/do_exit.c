@@ -93,8 +93,8 @@ PRIVATE void clear_proc(
 		priv(rc)->s_proc_nr = NONE;
 
 	/* Clean up virtual memory */
-	if (rc->p_misc_flags & MF_VM)
-		vm_map_default(rc);
+	// if (rc->p_misc_flags & MF_VM)
+	// 	vm_map_default(rc);
 }
 
 #endif /* USE_EXIT */

@@ -50,7 +50,10 @@ static char sccsid[] = "@(#)mknodes.c	5.1 (Berkeley) 3/7/91";
  */
 
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include "error.h"
 
 #define MAXTYPES 50		/* max number of node types */
 #define MAXFIELDS 20		/* max fields in a structure */
@@ -88,19 +91,29 @@ struct str str[MAXTYPES];	/* the structures */
 struct str *curstr;		/* current structure */
 
 
-FILE *infp = stdin;
+FILE *infp;
 char line[1024];
 int linno;
 char *linep;
 
+int readline(void);
+static void parsenode(void);
+static void parsefield(void);
+static void output(const char *file);
+static int nextfield(char *buf);
+static void skipbl(void);
+static void outsizes(FILE *cfile);
+static void outfunc(FILE *cfile, int calcsize);
+static void indent(int amount, FILE *fp);
 
 char *savestr();
+
 #define equal(s1, s2)	(strcmp(s1, s2) == 0)
 
+int main(int argc, char **argv)
+{
+	infp = stdin;
 
-main(argc, argv)
-	char **argv;
-	{
 	if (argc != 3)
 		error("usage: mknodes file\n");
 	if ((infp = fopen(argv[1], "r")) == NULL)
@@ -117,7 +130,7 @@ main(argc, argv)
 
 
 
-parsenode() {
+static void parsenode(void) {
 	char name[BUFLEN];
 	char tag[BUFLEN];
 	struct str *sp;
@@ -145,7 +158,7 @@ parsenode() {
 }
 
 
-parsefield() {
+static void parsefield(void) {
 	char name[BUFLEN];
 	char type[BUFLEN];
 	char decl[2 * BUFLEN];
@@ -196,8 +209,8 @@ char writer[] = "\
  */\n\
 \n";
 
-output(file)
-	char *file;
+static void
+output(const char *file)
 	{
 	FILE *hfile;
 	FILE *cfile;
@@ -257,10 +270,9 @@ output(file)
 }
 
 
-
-outsizes(cfile)
-	FILE *cfile;
-	{
+static void
+outsizes(FILE *cfile)
+{
 	int i;
 
 	fprintf(cfile, "static const short nodesize[%d] = {\n", ntypes);
@@ -270,10 +282,9 @@ outsizes(cfile)
 	fprintf(cfile, "};\n");
 }
 
-
-outfunc(cfile, calcsize)
-	FILE *cfile;
-	{
+static void
+outfunc(FILE *cfile, int calcsize)
+{
 	struct str *sp;
 	struct field *fp;
 	int i;
@@ -350,10 +361,9 @@ outfunc(cfile, calcsize)
 		fputs("      new->type = n->type;\n", cfile);
 }
 
-
-indent(amount, fp)
-	FILE *fp;
-	{
+static void
+indent(int amount, FILE *fp)
+{
 	while (amount >= 8) {
 		putc('\t', fp);
 		amount -= 8;
@@ -364,10 +374,9 @@ indent(amount, fp)
 }
 
 
-int
-nextfield(buf)
-	char *buf;
-	{
+static int
+nextfield(char *buf)
+{
 	register char *p, *q;
 
 	p = linep;
@@ -381,15 +390,15 @@ nextfield(buf)
 	return (q > buf);
 }
 
-
-skipbl() {
+static void
+skipbl(void) {
 	while (*linep == ' ' || *linep == '\t')
 		linep++;
 }
 
 
 int
-readline() {
+readline(void) {
 	register char *p;
 
 	if (fgets(line, 1024, infp) == NULL)
@@ -406,12 +415,14 @@ readline() {
 }
 
 
+void error(char *fmt, ...)
+{
+	va_list args;
 
-error(msg, a1, a2, a3, a4, a5, a6)
-	char *msg;
-	{
 	fprintf(stderr, "line %d: ", linno);
-	fprintf(stderr, msg, a1, a2, a3, a4, a5, a6);
+	va_start (args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
 	putc('\n', stderr);
 	exit(2);
 }
@@ -419,11 +430,9 @@ error(msg, a1, a2, a3, a4, a5, a6)
 
 
 char *
-savestr(s)
-	char *s;
-	{
+savestr(char *s)
+{
 	register char *p;
-	char *malloc();
 
 	if ((p = malloc(strlen(s) + 1)) == NULL)
 		error("Out of space");

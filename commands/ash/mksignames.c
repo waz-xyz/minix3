@@ -49,6 +49,8 @@ static char sccsid[] = "@(#)mksignames.c	5.1 (Berkeley) 3/7/91";
  */
 #include <sys/types.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 
 
@@ -158,8 +160,9 @@ char writer[] = "\
 
 
 
-main(argc, argv)  char **argv; {
-	FILE *cfile, *hfile;	
+int main(int argc, char **argv)
+{
+	FILE *cfile, *hfile;
 	struct sig *sigp;
 	int maxsig;
 	int i;

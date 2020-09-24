@@ -137,7 +137,7 @@ PRIVATE void get_work(void)
 
 	for (;;)
 	{
-		/* Normal case.  No one to revive. */
+		/* Normal case. No one to revive. */
 		if (receive(ANY, &m_in) != OK)
 			panic(__FILE__, "fs receive error", NO_NUM);
 		who_e = m_in.m_source;

@@ -14,7 +14,7 @@ typedef unsigned long phys_bytes;	/* physical addr/length in bytes */
 typedef unsigned int phys_clicks;	/* physical addr/length in clicks */
 
 #if (_MINIX_CHIP == _CHIP_INTEL)
-typedef unsigned int vir_bytes;		/* virtual addresses and lengths in bytes */
+typedef unsigned vir_bytes;		/* virtual addresses and lengths in bytes */
 #endif
 
 #if (_MINIX_CHIP == _CHIP_M68000)

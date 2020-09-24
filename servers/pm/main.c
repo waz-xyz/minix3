@@ -30,6 +30,7 @@
 FORWARD void get_work(void);
 FORWARD void pm_init(void);
 FORWARD int get_nice_value(int queue);
+FORWARD const char *get_name_from_call_nr(int call_nr);
 
 /*===========================================================================*
  *				main					     *
@@ -71,7 +72,7 @@ PUBLIC int main(void)
 		}
 		else
 		{
-			printf("pm.c:main: Calling call_vec[%d]\n", call_nr);
+			printf("pm.c:main: Executing %s system call\n", get_name_from_call_nr(call_nr));
 			result = (*call_vec[call_nr])();
 		}
 
@@ -318,4 +319,102 @@ PRIVATE int get_nice_value(
 	if (nice_val < PRIO_MIN)
 		nice_val = PRIO_MIN;	/* shouldn't happen */
 	return nice_val;
+}
+
+#define	declare_name_table_item(name)	[name] = #name,
+
+static const char *get_name_from_call_nr(int call_nr)
+{
+	static const char *table[] =
+	{
+		declare_name_table_item(EXIT)
+		declare_name_table_item(FORK)
+		declare_name_table_item(READ)
+		declare_name_table_item(WRITE)
+		declare_name_table_item(OPEN)
+		declare_name_table_item(CLOSE)
+		declare_name_table_item(WAIT)
+		declare_name_table_item(CREAT)
+		declare_name_table_item(LINK)
+		declare_name_table_item(UNLINK)
+		declare_name_table_item(WAITPID)
+		declare_name_table_item(CHDIR)
+		declare_name_table_item(TIME)
+		declare_name_table_item(MKNOD)
+		declare_name_table_item(CHMOD)
+		declare_name_table_item(CHOWN)
+		declare_name_table_item(BRK)
+		declare_name_table_item(STAT)
+		declare_name_table_item(LSEEK)
+		declare_name_table_item(GETPID)
+		declare_name_table_item(MOUNT)
+		declare_name_table_item(UMOUNT)
+		declare_name_table_item(SETUID)
+		declare_name_table_item(GETUID)
+		declare_name_table_item(STIME)
+		declare_name_table_item(PTRACE)
+		declare_name_table_item(ALARM)
+		declare_name_table_item(FSTAT)
+		declare_name_table_item(PAUSE)
+		declare_name_table_item(UTIME)
+		declare_name_table_item(ACCESS)
+		declare_name_table_item(SYNC)
+		declare_name_table_item(KILL)
+		declare_name_table_item(RENAME)
+		declare_name_table_item(MKDIR)
+		declare_name_table_item(RMDIR)
+		declare_name_table_item(DUP)
+		declare_name_table_item(PIPE)
+		declare_name_table_item(TIMES)
+		declare_name_table_item(SYMLINK)
+		declare_name_table_item(SETGID)
+		declare_name_table_item(GETGID)
+		declare_name_table_item(SIGNAL)
+		declare_name_table_item(RDLNK)
+		declare_name_table_item(LSTAT)
+		declare_name_table_item(IOCTL)
+		declare_name_table_item(FCNTL)
+		declare_name_table_item(EXEC)
+		declare_name_table_item(UMASK)
+		declare_name_table_item(CHROOT)
+		declare_name_table_item(SETSID)
+		declare_name_table_item(GETPGRP)
+		declare_name_table_item(UNPAUSE)
+		declare_name_table_item(REVIVE)
+		declare_name_table_item(TASK_REPLY)
+		declare_name_table_item(SIGACTION)
+		declare_name_table_item(SIGSUSPEND)
+		declare_name_table_item(SIGPENDING)
+		declare_name_table_item(SIGPROCMASK)
+		declare_name_table_item(SIGRETURN)
+		declare_name_table_item(REBOOT)
+		declare_name_table_item(SVRCTL)
+		declare_name_table_item(PROCSTAT)
+		declare_name_table_item(GETSYSINFO)
+		declare_name_table_item(GETPROCNR)
+		declare_name_table_item(DEVCTL)
+		declare_name_table_item(FSTATFS)
+		declare_name_table_item(ALLOCMEM)
+		declare_name_table_item(FREEMEM)
+		declare_name_table_item(SELECT)
+		declare_name_table_item(FCHDIR)
+		declare_name_table_item(FSYNC)
+		declare_name_table_item(GETPRIORITY)
+		declare_name_table_item(SETPRIORITY)
+		declare_name_table_item(GETTIMEOFDAY)
+		declare_name_table_item(SETEUID)
+		declare_name_table_item(SETEGID)
+		declare_name_table_item(TRUNCATE)
+		declare_name_table_item(FTRUNCATE)
+	};
+
+	if (call_nr < 0 || call_nr >= NCALLS)
+	{
+		return "(unknown)";
+	}
+	else
+	{
+		const char *s = table[call_nr];
+		return s != NULL ? s : "(unknown)";
+	}
 }

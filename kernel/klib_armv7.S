@@ -68,7 +68,7 @@ halt_cpu:
 idle_task:
 	cpsie	if
 	wfe
-	bx	lr
+	b	idle_task
 
 	.arm
 	.align	2

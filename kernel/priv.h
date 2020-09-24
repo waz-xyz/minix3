@@ -36,8 +36,8 @@ struct priv {
   long s_call_mask;		/* allowed kernel calls */
 
   sys_map_t s_notify_pending;  	/* bit map with pending notifications */
-  irq_id_t s_int_pending;	/* pending hardware interrupts */
-  sigset_t s_sig_pending;	/* pending signals */
+  irq_id_t s_int_pending;       /* pending hardware interrupt */
+  sigset_t s_sig_pending;       /* pending signals */
 
   timer_t s_alarm_timer;	/* synchronous alarm timer */ 
   struct far_mem s_farmem[NR_REMOTE_SEGS];  /* remote memory map */

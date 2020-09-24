@@ -6,20 +6,21 @@ CFLAGS=-O -D_MINIX -D_POSIX_SOURCE
 
 # Specify the programs that are part of the system image.
 PROGRAMS=	../kernel/kernel \
-	../servers/pm/pm \
-	../servers/fs/fs \
-	../servers/rs/rs \
-	../servers/ds/ds \
-	../drivers/tty/tty \
-	../drivers/memory/memory \
-	../drivers/log/log \
-	../servers/init/init
+	../servers/bin/pm \
+	../servers/bin/fs \
+	../servers/bin/rs \
+	../servers/bin/ds \
+	../drivers/bin/tty \
+	../drivers/bin/memory \
+	../drivers/bin/log \
+	../servers/bin/init
 
 PROGRAMS_LITE=	../kernel/kernel \
 	../servers/bin/pm \
 	../servers/bin/fs \
 	../servers/bin/rs \
 	../servers/bin/ds \
+	../drivers/bin/tty \
 	../servers/bin/init
 
 usage:	
@@ -53,11 +54,12 @@ fresh:
 
 all: services image
 
-image:  includes mkimage
+image:  mkimage $(PROGRAMS)
 	cd ../kernel && $(MAKE) 
 	cd ../servers && $(MAKE) image
 	cd ../drivers && $(MAKE) image
 	./mkimage -image $@ $(PROGRAMS)
+	cp $@ /mnt/c/TFTP-Root/image
 
 image_small:  includes mkimage
 	cd ../kernel && $(MAKE) 
@@ -91,8 +93,11 @@ libraries: includes
 mkimage: mkimage.c
 	$(CC) -idirafter ../include -o $@ $<
 
-mkfs: mkfs.c
-	$(CC) -g -D_MINIX -D_POSIX_SOURCE -idirafter ../include -o $@ $<
+# mkfs: mkfs.c
+# 	$(CC) -g -D_MINIX -D_POSIX_SOURCE -idirafter ../include -o $@ $<
+
+mkfs: mkfs32.c mkfs_dep.o
+	$(CC) -g -D_MINIX -D_POSIX_SOURCE -I ../include -o $@ $< mkfs_dep.o
 
 # make bootable and place system images
 bootable:

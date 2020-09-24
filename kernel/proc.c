@@ -166,7 +166,7 @@ PUBLIC int sys_call(
 	if (function & CHECK_PTR)
 	{
 		if (isuserp(caller_ptr) &&
-		    validate_user_ptr(proc_nr(caller_ptr), m_ptr, sizeof(*m_ptr), PTR_WRITABLE) == NULL)
+		    validate_user_ptr(proc_nr(caller_ptr), (vir_bytes)m_ptr, sizeof(*m_ptr), PTR_WRITABLE) == 0)
 		{
 #if DEBUG_ENABLE_IPC_WARNINGS
 			kprintf("sys_call: invalid message pointer, trap %d, caller %d\n",
@@ -219,7 +219,10 @@ PUBLIC int sys_call(
 		/* A flag is set so that notifications cannot interrupt SENDREC. */
 		caller_ptr->p_misc_flags |= REPLY_PENDING;
 		/* fall through */
-	case SEND:			
+	case SEND:
+		kprintf("sys_call: Doing %s from %s to %s\n",
+			(function == SENDREC) ? "SENDREC" : "SEND", caller_ptr->p_name,
+			proc_addr(_ENDPOINT_P(src_dst_e))->p_name);
 		result = mini_send(caller_ptr, src_dst_e, m_ptr, flags);
 		if (function == SEND || result != OK)
 		{	
@@ -227,17 +230,35 @@ PUBLIC int sys_call(
 		}					/* fall through for SENDREC */
 	case RECEIVE:
 		if (function == RECEIVE)
+		{
+			if (src_dst_e == ANY)
+			{
+				kprintf("sys_call: Doing RECEIVE from ANY to %s\n",
+					caller_ptr->p_name);
+			}
+			else
+			{
+				kprintf("sys_call: Doing RECEIVE from %s to %s\n",
+					proc_addr(_ENDPOINT_P(src_dst_e))->p_name,
+					caller_ptr->p_name);
+			}
 			caller_ptr->p_misc_flags &= ~REPLY_PENDING;
+		}
 		result = mini_receive(caller_ptr, src_dst_e, m_ptr, flags);
 		break;
 	case NOTIFY:
+		kprintf("sys_call: Doing NOTIFY from %s to %s\n",
+			caller_ptr->p_name,
+			proc_addr(_ENDPOINT_P(src_dst))->p_name);
 		result = mini_notify(caller_ptr, src_dst);
 		break;
 	case ECHO:
+		kprintf("sys_call: %s is doing ECHO\n", caller_ptr->p_name);
 		CopyMess(caller_ptr->p_nr, caller_ptr, m_ptr, caller_ptr, m_ptr);
 		result = OK;
 		break;
 	default:
+		kprintf("sys_call: illegal system call from %s\n", caller_ptr->p_name);
 		result = EBADCALL;			/* illegal system call */
 	}
 

@@ -55,6 +55,7 @@ PUBLIC int (*call_vec[NR_SYS_CALLS])(message *m_ptr);
 	call_vec[(call_nr-KERNEL_CALL)] = (handler)  
 
 FORWARD void initialize(void);
+FORWARD const char *get_name_from_call_nr(int call_nr);
 
 /*===========================================================================*
  *				sys_task				     *
@@ -77,9 +78,9 @@ PUBLIC void sys_task(void)
 		receive(ANY, &m);			
 		call_nr = (unsigned) m.m_type - KERNEL_CALL;
 		who_e = m.m_source;
-		kprintf("sys_task: Received call_nr = %d from %d\n", call_nr, who_e);
 		okendpt(who_e, &who_p);
 		caller_ptr = proc_addr(who_p);
+		kprintf("sys_task: Received %s from %s\n", get_name_from_call_nr(call_nr), caller_ptr->p_name);
 
 		/* See if the caller made a valid request and try to handle it. */
 		if (! (priv(caller_ptr)->s_call_mask & (1<<call_nr)))
@@ -524,5 +525,57 @@ PUBLIC void clear_endpoint(
 			if (rp->p_rts_flags == 0)
 				lock_enqueue(rp);	/* let process run again */
 		} 
+	}
+}
+
+static const char *get_name_from_call_nr(int call_nr)
+{
+	static const char *table[] =
+	{
+		[0] = "SYS_FORK",/* sys_fork() */
+		[1] = "SYS_EXEC",/* sys_exec() */
+		[2] = "SYS_EXIT",/* sys_exit() */
+		[3] = "SYS_NICE",/* sys_nice() */
+		[4] = "SYS_PRIVCTL",/* sys_privctl() */
+		[5] = "SYS_TRACE",/* sys_trace() */
+		[6] = "SYS_KILL",/* sys_kill() */
+
+		[7] = "SYS_GETKSIG",/* sys_getsig() */
+		[8] = "SYS_ENDKSIG",/* sys_endsig() */
+		[9] = "SYS_SIGSEND",/* sys_sigsend() */
+		[10] = "SYS_SIGRETURN",/* sys_sigreturn() */
+
+		[11] = "SYS_NEWMAP",/* sys_newmap() */
+		[12] = "SYS_SEGCTL",/* sys_segctl() */
+		[13] = "SYS_MEMSET",/* sys_memset() */
+
+		[14] = "SYS_UMAP",/* sys_umap() */
+		[15] = "SYS_VIRCOPY",/* sys_vircopy() */
+		[16] = "SYS_PHYSCOPY",/* sys_physcopy() */
+		[17] = "SYS_VIRVCOPY",/* sys_virvcopy() */
+		[18] = "SYS_PHYSVCOPY",/* sys_physvcopy() */
+
+		[19] = "SYS_IRQCTL",/* sys_irqctl() */
+		[20] = "SYS_INT86",/* sys_int86() */
+		[21] = "SYS_DEVIO",/* sys_devio() */
+		[22] = "SYS_SDEVIO",/* sys_sdevio() */
+		[23] = "SYS_VDEVIO",/* sys_vdevio() */
+
+		[24] = "SYS_SETALARM",/* sys_setalarm() */
+		[25] = "SYS_TIMES",/* sys_times() */
+		[26] = "SYS_GETINFO",/* sys_getinfo() */
+		[27] = "SYS_ABORT",/* sys_abort() */
+		[28] = "SYS_IOPENABLE",/* sys_enable_iop() */
+		[29] = "SYS_VM_SETBUF",/* sys_vm_setbuf() */
+		[30] = "SYS_VM_MAP"/* sys_vm_map() */
+	};
+
+	if (call_nr < 0 || call_nr >= NR_SYS_CALLS)
+	{
+		return "(unknown)";
+	}
+	else
+	{
+		return table[call_nr];
 	}
 }

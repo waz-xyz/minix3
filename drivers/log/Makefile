@@ -4,42 +4,40 @@ DRIVER = log
 # directories
 u = /usr
 i = ../../include
-s = $i/sys
-m = $i/minix
-d = ..
+l = ../../lib/bin
+d = ../bin
 
 # programs, flags, etc.
 MAKE = exec make
-CC =	exec cc
-CFLAGS = -I$i
-LDFLAGS = -i
+CC = ${TOOLCHAIN_PREFIX}gcc
+MKDEP = $(CC) -M -MG
+CFLAGS = -mcpu=cortex-a9 -ffreestanding -nostdinc -fno-plt -fno-pie -I$i
+LDFLAGS = -static -nostartfiles -Wl,--build-id=none -Wl,-Map=$d/$(DRIVER).map -Wl,--cref -L$l
 LIBS = -lsys -lsysutil
 
 OBJ = log.o diag.o kputc.o
-LIBDRIVER = $d/libdriver/driver.o
-
+LIBDRIVER = $d/driver.o
 
 # build local binary
-all build:	$(DRIVER)
-$(DRIVER):	$(OBJ) $(LIBDRIVER)
+all build:	$d/$(DRIVER)
+$d/$(DRIVER):	$(OBJ) $(LIBDRIVER)
 	$(CC) -o $@ $(LDFLAGS) $(OBJ) $(LIBDRIVER) $(LIBS)
-	install -S 4kb $(DRIVER)
+	#install -S 4kb $(DRIVER)
 
 $(LIBDRIVER): 
-	cd $d/libdriver && $(MAKE) 
+	cd ../libdriver && $(MAKE) 
 
 # install with other drivers
-install:	$(DRIVER)
+install:	$d/$(DRIVER)
 	install -o root -cs $? /sbin/$(DRIVER) 
 
 # clean up local files
 clean:
-	rm -f $(DRIVER) *.o *.bak 
+	rm -f $d/$(DRIVER) *.o *.bak 
 
 
 depend: 
-	/usr/bin/mkdep "$(CC) -E $(CPPFLAGS)" *.c ../libdriver/*.c > .depend
+	$(MKDEP) $(CFLAGS) *.c ../libdriver/*.c > .depend
 
 # Include generated dependencies.
-include .depend
-
+-include .depend

@@ -50,13 +50,12 @@ PUBLIC int do_sigaction(void)
 	struct sigaction svec;
 	struct sigaction *svp;
 
-	printf("!!!! Starting do_sigaction\n");
 	if (m_in.sig_nr == SIGKILL)
 		return OK;
 	if (m_in.sig_nr < 1 || m_in.sig_nr > _NSIG)
 		return EINVAL;
 	svp = &mp->mp_sigact[m_in.sig_nr];
-LED_CONTROL = LED_GREEN;
+	
 	if ((struct sigaction *)m_in.sig_osa != NULL)
 	{
 		r = sys_vircopy(PM_PROC_NR, (vir_bytes)svp,

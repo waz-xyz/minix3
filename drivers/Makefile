@@ -38,9 +38,9 @@ all install depend clean:
 image:
 	cd ./libdriver && $(MAKE) build
 	cd ./tty && $(MAKE) build
-	cd ./at_wini && $(MAKE) build
-	cd ./floppy && $(MAKE) build
-	cd ./bios_wini && $(MAKE) build
+	# cd ./at_wini && $(MAKE) build
+	# cd ./floppy && $(MAKE) build
+	# cd ./bios_wini && $(MAKE) build
 	cd ./log && $(MAKE) build
-	cd ./pci && $(MAKE) build
+	# cd ./pci && $(MAKE) build
 	cd ./memory && $(MAKE) build	# Must be last for ramdisk image

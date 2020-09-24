@@ -9,7 +9,9 @@ libc_FILES=" \
 	__sigreturn.s \
 	_ipc.s \
 	_ipcnew.s \
-	brksize.s"
+	brksize.s \
+	longjmp.s \
+	setjmp.s "
 	
 #STARTFILES="\
 #	crt1.s"

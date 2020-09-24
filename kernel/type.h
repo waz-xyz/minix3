@@ -139,7 +139,7 @@ struct stackframe_s {		/* proc_ptr points here */
 #endif
 
 typedef unsigned long irq_policy_t;	
-typedef unsigned long irq_id_t;	
+typedef unsigned long irq_id_t;
 
 typedef struct irq_hook {
 	struct irq_hook *next;			/* next hook in chain */

@@ -196,10 +196,13 @@ void init_mmu_module(void);
 void *phys2vir(uint32_t address);
 void release_asid(uint32_t);
 uint32_t vir2phys(void *address);
-void *validate_user_ptr(int proc_nr, void *ptr, size_t len, int type);
+phys_bytes validate_user_ptr(int proc_nr, vir_bytes offset, size_t len, int type);
 void phys_memset(phys_bytes source, unsigned long pattern, phys_bytes count);
 void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count);
 int virtual_copy(struct vir_addr *src, struct vir_addr *dst, vir_bytes bytes);
+int map_physical_range(struct proc *pp, uint32_t base, uint32_t size, uint32_t *offset);
+int unmap_physical_range(struct proc *pp, uint32_t base, uint32_t size, uint32_t offset);
+void print_mmu_tables(struct proc *pp);
 
 /* mpx*.s */
 void idle_task(void);
