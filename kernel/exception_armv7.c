@@ -84,7 +84,7 @@ PUBLIC void exception(unsigned exception_type)
 				return;
 			case IRQ_EXCEPTION:
 			case FAST_IRQ_EXCEPTION:
-				kprintf("exception: An interrupt has arrived\n");
+				// kprintf("exception: An interrupt has arrived\n");
 				generic_interrupt_handler();
 				return;
 			default:

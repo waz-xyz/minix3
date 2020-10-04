@@ -195,7 +195,6 @@ PRIVATE int clock_handler(irq_hook_t *hook)
 {
 	register unsigned ticks;
 
-	kprintf("\nTick tick tick\n");
 	/* Get number of ticks and update realtime. */
 	ticks = lost_ticks + 1;
 	lost_ticks = 0;

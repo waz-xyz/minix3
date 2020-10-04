@@ -55,18 +55,18 @@ PUBLIC int do_fork(void)
 	/* Determine how much memory to allocate.  Only the data and stack need to
 	 * be copied, because the text segment is either shared or of zero length.
 	 */
-	prog_clicks = (phys_clicks)rmp->mp_seg[S].mem_len;
-	prog_clicks += (rmp->mp_seg[S].mem_vir - rmp->mp_seg[D].mem_vir);
-	prog_bytes = (phys_bytes)prog_clicks << CLICK_SHIFT;
-	if ((child_base = alloc_mem(prog_clicks)) == NO_MEM)
-		return ENOMEM;
+	// prog_clicks = (phys_clicks)rmp->mp_seg[S].mem_len;
+	// prog_clicks += (rmp->mp_seg[S].mem_vir - rmp->mp_seg[D].mem_vir);
+	// prog_bytes = (phys_bytes)prog_clicks << CLICK_SHIFT;
+	// if ((child_base = alloc_mem(prog_clicks)) == NO_MEM)
+	// 	return ENOMEM;
 
 	/* Create a copy of the parent's core image for the child. */
-	child_abs = (phys_bytes)child_base << CLICK_SHIFT;
-	parent_abs = (phys_bytes)rmp->mp_seg[D].mem_phys << CLICK_SHIFT;
-	s = sys_abscopy(parent_abs, child_abs, prog_bytes);
-	if (s < 0)
-		panic(__FILE__, "do_fork can't copy", s);
+	// child_abs = (phys_bytes)child_base << CLICK_SHIFT;
+	// parent_abs = (phys_bytes)rmp->mp_seg[D].mem_phys << CLICK_SHIFT;
+	// s = sys_abscopy(parent_abs, child_abs, prog_bytes);
+	// if (s < 0)
+	// 	panic(__FILE__, "do_fork can't copy", s);
 
 	/* Find a slot in 'mproc' for the child process. A slot must exist. */
 	do
@@ -93,11 +93,11 @@ PUBLIC int do_fork(void)
 	/* A separate I&D child keeps the parents text segment.  The data and stack
 	 * segments must refer to the new copy.
 	 */
-	if ((rmc->mp_flags & SEPARATE) == 0)
-		rmc->mp_seg[T].mem_phys = child_base;
-	rmc->mp_seg[D].mem_phys = child_base;
-	rmc->mp_seg[S].mem_phys = rmc->mp_seg[D].mem_phys +
-				  (rmp->mp_seg[S].mem_vir - rmp->mp_seg[D].mem_vir);
+	// if ((rmc->mp_flags & SEPARATE) == 0)
+	// 	rmc->mp_seg[T].mem_phys = child_base;
+	// rmc->mp_seg[D].mem_phys = child_base;
+	// rmc->mp_seg[S].mem_phys = rmc->mp_seg[D].mem_phys +
+	// 			  (rmp->mp_seg[S].mem_vir - rmp->mp_seg[D].mem_vir);
 	rmc->mp_exitstatus = 0;
 	rmc->mp_sigstatus = 0;
 
@@ -110,6 +110,7 @@ PUBLIC int do_fork(void)
 	{
 		panic(__FILE__, "do_fork can't sys_fork", r);
 	}
+	printf("do_fork: sys_fork() complete\n");
 	tell_fs(FORK, who_e, rmc->mp_endpoint, rmc->mp_pid);
 
 	/* Report child's memory map to kernel. */

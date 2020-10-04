@@ -18,7 +18,8 @@
 #define AP_PL0_RW			3
 #define AP_PL0_RO			2
 
-#define	DOMAIN0				0
+#define	DOMAIN_KERNEL			0
+#define DOMAIN_USER			15
 
 #if (MACHINE == ZYNQ)
 #define	CPU_CLK_FREQ_HZ			650000000

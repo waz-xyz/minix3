@@ -12,5 +12,6 @@ tools/mkimage
 tools/image
 tools/image_small
 tools/image_lite
+drivers/bin/*
 drivers/memory/ramdisk/bintoc
 drivers/memory/ramdisk/proto.gen

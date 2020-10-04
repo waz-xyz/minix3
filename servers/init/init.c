@@ -55,8 +55,8 @@ int gothup = 0;	 /* flag, showing signal 1 was received */
 int gotabrt = 0; /* flag, showing signal 6 was received */
 int spawn = 1;	 /* flag, spawn processes only when set */
 
-void tell(int fd, char *s);
-void report(int fd, char *label);
+void tell(int fd, const char *s);
+void report(int fd, const char *label);
 void wtmp(int type, int linenr, char *line, pid_t pid);
 void startup(int linenr, struct ttyent *ttyp);
 int execute(char **cmd);
@@ -99,11 +99,14 @@ int main(void)
 	sigaction(SIGABRT, &sa, NULL);
 
 	/* Execute the /etc/rc file. */
+	printf("init.c:main: I'm about to fork\n");
 	if ((pid = fork()) != 0)
 	{
+		printf("init.c:main: I'm the parent\n");
 		/* Parent just waits. */
 		while (wait(NULL) != pid)
 		{
+			printf("init.c:main: I'm the parent and I'm waiting\n");
 			if (gotabrt) reboot(RBT_HALT);
 		}
 	}
@@ -116,6 +119,7 @@ int main(void)
 		static char *rc_command[] = {"sh", "/etc/rc", NULL, NULL, NULL};
 		char **rcp = rc_command + 2;
 
+		printf("init.c:main: I'm the child\n");
 		/* Get the boot options from the boot environment. */
 		sysgetenv.key = "bootopts";
 		sysgetenv.keylen = 8 + 1;
@@ -127,8 +131,11 @@ int main(void)
 
 		execute(rc_command);
 		report(2, "sh /etc/rc");
+		printf("init.c:main: The impossible happened\n");
 		_exit(1); /* impossible, we hope */
 	}
+
+	printf("init.c:main: This is not supposed to happen\n");
 
 	/* Clear /etc/utmp if it exists. */
 	if ((fd = open(PATH_UTMP, O_WRONLY | O_TRUNC)) >= 0)
@@ -365,7 +372,7 @@ void startup(int linenr, struct ttyent *ttyp)
 int execute(char **cmd)
 {
 	/* Execute a command with a path search along /sbin:/bin:/usr/sbin:/usr/bin.
-   */
+	 */
 	static char *nullenv[] = {NULL};
 	char command[128];
 	char *path[] = {"/sbin", "/bin", "/usr/sbin", "/usr/bin"};
@@ -395,10 +402,12 @@ int execute(char **cmd)
 	return -1;
 }
 
-void wtmp(type, linenr, line, pid) int type; /* type of entry */
-int linenr;				     /* line number in ttytab */
-char *line;				     /* tty name (only good on login) */
-pid_t pid;				     /* pid of process */
+void wtmp(
+	int type,		/* type of entry */
+	int linenr,		/* line number in ttytab */
+	char *line,		/* tty name (only good on login) */
+	pid_t pid		/* pid of process */
+)
 {
 	/* Log an event into the UTMP and WTMP files. */
 
@@ -424,8 +433,8 @@ pid_t pid;				     /* pid of process */
 
 	case DEAD_PROCESS:
 		/* A logout.  Use the current utmp entry, but make sure it is a
-	 * user process exiting, and not getty or login giving up.
-	 */
+		 * user process exiting, and not getty or login giving up.
+		 */
 		if ((fd = open(PATH_UTMP, O_RDONLY)) < 0)
 		{
 			if (errno != ENOENT)
@@ -481,14 +490,12 @@ pid_t pid;				     /* pid of process */
 	}
 }
 
-void tell(fd, s) int fd;
-char *s;
+void tell(int fd, const char *s)
 {
 	write(fd, s, strlen(s));
 }
 
-void report(fd, label) int fd;
-char *label;
+void report(int fd, const char *label)
 {
 	int err = errno;
 

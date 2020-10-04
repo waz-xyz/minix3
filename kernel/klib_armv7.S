@@ -122,6 +122,9 @@ read_system_register:
 	beq	0f
 	cmp	r0, READ_DFAR
 	mrceq	p15, 0, r0, c6, c0, 0
+	beq	0f
+	cmp	r0, READ_DACR
+	mrceq	p15, 0, r0, c3, c0, 0
 	movne	r0, 0
 0:	bx	lr
 

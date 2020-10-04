@@ -19,6 +19,7 @@
 #define	GET_PAGE_ENTRY_BASE(e)		((e) & ~SMALL_PAGE_ALIGN)
 #define	IS_READABLE_SMALL_PAGE(e)	(((e) & 0x222U) == 0x22U)
 #define	IS_WRITABLE_SMALL_PAGE(e)	(((e) & 0x232U) == 0x32U)
+#define	IS_EXECUTABLE_SMALL_PAGE(e)	(((e) & 0x223U) == 0x22U)
 
 #define	ATTR_MEM_NON_CACHEABLE		0x10U
 #define	ATTR_MEM_WB_WA			0x15U
@@ -51,13 +52,13 @@ static void print_page_table(uint32_t *table);
 static void SetExceptionVectorTable(void);
 static void SetPageTableDescriptor(uint32_t *tt, int index, uint32_t base, int domain, int ns);
 static void SetSectionDescriptor(uint32_t *tt, int index, uint32_t base, int domain, int ap, int tex, int c, int b, int nG, int s);
-static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int mem_attr, int nG);
-static void SetLongPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG, int s);
+static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int mem_attr, int nG, int xn);
+static void SetLargePageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG, int s, int xn);
 static void MapSystemRegisters(void);
 static void MarkPhysicalRangeAsUsedInSection(int section_inx, int first_page, int last_page);
 static void MarkPhysicalRangeAsUsed(uint32_t start, uint32_t end);
 static void InitPhysicalMemoryTracking(void);
-static void *GetNextFreeUserTTLocation(uint32_t *phys_addr);
+static void *GetNextFreeSystemTTLocation(uint32_t *phys_addr);
 static uint32_t GetNextFreePageTableLocation(void);
 static uint32_t GetNextFreeSmallPageLocation(void);
 static uint32_t GetNextFreeLongPageLocation(void);
@@ -78,14 +79,14 @@ static void SetExceptionVectorTable(void)
 {
 	uint32_t *pt = kernel_page_table + PAGE_TABLE_SIZE/4;
 	uint32_t base = vir2phys(&exception_vector_start);
-	SetSmallPageDescriptor(pt, 0xF0, base, AP_PL1_RO, ATTR_MEM_WT, 0);
+	SetSmallPageDescriptor(pt, 0xF0, base, AP_PL1_RO, ATTR_MEM_WT, 0, 0);
 }
 
 static void MapSystemRegisters(void)
 {
-	SetSectionDescriptor(kernel_1st_level_tt, 0xF80, 0xF8000000U, DOMAIN0, AP_PL1_RW, 2, 0, 0, 0, 0);
-	SetSectionDescriptor(kernel_1st_level_tt, 0xF89, 0xF8900000U, DOMAIN0, AP_PL1_RW, 2, 0, 0, 0, 0);
-	SetSectionDescriptor(kernel_1st_level_tt, 0xF8F, 0xF8F00000U, DOMAIN0, AP_PL1_RW, 2, 0, 0, 0, 0);
+	SetSectionDescriptor(kernel_1st_level_tt, 0xF80, 0xF8000000U, DOMAIN_KERNEL, AP_PL1_RW, 2, 0, 0, 0, 0);
+	SetSectionDescriptor(kernel_1st_level_tt, 0xF89, 0xF8900000U, DOMAIN_KERNEL, AP_PL1_RW, 2, 0, 0, 0, 0);
+	SetSectionDescriptor(kernel_1st_level_tt, 0xF8F, 0xF8F00000U, DOMAIN_KERNEL, AP_PL1_RW, 2, 0, 0, 0, 0);
 }
 
 static void print_1st_level_table(uint32_t *table, int is_user)
@@ -241,7 +242,7 @@ static void SetSectionDescriptor(uint32_t *tt, int index, uint32_t base, int dom
 		    (domain << 5) | (c << 3) | (b << 2) | 2;
 }
 
-static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int mem_attr, int nG)
+static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int mem_attr, int nG, int xn)
 {
 	int ap2, ap10;
 	int tex;
@@ -252,10 +253,10 @@ static void SetSmallPageDescriptor(uint32_t *pt, int index, uint32_t base, int a
 	tex = (mem_attr >> 2) & 7;
 	c = (mem_attr >> 1) & 1;
 	b = mem_attr & 1;
-	pt[index] = (base & (~0xFFF)) | (nG << 11) | (ap2 << 9) | (tex << 6) | (ap10 << 4) | (c << 3) | (b << 2) | 2;
+	pt[index] = (base & (~0xFFF)) | (nG << 11) | (ap2 << 9) | (tex << 6) | (ap10 << 4) | (c << 3) | (b << 2) | xn | 2;
 }
 
-static void SetLongPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG, int s)
+static void SetLargePageDescriptor(uint32_t *pt, int index, uint32_t base, int ap, int tex, int c, int b, int nG, int s, int xn)
 {
 	int ap2, ap10, i;
 	uint32_t entry;
@@ -263,14 +264,14 @@ static void SetLongPageDescriptor(uint32_t *pt, int index, uint32_t base, int ap
 	ap2 = (ap >> 2) & 1;
 	ap10 = ap & 3;
 	index &= ~(0xF);
-	entry = (base & (~0xFFFFU)) | (tex << 12) | (nG << 11) | (s << 10) | (ap2 << 9) | (ap10 << 4) | (c << 3) | (b << 2) | 1;
+	entry = (base & (~0xFFFFU)) | (xn << 15) | (tex << 12) | (nG << 11) | (s << 10) | (ap2 << 9) | (ap10 << 4) | (c << 3) | (b << 2) | 1;
 	for (i = 0; i < 16; i++)
 	{
 		pt[index++] = entry;
 	}
 }
 
-static void *GetNextFreeUserTTLocation(uint32_t *phys_addr)
+static void *GetNextFreeSystemTTLocation(uint32_t *phys_addr)
 {
 	void *p;
 	if (phys_addr != NULL)
@@ -322,7 +323,7 @@ static uint32_t GetNextFreeSmallPageLocation(void)
 			for (size_t j = 0; j < BITMAP_LEN_PER_SECTION; j++)
 			{
 				bitmap = pages_bitmap[base_inx + j];
-				if (bitmap != ~0U)
+				if (bitmap != ~0)
 				{
 					for (int z = 0; z < BITMAP_WSIZE; z++)
 					{
@@ -376,13 +377,51 @@ static uint32_t GetNextFreeLongPageLocation(void)
 	return 0;
 }
 
+static uint32_t GetNextFreeUserTTLocation(void)
+{
+	section_entry *se;
+	uint32_t base_addr;
+	uint32_t bitmap;
+	size_t base_inx;
+	uint32_t bitmask;
+
+	for (size_t i = 0; i < NOF_SECTIONS; i++)
+	{
+		se = &sections_table[i];
+		if (se->pages_in_use < NOF_PAGES_PER_SECTION - SMALL_PAGES_IN_A_USER_FIRST_LEVEL_TT)
+		{
+			base_addr = i * ARM_SECTION_SIZE;
+			base_inx = i * BITMAP_LEN_PER_SECTION;
+			for (size_t j = 0; j < BITMAP_LEN_PER_SECTION; j++)
+			{
+				bitmap = pages_bitmap[base_inx + j];
+				if (bitmap == ~0)
+				{
+					continue;
+				}
+				for (int z = 0; z < BITMAP_WSIZE; z += 2)
+				{
+					bitmask = 3U << (BITMAP_WSIZE-2-z);
+					if ((bitmap & bitmask) == 0)
+					{
+						pages_bitmap[base_inx + j] |= bitmask;
+						return base_addr + (j * BITMAP_WSIZE + z) * SMALL_PAGE_SIZE;
+					}
+				}
+			}
+		}
+	}
+	panic("Out of memory: not enough free user 1st-level tables", NO_NUM);
+	return 0;
+}
+
 void allocate_page_tables(struct proc *pr)
 {
 	uint32_t *tt;
 	uint32_t virt_start, virt_end;
 	struct mem_map *mm;
 	
-	tt = GetNextFreeUserTTLocation(&pr->p_ttbase);
+	tt = GetNextFreeSystemTTLocation(&pr->p_ttbase);
 	// kprintf("1st-level table for %s: 0x%08X\n", pr->p_name, pr->p_ttbase);
 	for (int seg = T; seg <= S; seg++)
 	{
@@ -394,7 +433,7 @@ void allocate_page_tables(struct proc *pr)
 			int inx = (vloc >> 20) & 0xFFFU;
 			if (tt[inx] == 0)
 			{
-				SetPageTableDescriptor(tt, inx, GetNextFreePageTableLocation(), DOMAIN0, 0);
+				SetPageTableDescriptor(tt, inx, GetNextFreePageTableLocation(), DOMAIN_USER, 0);
 			}
 		}
 	}
@@ -433,15 +472,8 @@ void allocate_pages(struct proc *pr)
 			{
 				base = GetNextFreeSmallPageLocation();
 			}
-			SetSmallPageDescriptor(pt, inx, base, ap, ATTR_MEM_WB_WA, 1);
+			SetSmallPageDescriptor(pt, inx, base, ap, ATTR_MEM_WB_WA, 1, seg != T);
 		}
-	}
-
-	if (pr->p_nr == 3)
-	{
-		kprintf("MMU tables for %s:\n", pr->p_name);
-		kprintf("p_ttbase = 0x%08X\n", pr->p_ttbase);
-		PrintMmuTables(tt, 1);
 	}
 
 	// if (pr->p_nr == 4)
@@ -474,7 +506,7 @@ uint32_t allocate_task_stack(void)
 	if ((kernel_page_table[i-1] & 3) == 0)
 	{
 		SetSmallPageDescriptor(kernel_page_table, i, GetNextFreeSmallPageLocation(),
-				       AP_PL1_RW, ATTR_MEM_WB_WA, 0);
+				       AP_PL1_RW, ATTR_MEM_WB_WA, 0, 1);
 		// New stack pointer sits at the next page boundary
 		return KERNEL_VIRTUAL_BASE + (i+1) * SMALL_PAGE_SIZE;
 	}
@@ -639,7 +671,7 @@ static void ExpandDataSegment(void)
 	}
 	base = GetNextFreeLongPageLocation();
 	memset(phys2vir(base), 0, LARGE_PAGE_SIZE);
-	SetLongPageDescriptor(kernel_page_table, i, base, AP_PL1_RW, 5, 0, 1, 0, 1);
+	SetLargePageDescriptor(kernel_page_table, i, base, AP_PL1_RW, 5, 0, 1, 0, 1, 1);
 }
 
 static void InitPhysicalMemoryTracking(void)
@@ -769,7 +801,7 @@ phys_bytes validate_user_ptr(int proc_nr, vir_bytes offset, size_t len, int type
 PUBLIC void phys_copy(phys_bytes source, phys_bytes dest, phys_bytes count)
 /* Copy a block of physical memory. */
 {
-	kprintf("Starting phys_copy...\n");
+	// kprintf("Starting phys_copy...\n");
 	void *src, *dst;
 	if (source >= MAX_PHYSICAL_MEMORY)
 	{
@@ -974,12 +1006,12 @@ static int FindFreePage(uint32_t *tt, int *sec_inx, int *pg_inx)
 	uint32_t tt_entry;
 	uint32_t *pt;
 	
-	while (*sec_inx < MAX_USER_SECTION)
+	while (*sec_inx <= MAX_USER_SECTION)
 	{
 		tt_entry = tt[*sec_inx];
 		if (IS_SECTION_EMPTY(tt_entry))
 		{
-			SetPageTableDescriptor(tt, *sec_inx, GetNextFreePageTableLocation(), 0, 0);
+			SetPageTableDescriptor(tt, *sec_inx, GetNextFreePageTableLocation(), DOMAIN_USER, 0);
 			tt_entry = tt[*sec_inx];
 		}
 		else if (!IS_PAGE_TABLE(tt_entry))
@@ -1007,12 +1039,12 @@ static int FindFreeVirtualRange(uint32_t *tt, int sec_inx, int pg_inx, uint32_t 
 	uint32_t tt_entry;
 	uint32_t *pt;
 
-	while (sec_inx < MAX_USER_SECTION && size > 0)
+	while (sec_inx <= MAX_USER_SECTION && size > 0)
 	{
 		tt_entry = tt[sec_inx];
 		if (IS_SECTION_EMPTY(tt_entry))
 		{
-			SetPageTableDescriptor(tt, sec_inx, GetNextFreePageTableLocation(), 0, 0);
+			SetPageTableDescriptor(tt, sec_inx, GetNextFreePageTableLocation(), DOMAIN_USER, 0);
 			tt_entry = tt[sec_inx];
 		}
 		else if (!IS_PAGE_TABLE(tt_entry))
@@ -1074,7 +1106,7 @@ PUBLIC int map_physical_range(struct proc *pp, uint32_t base, uint32_t size, uin
 					{
 						panic("map_physical_range: page not empty", pg_inx);
 					}
-					SetSmallPageDescriptor(pt, pg_inx, base, AP_PL0_RW, ATTR_DEVICE_SHAREABLE, 1);
+					SetSmallPageDescriptor(pt, pg_inx, base, AP_PL0_RW, ATTR_DEVICE_SHAREABLE, 1, 1);
 					base += SMALL_PAGE_SIZE;
 					size -= SMALL_PAGE_SIZE;
 					if (size == 0) return OK;
@@ -1139,6 +1171,44 @@ PUBLIC int unmap_physical_range(struct proc *pp, uint32_t base, uint32_t size, u
 		sec_inx++;
 		pg_inx = 0;
 	}
+
+	return OK;
+}
+
+PUBLIC int clone_vm(struct proc *pp, struct proc *cp)
+{
+	uint32_t *tt;
+	
+	cp->p_ttbase = GetNextFreeUserTTLocation();
+	kprintf("clone_vm: New user TT: 0x%08X\n", cp->p_ttbase);
+	phys_copy(pp->p_ttbase, cp->p_ttbase, USER_FIRST_LEVEL_TT_SIZE);
+
+	tt = phys2vir(cp->p_ttbase);
+	for (int i = 0; i <= MAX_USER_SECTION; i++)
+	{
+		uint32_t tt_entry = tt[i];
+		if (!IS_PAGE_TABLE(tt_entry))
+		{
+			continue;
+		}
+		uint32_t pt_base = GetNextFreePageTableLocation();
+		phys_copy(GET_PAGE_TABLE_BASE(tt_entry), pt_base, PAGE_TABLE_SIZE);
+		tt[i] = (tt_entry & PAGE_TABLE_ALIGN) | pt_base;
+		uint32_t *pt = phys2vir(pt_base);
+		for (int j = 0; j < NOF_PAGES_PER_SECTION; j++)
+		{
+			uint32_t pg_entry = pt[j];
+			if (IS_PAGE_EMPTY(pg_entry))
+			{
+				continue;
+			}
+			uint32_t pg_base = GetNextFreeSmallPageLocation();
+			phys_copy(GET_PAGE_ENTRY_BASE(pg_entry), pg_base, SMALL_PAGE_SIZE);
+			pt[j] = (pg_entry & SMALL_PAGE_ALIGN) | pg_base;
+		}
+	}
+
+	invalidate_system_structures(INVALIDATE_TLB);
 
 	return OK;
 }

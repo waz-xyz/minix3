@@ -82,7 +82,7 @@ typedef void (*__sighandler_t)(int);
 #ifdef _POSIX_SOURCE
 struct sigaction {
 	__sighandler_t sa_handler;	/* SIG_DFL, SIG_IGN, or pointer to function */
-	sigset_t sa_mask; /* signals to be blocked during handler */
+	sigset_t sa_mask;		/* signals to be blocked during handler */
 	int sa_flags;			/* special flags */
 };
 

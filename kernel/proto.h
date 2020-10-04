@@ -203,6 +203,7 @@ int virtual_copy(struct vir_addr *src, struct vir_addr *dst, vir_bytes bytes);
 int map_physical_range(struct proc *pp, uint32_t base, uint32_t size, uint32_t *offset);
 int unmap_physical_range(struct proc *pp, uint32_t base, uint32_t size, uint32_t offset);
 void print_mmu_tables(struct proc *pp);
+int clone_vm(struct proc *pp, struct proc *cp);
 
 /* mpx*.s */
 void idle_task(void);

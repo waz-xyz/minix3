@@ -31,6 +31,7 @@ PUBLIC int do_fork(
 	struct proc *rpp;			/* parent process pointer */
 	int i, gen;
 	int p_proc;
+	int res;
 
 	if (!isokendpt(m_ptr->PR_ENDPT, &p_proc))
 		return EINVAL;
@@ -77,6 +78,12 @@ PUBLIC int do_fork(
 	{
 		rpc->p_priv = priv_addr(USER_PRIV_ID);
 		rpc->p_rts_flags |= NO_PRIV;
+	}
+
+	if ((res = clone_vm(rpp, rpc)) != OK)
+	{
+		kprintf("do_fork: clone_vm returned %d!\n", res);
+		return res;
 	}
 
 	/* Calculate endpoint identifier, so caller knows what it is. */

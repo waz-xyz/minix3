@@ -158,7 +158,7 @@ one_more_page:
 	str	r0, [r1]
 
 	/* Set domains through DACR */
-	mov	r0, #0xFFFFFFFF
+	mov	r0, #0x7FFFFFFF
 	mcr	p15, 0, r0, c3, c0, 0
 
 	/* Set kernel stack */
